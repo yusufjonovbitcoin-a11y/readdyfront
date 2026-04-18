@@ -1,0 +1,22 @@
+import { createContext, useContext, type ReactNode } from "react";
+
+const HospitalAdminThemeContext = createContext<boolean | null>(null);
+
+export function HospitalAdminThemeProvider({
+  darkMode,
+  children,
+}: {
+  darkMode: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <HospitalAdminThemeContext.Provider value={darkMode}>{children}</HospitalAdminThemeContext.Provider>
+  );
+}
+
+/** HALayout ichidagi sahifalar — header/sidebar bilan bir xil qorong‘u/yorug‘ */
+export function useHospitalAdminDarkMode(): boolean {
+  const v = useContext(HospitalAdminThemeContext);
+  if (v === null) throw new Error("useHospitalAdminDarkMode requires HospitalAdminThemeProvider");
+  return v;
+}

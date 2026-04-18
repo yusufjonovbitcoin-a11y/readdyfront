@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* To‘liq balandlik — layoutlar o‘z fon rangini beradi (yorug‘/qorong‘u) */
+html {
+  min-height: 100%;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Brauzer bosilganda (maxsus Android/WebKit) yorug‘ temada qora flash */
+aside nav a {
+  -webkit-tap-highlight-color: transparent;
+}
