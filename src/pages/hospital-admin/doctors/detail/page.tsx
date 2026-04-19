@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useQrPngDataUrl } from "@/components/QrCodeImage";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
 import { haDoctors } from "@/mocks/ha_doctors";
@@ -9,64 +10,48 @@ import { haDoctorPerformance, haAnalyticsDailyData } from "@/mocks/ha_analytics"
 type TabType = 'overview' | 'patients' | 'analytics' | 'qr';
 
 function QRCodeDisplay({ doctorId, doctorName, darkMode }: { doctorId: string; doctorName: string; darkMode: boolean }) {
-  const qrUrl = `${window.location.origin}/checkin?doctor_id=${doctorId}`;
+  const qrUrl = useMemo(
+    () =>
+      typeof window !== "undefined"
+        ? `${window.location.origin}/checkin?doctor_id=${encodeURIComponent(doctorId)}`
+        : "",
+    [doctorId],
+  );
   const qrSize = 180;
-  // Simple QR-like pattern using SVG
-  const cells = 21;
-  const cellSize = qrSize / cells;
-
-  const pattern: number[][] = [];
-  for (let r = 0; r < cells; r++) {
-    pattern[r] = [];
-    for (let c = 0; c < cells; c++) {
-      // Finder patterns
-      const inTopLeft = r < 7 && c < 7;
-      const inTopRight = r < 7 && c >= cells - 7;
-      const inBottomLeft = r >= cells - 7 && c < 7;
-      if (inTopLeft || inTopRight || inBottomLeft) {
-        const borderR = r === 0 || r === 6 || (r >= cells - 7 && (r === cells - 7 || r === cells - 1));
-        const borderC = c === 0 || c === 6 || c === cells - 7 || c === cells - 1;
-        const innerR = (r >= 2 && r <= 4) || (r >= cells - 5 && r <= cells - 3);
-        const innerC = (c >= 2 && c <= 4) || (c >= cells - 5 && c <= cells - 3);
-        pattern[r][c] = (borderR || borderC || (innerR && innerC)) ? 1 : 0;
-      } else {
-        pattern[r][c] = (r * 7 + c * 13 + doctorId.charCodeAt(r % doctorId.length)) % 3 === 0 ? 1 : 0;
-      }
-    }
-  }
+  const { dataUrl, loading } = useQrPngDataUrl(qrUrl, qrSize);
 
   const handleDownload = () => {
-    const svg = document.getElementById('doctor-qr-svg');
-    if (!svg) return;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const blob = new Blob([svgData], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `qr-${doctorId}.svg`;
+    if (!dataUrl) return;
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `qr-${doctorId}.png`;
     a.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <div className={`p-6 rounded-2xl ${darkMode ? "bg-white" : "bg-white border border-gray-100"}`}>
-        <svg id="doctor-qr-svg" width={qrSize} height={qrSize} viewBox={`0 0 ${qrSize} ${qrSize}`}>
-          {pattern.map((row, r) =>
-            row.map((cell, c) =>
-              cell ? (
-                <rect
-                  key={`${r}-${c}`}
-                  x={c * cellSize}
-                  y={r * cellSize}
-                  width={cellSize}
-                  height={cellSize}
-                  fill="#0f172a"
-                />
-              ) : null
-            )
-          )}
-        </svg>
+      <div
+        className={`rounded-2xl p-6 ${darkMode ? "bg-white" : "border border-gray-100 bg-white"}`}
+      >
+        {dataUrl ? (
+          <img
+            src={dataUrl}
+            alt=""
+            width={qrSize}
+            height={qrSize}
+            className="block max-h-full max-w-full select-none rounded-sm"
+            draggable={false}
+          />
+        ) : (
+          <div
+            className="flex items-center justify-center rounded-lg border border-dashed border-gray-300 bg-gray-50 text-[11px] text-gray-500"
+            style={{ width: qrSize, height: qrSize }}
+            role="status"
+            aria-live="polite"
+          >
+            {loading ? "Yuklanmoqda…" : "QR yaratilmadi"}
+          </div>
+        )}
       </div>
       <div className="text-center">
         <p className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{doctorName}</p>

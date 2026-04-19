@@ -24,7 +24,6 @@ export function useAuth() {
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as AuthUser;
-        // Check token expiry (mock: 24h)
         setUser(parsed);
       } catch {
         localStorage.removeItem(AUTH_KEY);

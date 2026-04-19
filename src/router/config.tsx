@@ -20,6 +20,7 @@ import HAAnalyticsPage from "../pages/hospital-admin/analytics/page";
 import HASettingsPage from "../pages/hospital-admin/settings/page";
 
 // Doctor Panel pages
+import DoctorPanelLayout from "../pages/doctor/DoctorPanelLayout";
 import DocPatientsPage from "../pages/doctor/patients/page";
 import DocPatientDetailPage from "../pages/doctor/patients/detail/page";
 import DocHistoryPage from "../pages/doctor/history/page";
@@ -32,13 +33,10 @@ import DocProfilePage from "../pages/doctor/profile/page";
 import CheckInPage from "../pages/checkin/page";
 
 const routes: RouteObject[] = [
-  // Auth
   {
     path: "/login",
     element: <LoginPage />,
   },
-
-  // Super Admin routes
   {
     path: "/",
     element: <Home />,
@@ -71,8 +69,6 @@ const routes: RouteObject[] = [
     path: "/settings",
     element: <SettingsPage />,
   },
-
-  // Hospital Admin routes
   {
     path: "/hospital-admin",
     element: <HADashboardPage />,
@@ -101,43 +97,23 @@ const routes: RouteObject[] = [
     path: "/hospital-admin/settings",
     element: <HASettingsPage />,
   },
-
-  // Doctor Panel routes
   {
-    path: "/doctor/patients",
-    element: <DocPatientsPage />,
+    path: "/doctor",
+    element: <DoctorPanelLayout />,
+    children: [
+      { path: "patients", element: <DocPatientsPage /> },
+      { path: "patients/:id", element: <DocPatientDetailPage /> },
+      { path: "history", element: <DocHistoryPage /> },
+      { path: "questions", element: <DocQuestionsPage /> },
+      { path: "analytics", element: <DocAnalyticsPage /> },
+      { path: "settings", element: <DocSettingsPage /> },
+      { path: "profile", element: <DocProfilePage /> },
+    ],
   },
-  {
-    path: "/doctor/patients/:id",
-    element: <DocPatientDetailPage />,
-  },
-  {
-    path: "/doctor/history",
-    element: <DocHistoryPage />,
-  },
-  {
-    path: "/doctor/questions",
-    element: <DocQuestionsPage />,
-  },
-  {
-    path: "/doctor/analytics",
-    element: <DocAnalyticsPage />,
-  },
-  {
-    path: "/doctor/settings",
-    element: <DocSettingsPage />,
-  },
-  {
-    path: "/doctor/profile",
-    element: <DocProfilePage />,
-  },
-
-  // Public check-in page
   {
     path: "/checkin",
     element: <CheckInPage />,
   },
-
   {
     path: "*",
     element: <NotFound />,

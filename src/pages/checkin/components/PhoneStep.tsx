@@ -9,12 +9,13 @@ interface DraftInfo {
 
 interface PhoneStepProps {
   onContinue: (phone: string, resumeDraft: boolean) => void;
+  onBack?: () => void;
   doctorName: string;
   doctorSpecialty: string;
   doctorAvatar: string;
 }
 
-export default function PhoneStep({ onContinue, doctorName, doctorSpecialty, doctorAvatar }: PhoneStepProps) {
+export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecialty, doctorAvatar }: PhoneStepProps) {
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -148,8 +149,7 @@ export default function PhoneStep({ onContinue, doctorName, doctorSpecialty, doc
 
         {/* Phone input card */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <h2 className="text-base font-bold text-gray-900 mb-1">Telefon raqamingizni kiriting</h2>
-          <p className="text-xs text-gray-500 mb-5">Navbat holati SMS orqali yuboriladi</p>
+          <h2 className="text-base font-bold text-gray-900 mb-5">Telefon raqamingizni kiriting</h2>
 
           <div className="flex gap-2 mb-1">
             <div className="flex items-center gap-2 px-3 h-13 rounded-xl border border-gray-200 bg-gray-50 flex-shrink-0">
@@ -195,6 +195,17 @@ export default function PhoneStep({ onContinue, doctorName, doctorSpecialty, doc
             )}
           </button>
         </div>
+
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-5 w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+          >
+            <i className="ri-arrow-left-line" aria-hidden />
+            Orqaga
+          </button>
+        )}
 
         <p className="text-xs text-gray-400 text-center mt-4">
           Ma'lumotlaringiz xavfsiz saqlanadi va faqat shifokorga ko'rsatiladi

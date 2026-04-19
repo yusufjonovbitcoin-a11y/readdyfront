@@ -39,7 +39,7 @@ export const docPatients: DocPatient[] = [
     riskFactors: ['Qon bosimi yuqori', 'Oilada yurak kasalligi', 'Chekadi'],
     notes: '',
     diagnosis: '',
-    date: '2026-04-18',
+    date: '2026-04-19',
     consultationDuration: 0,
   },
   {
@@ -58,7 +58,7 @@ export const docPatients: DocPatient[] = [
     riskFactors: [],
     notes: '',
     diagnosis: '',
-    date: '2026-04-18',
+    date: '2026-04-19',
     consultationDuration: 0,
   },
   {
@@ -77,7 +77,7 @@ export const docPatients: DocPatient[] = [
     riskFactors: ['Diabet', 'Semizlik', 'Qon bosimi yuqori', 'Chekadi', 'Harakatsiz turmush tarzi'],
     notes: '',
     diagnosis: '',
-    date: '2026-04-18',
+    date: '2026-04-19',
     consultationDuration: 0,
   },
   {
@@ -96,7 +96,7 @@ export const docPatients: DocPatient[] = [
     riskFactors: [],
     notes: 'Bemor 3 kundan beri yo\'talmoqda',
     diagnosis: '',
-    date: '2026-04-18',
+    date: '2026-04-19',
     consultationDuration: 12,
   },
   {
@@ -115,7 +115,7 @@ export const docPatients: DocPatient[] = [
     riskFactors: ['Yurak kasalligi tarixi', 'Qon bosimi yuqori', 'Diabet', 'Semizlik', 'Chekadi', '65+ yosh'],
     notes: 'Shoshilinch tekshiruv talab etiladi',
     diagnosis: '',
-    date: '2026-04-18',
+    date: '2026-04-19',
     consultationDuration: 25,
   },
   {
@@ -134,7 +134,7 @@ export const docPatients: DocPatient[] = [
     riskFactors: ['Qon bosimi yuqori', 'Stress'],
     notes: 'Dori buyurildi, 1 haftadan keyin qayta ko\'rik',
     diagnosis: 'Arterial gipertenziya, 1-daraja',
-    date: '2026-04-18',
+    date: '2026-04-19',
     consultationDuration: 18,
   },
   {
@@ -153,7 +153,7 @@ export const docPatients: DocPatient[] = [
     riskFactors: [],
     notes: 'Vitaminlar buyurildi, dam olish tavsiya etildi',
     diagnosis: 'Asteniya',
-    date: '2026-04-18',
+    date: '2026-04-19',
     consultationDuration: 15,
   },
   {

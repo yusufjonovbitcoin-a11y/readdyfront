@@ -2,9 +2,11 @@ import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, AuthUser, UserRole } from "@/hooks/useAuth";
 
-// Mock credentials for demo
+/** +998 dan keyingi 9 raqam (masalan 901111111) */
+const UZ_PHONE_PREFIX = "+998";
+
 const MOCK_CREDENTIALS: Record<string, { password: string; user: AuthUser }> = {
-  "superadmin@medcore.uz": {
+  "+998901111111": {
     password: "Admin@123",
     user: {
       id: "sa-001",
@@ -15,7 +17,7 @@ const MOCK_CREDENTIALS: Record<string, { password: string; user: AuthUser }> = {
       token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InNhLTAwMSIsInJvbGUiOiJTVVBFUl9BRE1JTiIsImlhdCI6MTcxMzQwMDAwMH0.mock_super_admin_token",
     },
   },
-  "sardor@tashkent-clinic.uz": {
+  "+998902222222": {
     password: "Hospital@123",
     user: {
       id: "u1",
@@ -28,7 +30,7 @@ const MOCK_CREDENTIALS: Record<string, { password: string; user: AuthUser }> = {
       token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InUxIiwicm9sZSI6IkhPU1BJVEFMX0FETUlOIiwiaWF0IjoxNzEzNDAwMDAwfQ.mock_hospital_admin_token",
     },
   },
-  "a.nazarov@clinic.uz": {
+  "+998901234567": {
     password: "Doctor@123",
     user: {
       id: "u3",
@@ -50,16 +52,17 @@ const ROLE_REDIRECT: Record<UserRole, string> = {
 };
 
 const DEMO_ACCOUNTS = [
-  { role: "Super Admin", email: "superadmin@medcore.uz", password: "Admin@123", color: "emerald", icon: "ri-shield-star-line" },
-  { role: "Hospital Admin", email: "sardor@tashkent-clinic.uz", password: "Hospital@123", color: "teal", icon: "ri-hospital-line" },
-  { role: "Doctor", email: "a.nazarov@clinic.uz", password: "Doctor@123", color: "violet", icon: "ri-stethoscope-line" },
+  { role: "Super Admin", phoneRest: "901111111", password: "Admin@123", color: "emerald", icon: "ri-shield-star-line" },
+  { role: "Hospital Admin", phoneRest: "902222222", password: "Hospital@123", color: "teal", icon: "ri-hospital-line" },
+  { role: "Doctor", phoneRest: "901234567", password: "Doctor@123", color: "violet", icon: "ri-stethoscope-line" },
 ];
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState("");
+  /** +998 dan keyin 9 ta raqam */
+  const [phoneRest, setPhoneRest] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -70,22 +73,28 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    if (!email.trim()) { setError("Email manzilini kiriting"); return; }
-    if (!password.trim()) { setError("Parolni kiriting"); return; }
+    const digits = phoneRest.replace(/\D/g, "").slice(0, 9);
+    if (digits.length < 9) {
+      setError("To'liq telefon raqamini kiriting (+998 dan keyin 9 raqam)");
+      return;
+    }
+    if (!password.trim()) {
+      setError("Parolni kiriting");
+      return;
+    }
 
     setLoading(true);
 
-    // Simulate API call delay
     await new Promise((r) => setTimeout(r, 900));
 
-    const cred = MOCK_CREDENTIALS[email.toLowerCase().trim()];
+    const fullPhone = `${UZ_PHONE_PREFIX}${digits}`;
+    const cred = MOCK_CREDENTIALS[fullPhone];
     if (!cred || cred.password !== password) {
-      setError("Email yoki parol noto'g'ri. Demo hisoblardan foydalaning.");
+      setError("Telefon yoki parol noto'g'ri. Demo tugmalaridan foydalaning.");
       setLoading(false);
       return;
     }
 
-    // Log audit event (mock)
     const auditLog = {
       id: `log-${Date.now()}`,
       userId: cred.user.id,
@@ -108,7 +117,7 @@ export default function LoginPage() {
   };
 
   const fillDemo = (acc: typeof DEMO_ACCOUNTS[0]) => {
-    setEmail(acc.email);
+    setPhoneRest(acc.phoneRest);
     setPassword(acc.password);
     setError("");
   };
@@ -196,7 +205,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => fillDemo(acc)}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all cursor-pointer ${
-                    email === acc.email
+                    phoneRest === acc.phoneRest
                       ? acc.color === "emerald"
                         ? "border-emerald-500 bg-emerald-50"
                         : acc.color === "teal"
@@ -222,21 +231,35 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
+            {/* Telefon */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email manzil</label>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center">
-                  <i className="ri-mail-line text-gray-400 text-sm"></i>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Telefon raqami</label>
+              <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-transparent">
+                <span
+                  className="shrink-0 px-3 py-2.5 bg-gray-50 text-gray-800 text-sm font-medium border-r border-gray-200 flex items-center tabular-nums"
+                  aria-hidden
+                >
+                  {UZ_PHONE_PREFIX}
+                </span>
+                <div className="relative flex-1 min-w-0 flex items-center">
+                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center pointer-events-none">
+                    <i className="ri-phone-line text-gray-400 text-sm"></i>
+                  </div>
+                  <input
+                    type="tel"
+                    value={phoneRest}
+                    onChange={(e) => {
+                      const d = e.target.value.replace(/\D/g, "").slice(0, 9);
+                      setPhoneRest(d);
+                      setError("");
+                    }}
+                    placeholder="90 123 45 67"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border-0 focus:ring-0 focus:outline-none text-gray-900 placeholder-gray-400"
+                    autoComplete="tel"
+                    inputMode="numeric"
+                    aria-label="Telefon raqami, +998 dan keyin"
+                  />
                 </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(""); }}
-                  placeholder="email@example.com"
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-400"
-                  autoComplete="email"
-                />
               </div>
             </div>
 
@@ -265,8 +288,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between">
+            {/* Remember */}
+            <div className="flex items-center">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -276,9 +299,6 @@ export default function LoginPage() {
                 />
                 <span className="text-sm text-gray-600">Eslab qolish</span>
               </label>
-              <button type="button" className="text-sm text-emerald-600 hover:text-emerald-700 cursor-pointer whitespace-nowrap">
-                Parolni unutdingizmi?
-              </button>
             </div>
 
             {/* Error */}

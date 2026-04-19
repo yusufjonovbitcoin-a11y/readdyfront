@@ -1,10 +1,42 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import QrCodeImage from "@/components/QrCodeImage";
 import DocLayout from "@/pages/doctor/components/DocLayout";
+import { useDoctorTheme } from "@/context/DoctorThemeContext";
 
 export default function DocProfilePage() {
+  return (
+    <DocLayout title="Profil">
+      <DocProfileContent />
+    </DocLayout>
+  );
+}
+
+function DocProfileContent() {
+  const { darkMode } = useDoctorTheme();
   const navigate = useNavigate();
   const [qrCopied, setQrCopied] = useState(false);
+
+  const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
+  const pageTitle = darkMode ? "text-white" : "text-gray-900";
+  const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
+  const bodyText = darkMode ? "text-gray-300" : "text-gray-600";
+  const labelMuted = darkMode ? "text-gray-500" : "text-gray-400";
+  const valueText = darkMode ? "text-gray-200" : "text-gray-800";
+  const iconBox = darkMode ? "bg-[#21262D]" : "bg-gray-100";
+  const backBtn = darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700";
+  const editBtn = darkMode
+    ? "border border-[#30363D] text-gray-400 hover:text-gray-200 hover:bg-[#21262D]"
+    : "border border-gray-200 text-gray-500 hover:text-gray-700";
+  const starEmpty = darkMode ? "text-gray-600" : "text-gray-200";
+  const qrFrame = darkMode ? "p-3 bg-white border-2 border-[#30363D] rounded-xl inline-block" : "p-3 bg-white border-2 border-gray-200 rounded-xl inline-block";
+  const copyIdle = darkMode
+    ? "border-[#30363D] text-gray-200 hover:bg-[#21262D]"
+    : "border-gray-200 text-gray-700 hover:bg-gray-50";
+  const quickLink = darkMode ? "hover:bg-[#21262D] text-gray-200" : "hover:bg-gray-50 text-gray-700";
+  const quickIcon = darkMode ? "text-violet-400" : "text-violet-500";
+  const quickArrow = darkMode ? "text-gray-500" : "text-gray-400";
+  const sectionTitle = darkMode ? "text-gray-200" : "text-gray-700";
 
   const doctor = {
     id: "doc-001",
@@ -22,180 +54,149 @@ export default function DocProfilePage() {
     checkinUrl: "/checkin?doctor_id=doc-001",
   };
 
+  const checkinFullUrl = useMemo(
+    () =>
+      typeof window !== "undefined" ? `${window.location.origin}${doctor.checkinUrl}` : "",
+    [doctor.checkinUrl],
+  );
+
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}${doctor.checkinUrl}`);
+    if (!checkinFullUrl) return;
+    navigator.clipboard.writeText(checkinFullUrl);
     setQrCopied(true);
     setTimeout(() => setQrCopied(false), 2000);
   };
 
-  const qrCells = Array.from({ length: 21 }, (_, row) =>
-    Array.from({ length: 21 }, (_, col) => {
-      const isCorner = (row < 7 && col < 7) || (row < 7 && col > 13) || (row > 13 && col < 7);
-      const isInnerCorner =
-        (row >= 2 && row <= 4 && col >= 2 && col <= 4) ||
-        (row >= 2 && row <= 4 && col >= 16 && col <= 18) ||
-        (row >= 16 && row <= 18 && col >= 2 && col <= 4);
-      const isBorder =
-        ((row === 0 || row === 6) && col <= 6) ||
-        ((row === 0 || row === 6) && col >= 14) ||
-        ((row === 14 || row === 20) && col <= 6) ||
-        ((col === 0 || col === 6) && row <= 6) ||
-        ((col === 14 || col === 20) && row <= 6) ||
-        ((col === 0 || col === 6) && row >= 14);
-      const isData = (row + col + row * col) % 3 === 0 && !isCorner;
-      return isInnerCorner || isBorder || isData;
-    })
-  );
-
   return (
-    <DocLayout title="Profil">
-      <div className="max-w-4xl mx-auto space-y-5">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors"
-        >
-          <i className="ri-arrow-left-line"></i>
-          Orqaga
-        </button>
+    <div className="w-full min-w-0 space-y-5">
+      <button onClick={() => navigate(-1)} className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${backBtn}`}>
+        <i className="ri-arrow-left-line"></i>
+        Orqaga
+      </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 space-y-5">
-            <div className="bg-white rounded-xl border border-gray-100 p-6">
-              <div className="flex items-start gap-5">
-                <div className="w-20 h-20 rounded-2xl bg-violet-600 flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-2xl font-bold">AK</span>
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold text-gray-900">{doctor.name}</h2>
-                  <p className="text-violet-600 font-medium">{doctor.specialty}</p>
-                  <p className="text-sm text-gray-500 mt-1">{doctor.hospital}</p>
-                  <div className="flex items-center gap-1 mt-2">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="w-4 h-4 flex items-center justify-center">
-                        <i
-                          className={`ri-star-fill text-sm ${i < Math.floor(doctor.rating) ? "text-amber-400" : "text-gray-200"}`}
-                        ></i>
-                      </div>
-                    ))}
-                    <span className="text-sm font-semibold text-gray-700 ml-1">{doctor.rating}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate("/doctor/settings")}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-gray-700 cursor-pointer transition-colors"
-                >
-                  <i className="ri-edit-2-line text-base"></i>
-                </button>
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="min-w-0 space-y-5 lg:col-span-2">
+          <div className={`rounded-xl p-6 ${cardBase}`}>
+            <div className="flex items-start gap-5">
+              <div className="w-20 h-20 rounded-2xl bg-violet-600 flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-2xl font-bold">AK</span>
               </div>
-
-              <p className="text-sm text-gray-600 mt-4 leading-relaxed">{doctor.bio}</p>
-
-              <div className="grid grid-cols-2 gap-4 mt-5">
-                {[
-                  { icon: "ri-phone-line", label: "Telefon", value: doctor.phone },
-                  { icon: "ri-mail-line", label: "Email", value: doctor.email },
-                  { icon: "ri-time-line", label: "Tajriba", value: doctor.experience },
-                  { icon: "ri-calendar-line", label: "Qo'shilgan", value: doctor.joinDate },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100">
-                      <i className={`${item.icon} text-gray-500 text-sm`}></i>
+              <div className="min-w-0 flex-1">
+                <h2 className={`text-xl font-bold ${pageTitle}`}>{doctor.name}</h2>
+                <p className="text-violet-500 font-medium">{doctor.specialty}</p>
+                <p className={`text-sm mt-1 ${pageMuted}`}>{doctor.hospital}</p>
+                <div className="flex items-center gap-1 mt-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="w-4 h-4 flex items-center justify-center">
+                      <i
+                        className={`ri-star-fill text-sm ${i < Math.floor(doctor.rating) ? "text-amber-400" : starEmpty}`}
+                      ></i>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-400">{item.label}</p>
-                      <p className="text-sm font-medium text-gray-800">{item.value}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                  <span className={`text-sm font-semibold ml-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{doctor.rating}</span>
+                </div>
               </div>
+              <button onClick={() => navigate("/doctor/settings")} className={`w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${editBtn}`}>
+                <i className="ri-edit-2-line text-base"></i>
+              </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <p className={`text-sm mt-4 leading-relaxed ${bodyText}`}>{doctor.bio}</p>
+
+            <div className="grid grid-cols-2 gap-4 mt-5">
               {[
-                { label: "Jami bemorlar", value: doctor.totalPatients, icon: "ri-user-heart-line", color: "text-violet-600", bg: "bg-violet-50" },
-                { label: "Bugun", value: doctor.todayPatients, icon: "ri-calendar-check-line", color: "text-green-600", bg: "bg-green-50" },
-                { label: "Reyting", value: doctor.rating, icon: "ri-star-line", color: "text-amber-600", bg: "bg-amber-50" },
-              ].map((stat, i) => (
-                <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 text-center">
-                  <div className={`w-10 h-10 flex items-center justify-center rounded-lg ${stat.bg} mx-auto mb-2`}>
-                    <i className={`${stat.icon} text-lg ${stat.color}`}></i>
+                { icon: "ri-phone-line", label: "Telefon", value: doctor.phone },
+                { icon: "ri-mail-line", label: "Email", value: doctor.email },
+                { icon: "ri-time-line", label: "Tajriba", value: doctor.experience },
+                { icon: "ri-calendar-line", label: "Qo'shilgan", value: doctor.joinDate },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className={`w-8 h-8 flex items-center justify-center rounded-lg ${iconBox}`}>
+                    <i className={`${item.icon} text-gray-500 text-sm`}></i>
                   </div>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+                  <div>
+                    <p className={`text-xs ${labelMuted}`}>{item.label}</p>
+                    <p className={`text-sm font-medium ${valueText}`}>{item.value}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <h3 className="text-base font-semibold text-gray-900 mb-1">QR Kod</h3>
-              <p className="text-xs text-gray-500 mb-4">Bemorlar bu QR orqali navbatga yoziladi</p>
-
-              <div className="flex justify-center mb-4">
-                <div className="p-3 bg-white border-2 border-gray-200 rounded-xl inline-block">
-                  <div className="grid gap-0" style={{ gridTemplateColumns: `repeat(21, 10px)` }}>
-                    {qrCells.map((row, ri) =>
-                      row.map((cell, ci) => (
-                        <div key={`${ri}-${ci}`} className={`w-2.5 h-2.5 ${cell ? "bg-gray-900" : "bg-white"}`}></div>
-                      ))
-                    )}
-                  </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: "Jami bemorlar", value: doctor.totalPatients, icon: "ri-user-heart-line", color: "text-violet-600", bg: "bg-violet-50" },
+              { label: "Bugun", value: doctor.todayPatients, icon: "ri-calendar-check-line", color: "text-green-600", bg: "bg-green-50" },
+              { label: "Reyting", value: doctor.rating, icon: "ri-star-line", color: "text-amber-600", bg: "bg-amber-50" },
+            ].map((stat, i) => (
+              <div key={i} className={`rounded-xl p-4 text-center ${cardBase}`}>
+                <div className={`w-10 h-10 flex items-center justify-center rounded-lg ${stat.bg} mx-auto mb-2`}>
+                  <i className={`${stat.icon} text-lg ${stat.color}`}></i>
                 </div>
+                <p className={`text-2xl font-bold ${pageTitle}`}>{stat.value}</p>
+                <p className={`text-xs mt-0.5 ${pageMuted}`}>{stat.label}</p>
               </div>
+            ))}
+          </div>
+        </div>
 
-              <p className="text-xs text-center text-gray-500 mb-4 break-all">
-                {window.location.origin}
-                {doctor.checkinUrl}
-              </p>
+        <div className="min-w-0 space-y-4">
+          <div className={`rounded-xl p-5 ${cardBase}`}>
+            <h3 className={`text-base font-semibold mb-1 ${pageTitle}`}>QR Kod</h3>
+            <p className={`text-xs mb-4 ${pageMuted}`}>Bemorlar bu QR orqali navbatga yoziladi</p>
 
-              <div className="space-y-2">
-                <button
-                  onClick={handleCopyLink}
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
-                    qrCopied
-                      ? "border-green-300 bg-green-50 text-green-700"
-                      : "border-gray-200 text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <i className={`${qrCopied ? "ri-checkbox-circle-line" : "ri-link"} text-sm`}></i>
-                  {qrCopied ? "Nusxalandi!" : "Havolani nusxalash"}
-                </button>
-                <button
-                  onClick={() => navigate(doctor.checkinUrl)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors whitespace-nowrap"
-                >
-                  <i className="ri-external-link-line text-sm"></i>
-                  Check-in sahifasini ko'rish
-                </button>
+            <div className="mb-4 flex justify-center">
+              <div className={qrFrame}>
+                <QrCodeImage value={checkinFullUrl} size={200} alt="Navbatga yozilish QR kodi" />
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Tezkor havolalar</h4>
-              <div className="space-y-2">
-                {[
-                  { label: "Bugungi bemorlar", path: "/doctor/patients", icon: "ri-user-add-line" },
-                  { label: "Tahlil", path: "/doctor/analytics", icon: "ri-bar-chart-2-line" },
-                  { label: "Sozlamalar", path: "/doctor/settings", icon: "ri-settings-3-line" },
-                ].map((link, i) => (
-                  <button
-                    key={i}
-                    onClick={() => navigate(link.path)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm text-gray-700 cursor-pointer transition-colors text-left"
-                  >
-                    <div className="w-5 h-5 flex items-center justify-center">
-                      <i className={`${link.icon} text-violet-500`}></i>
-                    </div>
-                    {link.label}
-                    <i className="ri-arrow-right-s-line ml-auto text-gray-400"></i>
-                  </button>
-                ))}
-              </div>
+            <p className={`mb-4 break-all text-center text-xs ${pageMuted}`}>{checkinFullUrl || "…"}</p>
+
+            <div className="space-y-2">
+              <button
+                onClick={handleCopyLink}
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                  qrCopied ? "border-green-300 bg-green-50 text-green-700" : copyIdle
+                }`}
+              >
+                <i className={`${qrCopied ? "ri-checkbox-circle-line" : "ri-link"} text-sm`}></i>
+                {qrCopied ? "Nusxalandi!" : "Havolani nusxalash"}
+              </button>
+              <button
+                onClick={() => navigate(doctor.checkinUrl)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors whitespace-nowrap"
+              >
+                <i className="ri-external-link-line text-sm"></i>
+                Check-in sahifasini ko'rish
+              </button>
+            </div>
+          </div>
+
+          <div className={`rounded-xl p-4 ${cardBase}`}>
+            <h4 className={`text-sm font-semibold mb-3 ${sectionTitle}`}>Tezkor havolalar</h4>
+            <div className="space-y-2">
+              {[
+                { label: "Bugungi bemorlar", path: "/doctor/patients", icon: "ri-user-add-line" },
+                { label: "Tahlil", path: "/doctor/analytics", icon: "ri-bar-chart-2-line" },
+                { label: "Sozlamalar", path: "/doctor/settings", icon: "ri-settings-3-line" },
+              ].map((link, i) => (
+                <button
+                  key={i}
+                  onClick={() => navigate(link.path)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors text-left ${quickLink}`}
+                >
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    <i className={`${link.icon} ${quickIcon}`}></i>
+                  </div>
+                  {link.label}
+                  <i className={`ri-arrow-right-s-line ml-auto ${quickArrow}`}></i>
+                </button>
+              ))}
             </div>
           </div>
         </div>
       </div>
-    </DocLayout>
+    </div>
   );
 }

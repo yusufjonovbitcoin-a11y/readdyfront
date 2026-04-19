@@ -37,7 +37,6 @@ export default function DocQuestionsPage() {
 function DocQuestionsContent() {
   const { darkMode } = useDoctorTheme();
   const [questions, setQuestions] = useState<DocQuestion[]>(docQuestions);
-  const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
@@ -59,7 +58,6 @@ function DocQuestionsContent() {
   const btnGhost = darkMode
     ? "border border-[#30363D] bg-[#21262D] text-gray-200 hover:bg-[#30363D]"
     : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50";
-  const pillIdle = darkMode ? "bg-[#21262D] text-gray-300 hover:bg-[#30363D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200";
   const statGreen = darkMode ? "text-emerald-400" : "text-green-600";
   const statGray = darkMode ? "text-gray-500" : "text-gray-400";
   const statViolet = darkMode ? "text-violet-400" : "text-violet-600";
@@ -88,11 +86,7 @@ function DocQuestionsContent() {
     ? "bg-violet-900/40 text-violet-200 hover:bg-violet-900/60"
     : "bg-violet-50 text-violet-700 hover:bg-violet-100";
 
-  const filtered = questions.filter((q) => {
-    const matchCat = activeCategory === "all" || q.categoryId === activeCategory;
-    const matchSearch = q.text.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
+  const filtered = questions.filter((q) => q.text.toLowerCase().includes(search.toLowerCase()));
 
   const handleAdd = () => {
     if (!formData.text.trim()) return;
@@ -182,31 +176,16 @@ function DocQuestionsContent() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative">
-          <i className={`ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-sm ${searchIcon}`}></i>
-          <input
-            type="text"
-            placeholder="Savol qidirish..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={inputBase}
-          />
-        </div>
-        <div className="flex items-center gap-1 flex-wrap">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
-                activeCategory === cat.id ? "bg-violet-600 text-white" : pillIdle
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
+      {/* Qidiruv */}
+      <div className="relative max-w-md">
+        <i className={`ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-sm ${searchIcon}`}></i>
+        <input
+          type="text"
+          placeholder="Savol qidirish..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className={inputBase}
+        />
       </div>
 
       {/* Stats row */}
@@ -232,7 +211,7 @@ function DocQuestionsContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((q) => (
+          {filtered.map((q, i) => (
             <div
               key={q.id}
               className={`rounded-xl p-4 transition-all ${cardBase} ${
@@ -240,21 +219,39 @@ function DocQuestionsContent() {
               }`}
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex min-w-0 flex-1 items-center gap-2 flex-wrap pr-2">
+                  <span
+                    className={`flex h-7 min-w-[1.75rem] shrink-0 items-center justify-center rounded-lg px-1.5 text-xs font-bold tabular-nums ${
+                      darkMode ? "bg-violet-900/45 text-violet-200" : "bg-violet-100 text-violet-700"
+                    }`}
+                    title={`Tartib: ${i + 1}`}
+                  >
+                    {i + 1}
+                  </span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCat}`}>{q.category}</span>
                   {q.isCustom && <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCustom}`}>Shaxsiy</span>}
                 </div>
                 <button
+                  type="button"
+                  role="switch"
+                  aria-checked={q.status === "active"}
+                  aria-label={q.status === "active" ? "Savolni nofaol qilish" : "Savolni faollashtirish"}
                   onClick={() => handleToggleStatus(q.id)}
-                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer flex-shrink-0 ${
-                    q.status === "active" ? "bg-green-500" : darkMode ? "bg-[#30363D]" : "bg-gray-300"
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+                    darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
+                  } ${
+                    q.status === "active"
+                      ? "bg-emerald-500"
+                      : darkMode
+                        ? "bg-[#30363D]"
+                        : "bg-gray-300"
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                      q.status === "active" ? "translate-x-4" : "translate-x-0.5"
+                    className={`pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ease-out ${
+                      q.status === "active" ? "translate-x-5" : "translate-x-0"
                     }`}
-                  ></span>
+                  />
                 </button>
               </div>
 

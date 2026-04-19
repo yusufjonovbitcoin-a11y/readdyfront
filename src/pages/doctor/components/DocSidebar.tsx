@@ -101,16 +101,12 @@ export default function DocSidebar({ collapsed, onToggle }: DocSidebarProps) {
       {!collapsed && (
         <div className={`mx-3 mb-3 p-3 rounded-lg ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-violet-50"}`}>
           <p className={`text-xs font-semibold mb-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Bugun</p>
-          <div className="flex justify-between">
-            <div className="text-center">
+          <div className="flex justify-between gap-2">
+            <div className="text-center flex-1">
               <p className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>3</p>
               <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Navbat</p>
             </div>
-            <div className="text-center">
-              <p className={`text-lg font-bold text-amber-500`}>2</p>
-              <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Jarayonda</p>
-            </div>
-            <div className="text-center">
+            <div className="text-center flex-1">
               <p className={`text-lg font-bold text-green-500`}>2</p>
               <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Tugallandi</p>
             </div>
@@ -121,7 +117,7 @@ export default function DocSidebar({ collapsed, onToggle }: DocSidebarProps) {
       {/* User Profile */}
       <div className={`p-3 border-t ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
         <Link
-          to="/doctor/profile"
+          to="/login"
           prefetch="none"
           className={`no-underline flex items-center rounded-lg p-2 [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 ${collapsed ? "justify-center" : ""} ${
             darkMode ? "hover:bg-[#21262D] active:bg-[#30363D]/80" : "hover:bg-gray-50 active:bg-gray-100"

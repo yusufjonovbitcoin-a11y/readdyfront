@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { haDoctors } from '@/mocks/ha_doctors';
+import i18n from '@/i18n';
 import PhoneStep from './components/PhoneStep';
+import LanguageStep from './components/LanguageStep';
+import type { CheckinLang } from './components/LanguageStep';
 import QuestionsFlow from './components/QuestionsFlow';
 import AIAssistStep from './components/AIAssistStep';
 import ResultStep from './components/ResultStep';
 
-type FlowStep = 'phone' | 'questions' | 'ai' | 'result';
+type FlowStep = 'phone' | 'language' | 'questions' | 'ai' | 'result';
 
 export default function CheckInPage() {
   const [searchParams] = useSearchParams();
   const doctorId = searchParams.get('doctor_id') || 'doc-001';
   const doctor = haDoctors.find(d => d.id === doctorId);
 
-  const [step, setStep] = useState<FlowStep>('phone');
+  const [step, setStep] = useState<FlowStep>('language');
   const [phone, setPhone] = useState('');
   const [resumeDraft, setResumeDraft] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
@@ -33,6 +36,10 @@ export default function CheckInPage() {
     );
   }
 
+  const handleLanguageContinue = (_: CheckinLang) => {
+    setStep('phone');
+  };
+
   const handlePhoneContinue = (p: string, resume: boolean) => {
     setPhone(p);
     setResumeDraft(resume);
@@ -50,7 +57,8 @@ export default function CheckInPage() {
   };
 
   const handleRestart = () => {
-    setStep('phone');
+    void i18n.changeLanguage('uz');
+    setStep('language');
     setPhone('');
     setResumeDraft(false);
     setAnswers({});
@@ -59,9 +67,18 @@ export default function CheckInPage() {
 
   return (
     <>
+      {step === 'language' && (
+        <LanguageStep
+          onContinue={handleLanguageContinue}
+          doctorName={doctor.name}
+          doctorSpecialty={doctor.specialty}
+          doctorAvatar={doctor.avatar}
+        />
+      )}
       {step === 'phone' && (
         <PhoneStep
           onContinue={handlePhoneContinue}
+          onBack={() => setStep('language')}
           doctorName={doctor.name}
           doctorSpecialty={doctor.specialty}
           doctorAvatar={doctor.avatar}

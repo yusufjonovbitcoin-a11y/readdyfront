@@ -1,9 +1,12 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
+import type { PatientDetailLayoutMode } from "@/hooks/usePersistedPatientDetailLayout";
 
 interface DoctorThemeContextValue {
   darkMode: boolean;
   toggleDarkMode: () => void;
   setDarkMode: (next: boolean) => void;
+  patientDetailLayout: PatientDetailLayoutMode;
+  setPatientDetailLayout: (next: PatientDetailLayoutMode) => void;
 }
 
 const DoctorThemeContext = createContext<DoctorThemeContextValue | null>(null);
@@ -16,6 +19,8 @@ export function DoctorThemeProvider({
   darkMode,
   toggleDarkMode,
   setDarkMode,
+  patientDetailLayout,
+  setPatientDetailLayout,
   children,
 }: DoctorThemeProviderProps) {
   const value = useMemo(
@@ -23,8 +28,10 @@ export function DoctorThemeProvider({
       darkMode,
       toggleDarkMode,
       setDarkMode,
+      patientDetailLayout,
+      setPatientDetailLayout,
     }),
-    [darkMode, toggleDarkMode, setDarkMode],
+    [darkMode, toggleDarkMode, setDarkMode, patientDetailLayout, setPatientDetailLayout],
   );
 
   return <DoctorThemeContext.Provider value={value}>{children}</DoctorThemeContext.Provider>;

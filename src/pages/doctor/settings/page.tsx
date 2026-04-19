@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
+import { currentDoctorSession } from "@/mocks/current_doctor";
 
 type SettingsTab = 'profile' | 'security' | 'language' | 'notifications';
 
@@ -16,7 +17,19 @@ function DocSettingsContent() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [language, setLanguage] = useState<'uz' | 'ru'>('uz');
   const [saved, setSaved] = useState(false);
-  const { darkMode, setDarkMode } = useDoctorTheme();
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  /** Tanlangan rasm (faqat brauzerda; serverga yuklanmaydi) */
+  const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (localAvatarUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(localAvatarUrl);
+      }
+    };
+  }, [localAvatarUrl]);
+  const { darkMode, setDarkMode, patientDetailLayout, setPatientDetailLayout } = useDoctorTheme();
 
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
@@ -33,7 +46,6 @@ function DocSettingsContent() {
     name: 'Dr. Alisher Karimov',
     specialty: 'Kardiologiya',
     phone: '+998 90 123 45 67',
-    email: 'a.karimov@medcore.uz',
     experience: '8 yil',
     bio: 'Yurak-qon tomir kasalliklari bo\'yicha mutaxassis. Toshkent Tibbiyot Akademiyasini tamomlagan.',
   });
@@ -48,6 +60,21 @@ function DocSettingsContent() {
     dailySummary: false,
     systemUpdates: true,
   });
+
+  const handleAvatarFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) {
+      e.target.value = "";
+      return;
+    }
+    const next = URL.createObjectURL(file);
+    setLocalAvatarUrl((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return next;
+    });
+    setAvatarFailed(false);
+    e.target.value = "";
+  };
 
   const handleSaveProfile = () => {
     setSaved(true);
@@ -81,15 +108,15 @@ function DocSettingsContent() {
   ];
 
   return (
-      <div className="max-w-4xl mx-auto space-y-5">
+      <div className="w-full min-w-0 space-y-5">
         <div>
           <h2 className={`text-xl font-bold ${pageTitle}`}>Sozlamalar</h2>
           <p className={`text-sm mt-0.5 ${pageMuted}`}>Profil va tizim sozlamalarini boshqaring</p>
         </div>
 
-        <div className="flex gap-5">
+        <div className="flex min-w-0 gap-5">
           {/* Sidebar Tabs */}
-          <div className="w-48 flex-shrink-0">
+          <div className="w-48 shrink-0">
             <div className={`rounded-xl p-2 space-y-1 ${cardBase}`}>
               {tabs.map((tab) => (
                 <button
@@ -115,7 +142,7 @@ function DocSettingsContent() {
           </div>
 
           {/* Content */}
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className={`rounded-xl p-6 space-y-5 ${cardBase}`}>
@@ -130,13 +157,38 @@ function DocSettingsContent() {
 
                 {/* Avatar */}
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-violet-600 flex items-center justify-center">
-                    <span className="text-white text-xl font-bold">AK</span>
+                  <input
+                    ref={avatarFileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={handleAvatarFileChange}
+                  />
+                  <div className="w-16 h-16 shrink-0 overflow-hidden rounded-full bg-violet-600 flex items-center justify-center">
+                    {!avatarFailed ? (
+                      <img
+                        src={localAvatarUrl ?? currentDoctorSession.avatarUrl}
+                        alt={profile.name}
+                        width={64}
+                        height={64}
+                        className="h-full w-full object-cover"
+                        onError={() => setAvatarFailed(true)}
+                      />
+                    ) : (
+                      <span className="text-white text-xl font-bold">{currentDoctorSession.initials}</span>
+                    )}
                   </div>
                   <div>
                     <p className={`text-sm font-semibold ${cardTitle}`}>{profile.name}</p>
                     <p className="text-xs text-violet-600">{profile.specialty}</p>
-                    <button className={`text-xs cursor-pointer mt-1 whitespace-nowrap ${pageMuted} ${darkMode ? "hover:text-gray-200" : "hover:text-gray-700"}`}>
+                    <button
+                      type="button"
+                      aria-label="Profil rasmini tanlash"
+                      onClick={() => avatarFileInputRef.current?.click()}
+                      className={`text-xs cursor-pointer mt-1 whitespace-nowrap ${pageMuted} ${darkMode ? "hover:text-gray-200" : "hover:text-gray-700"}`}
+                    >
                       Rasmni o'zgartirish
                     </button>
                   </div>
@@ -167,15 +219,6 @@ function DocSettingsContent() {
                       type="text"
                       value={profile.phone}
                       onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <label className={`block text-sm font-medium mb-1.5 ${cardText}`}>Email</label>
-                    <input
-                      type="email"
-                      value={profile.email}
-                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                       className={inputBase}
                     />
                   </div>
@@ -332,6 +375,71 @@ function DocSettingsContent() {
                 </div>
 
                 <div>
+                  <p className={`text-sm font-medium mb-3 ${cardText}`}>Bemor tafsiloti ko&apos;rinishi</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      {
+                        id: "scroll" as const,
+                        label: "Bitta sahifa",
+                        desc: "Barcha bloklar pastga scroll",
+                        icon: "ri-layout-bottom-line",
+                      },
+                      {
+                        id: "tabs" as const,
+                        label: "Bo'limlar (tablar)",
+                        desc: "Kasalxona kartasiga o'xshash yuqori varaqlar",
+                        icon: "ri-layout-top-line",
+                      },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setPatientDetailLayout(opt.id)}
+                        className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer text-left ${
+                          patientDetailLayout === opt.id
+                            ? darkMode
+                              ? "border-violet-500/70 bg-violet-900/30"
+                              : "border-violet-500 bg-violet-50"
+                            : darkMode
+                              ? "border-[#30363D] hover:border-gray-500/60"
+                              : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 w-full">
+                          <div className="w-8 h-8 flex items-center justify-center">
+                            <i
+                              className={`${opt.icon} text-xl ${
+                                patientDetailLayout === opt.id
+                                  ? darkMode
+                                    ? "text-violet-300"
+                                    : "text-violet-600"
+                                  : darkMode
+                                    ? "text-gray-400"
+                                    : "text-gray-500"
+                              }`}
+                            ></i>
+                          </div>
+                          <span
+                            className={`text-sm font-medium ${
+                              patientDetailLayout === opt.id
+                                ? darkMode
+                                  ? "text-violet-200"
+                                  : "text-violet-700"
+                                : darkMode
+                                  ? "text-gray-200"
+                                  : "text-gray-700"
+                            }`}
+                          >
+                            {opt.label}
+                          </span>
+                        </div>
+                        <p className={`text-xs ${pageMuted}`}>{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
                   <p className={`text-sm font-medium mb-3 ${cardText}`}>Interfeys rejimi</p>
                   <div className="grid grid-cols-2 gap-3">
                     {[
@@ -389,14 +497,25 @@ function DocSettingsContent() {
                         <p className={`text-xs mt-0.5 ${pageMuted}`}>{item.desc}</p>
                       </div>
                       <button
+                        type="button"
+                        role="switch"
+                        aria-checked={notifs[item.key as keyof typeof notifs]}
+                        aria-label={`${item.label}: bildirishnoma`}
                         onClick={() => setNotifs({ ...notifs, [item.key]: !notifs[item.key as keyof typeof notifs] })}
-                        className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer flex-shrink-0 ${
-                          notifs[item.key as keyof typeof notifs] ? 'bg-violet-600' : 'bg-gray-300'
+                        className={`inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+                          darkMode ? "focus-visible:ring-offset-[#161B22]" : "focus-visible:ring-offset-white"
+                        } ${
+                          notifs[item.key as keyof typeof notifs]
+                            ? "justify-end bg-violet-600"
+                            : darkMode
+                              ? "justify-start bg-[#30363D]"
+                              : "justify-start bg-gray-300"
                         }`}
                       >
-                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                          notifs[item.key as keyof typeof notifs] ? 'translate-x-5' : 'translate-x-1'
-                        }`}></span>
+                        <span
+                          aria-hidden
+                          className="pointer-events-none h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-[transform] duration-200 ease-out"
+                        />
                       </button>
                     </div>
                   ))}

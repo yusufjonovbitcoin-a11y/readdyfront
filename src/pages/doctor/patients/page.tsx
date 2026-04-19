@@ -1,15 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import PatientCard from "./components/PatientCard";
 import PatientTableRow from "./components/PatientTableRow";
-import { docPatients, type DocPatient } from "@/mocks/doc_patients";
+import QueueDraggableGrid from "./components/QueueDraggableGrid";
+import type { DocPatient } from "@/mocks/doc_patients";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
+import { useDocPatients } from "@/context/DocPatientsContext";
+import { formatLocalYMD } from "@/utils/date";
 
 type TabType = "queue" | "in_progress" | "completed";
 
 const tabs: { id: TabType; label: string; icon: string }[] = [
   { id: "queue", label: "Navbat", icon: "ri-time-line" },
-  { id: "in_progress", label: "Jarayonda", icon: "ri-loader-4-line" },
+  { id: "in_progress", label: "Taxlil", icon: "ri-flask-line" },
   { id: "completed", label: "Tugallandi", icon: "ri-checkbox-circle-line" },
 ];
 
@@ -22,24 +26,44 @@ export default function DocPatientsPage() {
 }
 
 function DocPatientsContent() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabType>("queue");
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [search, setSearch] = useState("");
-  const [patients, setPatients] = useState<DocPatient[]>(docPatients);
+  const { patients, updatePatient, reorderQueuePatients } = useDocPatients();
   const { darkMode } = useDoctorTheme();
 
-  const filtered = patients.filter(
-    (p) => p.status === activeTab && p.name.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    if (searchParams.get("tab") === "taxlil") {
+      setActiveTab("in_progress");
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const todayStr = formatLocalYMD();
+  const todayPatients = patients.filter((p) => p.date === todayStr);
+
+  const searchLower = search.toLowerCase();
+  const filtered = (() => {
+    const list = todayPatients.filter(
+      (p) => p.status === activeTab && p.name.toLowerCase().includes(searchLower)
+    );
+    if (activeTab === "queue") {
+      return [...list].sort((a, b) => a.queueNumber - b.queueNumber);
+    }
+    return list;
+  })();
+
+  const canReorderQueueCards = activeTab === "queue" && !search.trim();
 
   const counts = {
-    queue: patients.filter((p) => p.status === "queue").length,
-    in_progress: patients.filter((p) => p.status === "in_progress").length,
-    completed: patients.filter((p) => p.status === "completed").length,
+    queue: todayPatients.filter((p) => p.status === "queue").length,
+    in_progress: todayPatients.filter((p) => p.status === "in_progress").length,
+    completed: todayPatients.filter((p) => p.status === "completed").length,
   };
 
   const handleStatusChange = (id: string, newStatus: DocPatient["status"]) => {
-    setPatients((prev) => prev.map((p) => (p.id === id ? { ...p, status: newStatus } : p)));
+    updatePatient(id, { status: newStatus });
   };
 
   const titleCls = darkMode ? "text-white" : "text-gray-900";
@@ -60,13 +84,10 @@ function DocPatientsContent() {
   const tbodyDivide = darkMode ? "divide-[#30363D]" : "divide-gray-50";
 
   return (
-      <div className="space-y-5">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="min-w-0 space-y-5">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className={`text-xl font-bold ${titleCls}`}>Bugungi Bemorlar</h2>
-            <p className={`text-sm mt-0.5 ${mutedCls}`}>
-              18 Aprel 2026 — Jami {patients.filter((p) => p.status !== "history").length} bemor
-            </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -100,7 +121,7 @@ function DocPatientsContent() {
           </div>
         </div>
 
-        <div className={`flex items-center gap-1 rounded-xl p-1 w-fit ${tabsWrap}`}>
+        <div className={`flex max-w-full min-w-0 items-center gap-1 overflow-x-auto rounded-xl p-1 ${tabsWrap}`}>
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -120,8 +141,8 @@ function DocPatientsContent() {
                         : "bg-violet-100 text-violet-700"
                       : tab.id === "in_progress"
                         ? darkMode
-                          ? "bg-amber-900/40 text-amber-300"
-                          : "bg-amber-100 text-amber-700"
+                          ? "bg-sky-900/40 text-sky-300"
+                          : "bg-sky-100 text-sky-700"
                         : darkMode
                           ? "bg-emerald-900/40 text-emerald-300"
                           : "bg-green-100 text-green-700"
@@ -135,6 +156,12 @@ function DocPatientsContent() {
             </button>
           ))}
         </div>
+
+        {canReorderQueueCards && viewMode === "card" && filtered.length > 1 && (
+          <p className={`text-xs ${mutedCls}`}>
+            Navbat tartibini o&apos;zgartirish: kartani ushlab sudrang.
+          </p>
+        )}
 
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -150,21 +177,28 @@ function DocPatientsContent() {
               {activeTab === "queue"
                 ? "Navbatda hech kim yo'q"
                 : activeTab === "in_progress"
-                  ? "Hozir ko'rik yo'q"
+                  ? "Taxlilda bemor yo'q — navbatdan tahlilga yuboring"
                   : "Tugallangan ko'rik yo'q"}
             </p>
           </div>
         ) : viewMode === "card" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((patient) => (
-              <PatientCard
-                key={patient.id}
-                patient={patient}
-                darkMode={darkMode}
-                onStatusChange={handleStatusChange}
-              />
-            ))}
-          </div>
+          canReorderQueueCards ? (
+            <QueueDraggableGrid
+              patients={filtered}
+              darkMode={darkMode}
+              onReorder={reorderQueuePatients}
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map((patient) => (
+                <PatientCard
+                  key={patient.id}
+                  patient={patient}
+                  darkMode={darkMode}
+                />
+              ))}
+            </div>
+          )
         ) : (
           <div className={`rounded-xl border overflow-hidden ${tableWrap}`}>
             <table className="w-full">
@@ -180,7 +214,12 @@ function DocPatientsContent() {
               </thead>
               <tbody className={`divide-y ${tbodyDivide}`}>
                 {filtered.map((patient) => (
-                  <PatientTableRow key={patient.id} patient={patient} darkMode={darkMode} />
+                  <PatientTableRow
+                    key={patient.id}
+                    patient={patient}
+                    darkMode={darkMode}
+                    onStatusChange={handleStatusChange}
+                  />
                 ))}
               </tbody>
             </table>

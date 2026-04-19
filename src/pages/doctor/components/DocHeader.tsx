@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
+import { currentDoctorSession } from "@/mocks/current_doctor";
 
 interface DocHeaderProps {
   title: string;
@@ -9,6 +10,7 @@ interface DocHeaderProps {
 
 export default function DocHeader({ title, sidebarCollapsed }: DocHeaderProps) {
   const [showNotif, setShowNotif] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useDoctorTheme();
 
@@ -20,15 +22,15 @@ export default function DocHeader({ title, sidebarCollapsed }: DocHeaderProps) {
 
   return (
     <header
-      className={`fixed top-0 right-0 z-20 h-16 flex items-center px-6 transition-[left] duration-300 ease-out ${
+      className={`fixed top-0 right-0 z-20 h-16 flex min-w-0 items-center px-6 transition-[left] duration-300 ease-out ${
         sidebarCollapsed ? "left-16" : "left-64"
       } ${darkMode ? "bg-[#0D1117] border-b border-[#1C2333]" : "bg-white border-b border-gray-100"}`}
     >
-      <div className="flex items-center gap-2">
-        <h1 className={`text-lg font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{title}</h1>
+      <div className="min-w-0 flex flex-1 items-center gap-2 pr-2">
+        <h1 className={`truncate text-lg font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{title}</h1>
       </div>
 
-      <div className="ml-auto flex items-center gap-3">
+      <div className="flex shrink-0 items-center gap-3">
         {/* Date */}
         <span className={`text-sm hidden md:block ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
           18 Aprel 2026, Juma
@@ -90,10 +92,23 @@ export default function DocHeader({ title, sidebarCollapsed }: DocHeaderProps) {
 
         {/* Profile */}
         <button
+          type="button"
           onClick={() => navigate("/doctor/profile")}
-          className="w-9 h-9 rounded-full bg-violet-600 flex items-center justify-center cursor-pointer hover:bg-violet-700 transition-colors"
+          title={currentDoctorSession.name}
+          className="w-9 h-9 shrink-0 overflow-hidden rounded-full bg-violet-600 flex items-center justify-center cursor-pointer ring-2 ring-transparent hover:ring-violet-400/50 transition-[box-shadow,transform] hover:scale-[1.02]"
         >
-          <span className="text-white text-xs font-bold">AK</span>
+          {!avatarFailed ? (
+            <img
+              src={currentDoctorSession.avatarUrl}
+              alt={currentDoctorSession.name}
+              width={36}
+              height={36}
+              className="h-full w-full object-cover"
+              onError={() => setAvatarFailed(true)}
+            />
+          ) : (
+            <span className="text-white text-xs font-bold">{currentDoctorSession.initials}</span>
+          )}
         </button>
       </div>
     </header>
