@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { useEffect, useRef, useState } from 'react';
+import { useModalA11y } from "@/hooks/useModalA11y";
+import { parseJsonSafe } from "@/utils/storage";
 
 interface DraftInfo {
   phone: string;
@@ -16,11 +19,29 @@ interface PhoneStepProps {
 }
 
 export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecialty, doctorAvatar }: PhoneStepProps) {
+  const { t, i18n } = useTranslation("checkin");
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [draft, setDraft] = useState<DraftInfo | null>(null);
   const [showDraftModal, setShowDraftModal] = useState(false);
+  const continueButtonRef = useRef<HTMLButtonElement>(null);
+  const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeDraftModal = () => setShowDraftModal(false);
+  const draftModalRef = useModalA11y({
+    isOpen: showDraftModal && Boolean(draft),
+    onClose: closeDraftModal,
+    returnFocusRef: continueButtonRef,
+    inertSelectors: ["header", "main", "aside"],
+  });
+
+  useEffect(() => {
+    return () => {
+      if (submitTimerRef.current) {
+        clearTimeout(submitTimerRef.current);
+      }
+    };
+  }, []);
 
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, '');
@@ -46,7 +67,8 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
       const key = `draft_${fullPhone}`;
       const saved = localStorage.getItem(key);
       if (!saved) return null;
-      const parsed = JSON.parse(saved);
+      const parsed = parseJsonSafe<DraftInfo | null>(saved, null);
+      if (!parsed) return null;
       const updatedAt = new Date(parsed.updatedAt);
       const now = new Date();
       const hoursDiff = (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60);
@@ -62,12 +84,13 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
 
   const handleSubmit = () => {
     if (!validatePhone(phone)) {
-      setError('Telefon raqamni to\'liq kiriting (9 ta raqam)');
+      setError(t("phoneStep.phoneError"));
       return;
     }
     setLoading(true);
     const fullPhone = `+998 ${phone}`;
-    setTimeout(() => {
+    submitTimerRef.current = setTimeout(() => {
+      submitTimerRef.current = null;
       setLoading(false);
       const existingDraft = checkDraft(fullPhone);
       if (existingDraft && existingDraft.currentStep > 0) {
@@ -88,16 +111,23 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
       {/* Draft Resume Modal */}
       {showDraftModal && draft && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl">
+          <div
+            ref={draftModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="checkin-draft-title"
+            tabIndex={-1}
+            className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl"
+          >
             <div className="w-12 h-12 flex items-center justify-center rounded-full bg-amber-100 mx-auto mb-4">
               <i className="ri-save-line text-amber-600 text-xl"></i>
             </div>
-            <h3 className="text-base font-bold text-gray-900 text-center mb-2">Saqlangan ma'lumot topildi</h3>
+            <h3 id="checkin-draft-title" className="text-base font-bold text-gray-900 text-center mb-2">{t("phoneStep.draftFound")}</h3>
             <p className="text-sm text-gray-500 text-center mb-1">
-              Siz avval {draft.answersCount} ta savolga javob bergansiz
+              {t("phoneStep.draftAnswered", { count: draft.answersCount, defaultValue: "Siz avval {{count}} ta savolga javob bergansiz" })}
             </p>
             <p className="text-xs text-gray-400 text-center mb-5">
-              {new Date(draft.updatedAt).toLocaleString('uz-UZ')}
+              {new Date(draft.updatedAt).toLocaleString(i18n.language === "ru" ? "ru-RU" : "uz-UZ")}
             </p>
             <div className="space-y-3">
               <button
@@ -105,7 +135,7 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
                 className="w-full h-12 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
               >
                 <i className="ri-play-circle-line text-base"></i>
-                Davom etish
+                {t("phoneStep.continue")}
               </button>
               <button
                 onClick={() => {
@@ -115,7 +145,7 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
                 }}
                 className="w-full h-12 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
               >
-                Qaytadan boshlash
+                {t("phoneStep.restart")}
               </button>
             </div>
           </div>
@@ -128,8 +158,8 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-200">
             <i className="ri-hospital-line text-white text-2xl"></i>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">MedCore</h1>
-          <p className="text-sm text-gray-500 mt-1">Navbatga yozilish tizimi</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t("phoneStep.appName")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("phoneStep.title")}</p>
         </div>
 
         {/* Doctor card */}
@@ -142,14 +172,14 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
             <p className="text-xs text-teal-600 font-medium">{doctorSpecialty}</p>
             <div className="flex items-center gap-1 mt-1">
               <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-              <span className="text-xs text-gray-500">Qabul qilmoqda</span>
+              <span className="text-xs text-gray-500">{t("phoneStep.active")}</span>
             </div>
           </div>
         </div>
 
         {/* Phone input card */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <h2 className="text-base font-bold text-gray-900 mb-5">Telefon raqamingizni kiriting</h2>
+          <h2 className="text-base font-bold text-gray-900 mb-5">{t("phoneStep.phoneLabel")}</h2>
 
           <div className="flex gap-2 mb-1">
             <div className="flex items-center gap-2 px-3 h-13 rounded-xl border border-gray-200 bg-gray-50 flex-shrink-0">
@@ -162,7 +192,7 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
               className={`flex-1 px-4 h-13 rounded-xl border text-sm outline-none transition-all font-medium tracking-wider ${
                 error ? 'border-red-400 bg-red-50' : 'border-gray-200 focus:border-teal-500 focus:bg-teal-50/30'
               }`}
-              placeholder="90 123 45 67"
+              placeholder={t("phoneStep.phonePlaceholder")}
               value={phone}
               onChange={handlePhoneChange}
               onKeyDown={handleKeyDown}
@@ -177,6 +207,7 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
           )}
 
           <button
+            ref={continueButtonRef}
             onClick={handleSubmit}
             disabled={loading}
             className="w-full h-13 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-70 text-white text-sm font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-2 mt-5 shadow-md shadow-teal-200"
@@ -185,11 +216,11 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
             {loading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Tekshirilmoqda...
+                {t("phoneStep.checking")}
               </>
             ) : (
               <>
-                Davom etish
+                {t("phoneStep.continue")}
                 <i className="ri-arrow-right-line text-base"></i>
               </>
             )}
@@ -203,12 +234,12 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
             className="mt-5 w-full flex items-center justify-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
           >
             <i className="ri-arrow-left-line" aria-hidden />
-            Orqaga
+            {t("phoneStep.back")}
           </button>
         )}
 
         <p className="text-xs text-gray-400 text-center mt-4">
-          Ma'lumotlaringiz xavfsiz saqlanadi va faqat shifokorga ko'rsatiladi
+          {t("phoneStep.securityHint")}
         </p>
       </div>
     </div>

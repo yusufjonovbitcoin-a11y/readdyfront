@@ -1,4 +1,6 @@
-import { bodyParts } from '@/mocks/checkin_questions';
+import { useTranslation } from "react-i18next";
+import { useMemo } from "react";
+import { getBodyParts } from "@/mocks/checkin_questions";
 
 interface BodyMapProps {
   selected: string[];
@@ -6,6 +8,9 @@ interface BodyMapProps {
 }
 
 export default function BodyMap({ selected, onChange }: BodyMapProps) {
+  const { t, i18n } = useTranslation("checkin");
+  const bodyParts = useMemo(() => getBodyParts(t), [i18n.language]);
+
   const toggle = (id: string) => {
     if (selected.includes(id)) {
       onChange(selected.filter(s => s !== id));
@@ -16,7 +21,7 @@ export default function BodyMap({ selected, onChange }: BodyMapProps) {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <p className="text-xs text-gray-500 text-center">Og'riq sezayotgan joylarni bosing</p>
+      <p className="text-xs text-gray-500 text-center">{t("questions.bodyMapHint")}</p>
       <div className="relative w-48 h-80 mx-auto">
         {/* Body silhouette */}
         <div className="absolute inset-0 flex items-center justify-center">
@@ -44,7 +49,10 @@ export default function BodyMap({ selected, onChange }: BodyMapProps) {
           return (
             <button
               key={part.id}
+              type="button"
               onClick={() => toggle(part.id)}
+              aria-label={`${part.label} ni tanlash`}
+              aria-pressed={isSelected}
               className={`absolute w-5 h-5 rounded-full border-2 transition-all cursor-pointer transform -translate-x-1/2 -translate-y-1/2 ${
                 isSelected
                   ? 'bg-red-500 border-red-600 scale-125 shadow-lg shadow-red-200'
@@ -59,20 +67,25 @@ export default function BodyMap({ selected, onChange }: BodyMapProps) {
 
       {selected.length > 0 && (
         <div className="w-full">
-          <p className="text-xs font-semibold text-gray-700 mb-2">Tanlangan joylar:</p>
-          <div className="flex flex-wrap gap-2">
+          <p className="text-xs font-semibold text-gray-700 mb-2">{t("questions.selectedParts")}</p>
+          <ul className="flex flex-wrap gap-2" aria-label={t("questions.selectedParts")}>
             {selected.map(id => {
               const part = bodyParts.find(p => p.id === id);
               return part ? (
-                <span key={id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-600 text-xs font-medium border border-red-200">
-                  {part.label}
-                  <button onClick={() => toggle(id)} className="cursor-pointer hover:text-red-800">
-                    <i className="ri-close-line text-xs"></i>
+                <li key={id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-600 text-xs font-medium border border-red-200">
+                  <span>{part.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggle(id)}
+                    className="cursor-pointer hover:text-red-800"
+                    aria-label={`${part.label} ni olib tashlash`}
+                  >
+                    <i className="ri-close-line text-xs" aria-hidden="true"></i>
                   </button>
-                </span>
+                </li>
               ) : null;
             })}
-          </div>
+          </ul>
         </div>
       )}
     </div>

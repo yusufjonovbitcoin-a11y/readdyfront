@@ -1,0 +1,60 @@
+{
+  "language": {
+    "uz": "O'zbekcha",
+    "ru": "Русский",
+    "switcherLabel": "Язык"
+  },
+  "buttons": {
+    "continue": "Продолжить",
+    "back": "Назад",
+    "skip": "Пропустить",
+    "finish": "Завершить",
+    "cancel": "Отмена",
+    "delete": "Удалить"
+  },
+  "filters": {
+    "all": "Все"
+  },
+  "status": {
+    "active": "Активный",
+    "inactive": "Неактивный"
+  },
+  "actions": {
+    "view": "Открыть",
+    "toggleStatus": "Изменить статус"
+  },
+  "stats": {
+    "total": "Всего"
+  },
+  "pagination": {
+    "previous": "Предыдущая страница",
+    "next": "Следующая страница"
+  },
+  "notFound": {
+    "title": "Эта страница еще не создана",
+    "description": "Расскажите подробнее об этой странице, и я смогу ее сгенерировать"
+  },
+  "login": {
+    "title": "Вход в систему",
+    "subtitle": "Войдите в аккаунт и начните управление",
+    "demoAccounts": "Демо аккаунты",
+    "phoneLabel": "Номер телефона",
+    "phonePlaceholder": "90 123 45 67",
+    "phoneAria": "Номер телефона после +998",
+    "passwordLabel": "Пароль",
+    "rememberMe": "Запомнить",
+    "checking": "Проверка...",
+    "submit": "Войти",
+    "roleRouting": "Маршрутизация по роли",
+    "roles": {
+      "superAdmin": "Супер админ",
+      "hospitalAdmin": "Админ клиники",
+      "doctor": "Врач"
+    },
+    "errors": {
+      "phoneRequired": "Введите полный номер телефона (9 цифр после +998)",
+      "passwordRequired": "Введите пароль",
+      "invalidCredentials": "Неверный телефон или пароль. Используйте демо-кнопки."
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useId, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
@@ -14,7 +15,7 @@ import {
 type Period = 'daily' | 'weekly' | 'monthly';
 
 function BarChart({ data, valueKey, labelKey, color, darkMode, height = 140 }: {
-  data: Record<string, number | string>[]; valueKey: string; labelKey: string; color: string; darkMode: boolean; height?: number;
+  data: Array<Record<string, number | string> & { id?: string }>; valueKey: string; labelKey: string; color: string; darkMode: boolean; height?: number;
 }) {
   const [hovered, setHovered] = useState<number | null>(null);
   const values = data.map((d) => Number(d[valueKey]));
@@ -30,7 +31,7 @@ function BarChart({ data, valueKey, labelKey, color, darkMode, height = 140 }: {
         const barH = (values[i] / max) * barMax;
         return (
           <div
-            key={i}
+            key={d.id ?? `${String(d[labelKey])}`}
             className="flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1"
             onMouseEnter={() => setHovered(i)}
             onMouseLeave={() => setHovered(null)}
@@ -62,7 +63,7 @@ function BarChart({ data, valueKey, labelKey, color, darkMode, height = 140 }: {
   );
 }
 
-function LineChart({ data, darkMode }: { data: { month: string; patients: number }[]; darkMode: boolean }) {
+function LineChart({ data, darkMode }: { data: { id?: string; month: string; patients: number }[]; darkMode: boolean }) {
   const gradId = useId().replace(/:/g, "");
   const [hovered, setHovered] = useState<number | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
@@ -111,7 +112,7 @@ function LineChart({ data, darkMode }: { data: { month: string; patients: number
         const showValue = hovered !== null ? hovered === i : selected === i;
         return (
           <g
-            key={i}
+            key={p.id ?? p.month}
             className="cursor-pointer"
             onMouseEnter={() => setHovered(i)}
             onMouseLeave={() => setHovered(null)}
@@ -160,14 +161,16 @@ function LineChart({ data, darkMode }: { data: { month: string; patients: number
 }
 
 export default function HAAnalyticsPage() {
+  const { t } = useTranslation("hospital");
   return (
-    <HALayout title="Tahlil">
+    <HALayout title={t("sidebar.analytics")}>
       <HAAnalyticsPageContent />
     </HALayout>
   );
 }
 
-function HAAnalyticsPageContent() {
+export function HAAnalyticsPageContent() {
+  const { t } = useTranslation("hospital");
   const darkMode = useHospitalAdminDarkMode();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>('daily');
@@ -187,12 +190,12 @@ function HAAnalyticsPageContent() {
         {/* Summary cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Haftalik bemorlar', value: totalPatients, icon: 'ri-user-heart-line', color: 'bg-teal-500' },
-            { label: 'Kunlik o\'rtacha', value: avgPerDay, icon: 'ri-calendar-line', color: 'bg-indigo-500' },
-            { label: 'Eng yuqori soat', value: peakHour.hour, icon: 'ri-time-line', color: 'bg-amber-500' },
-            { label: 'Faol shifokorlar', value: 5, icon: 'ri-stethoscope-line', color: 'bg-emerald-500' },
-          ].map((item, i) => (
-            <div key={i} className={cardBase}>
+            { label: t("analytics.summary.weeklyPatients"), value: totalPatients, icon: 'ri-user-heart-line', color: 'bg-teal-500' },
+            { label: t("analytics.summary.dailyAverage"), value: avgPerDay, icon: 'ri-calendar-line', color: 'bg-indigo-500' },
+            { label: t("analytics.summary.peakHour"), value: peakHour.hour, icon: 'ri-time-line', color: 'bg-amber-500' },
+            { label: t("analytics.summary.activeDoctors"), value: 5, icon: 'ri-stethoscope-line', color: 'bg-emerald-500' },
+          ].map((item) => (
+            <div key={item.label} className={cardBase}>
               <div className="flex items-start justify-between">
                 <div>
                   <p className={`text-xs font-medium mb-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{item.label}</p>
@@ -210,8 +213,8 @@ function HAAnalyticsPageContent() {
         <div className={cardBase}>
           <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
             <div>
-              <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>Bemor oqimi</h3>
-              <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Vaqt bo'yicha statistika</p>
+              <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{t("analytics.patientFlow")}</h3>
+              <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("analytics.timeStats")}</p>
             </div>
             <div className={`flex items-center gap-1 p-1 rounded-xl ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
               {(['daily', 'weekly', 'monthly'] as Period[]).map(p => (
@@ -222,7 +225,7 @@ function HAAnalyticsPageContent() {
                     period === p ? darkMode ? "bg-[#141824] text-teal-400" : "bg-white text-teal-600" : darkMode ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
-                  {p === 'daily' ? 'Kunlik' : p === 'weekly' ? 'Haftalik' : 'Oylik'}
+                  {p === 'daily' ? t("analytics.period.daily") : p === 'weekly' ? t("analytics.period.weekly") : t("analytics.period.monthly")}
                 </button>
               ))}
             </div>
@@ -239,24 +242,24 @@ function HAAnalyticsPageContent() {
         </div>
 
         <div className={cardBase}>
-          <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>Yillik dinamika</h3>
+          <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("analytics.yearlyTrend")}</h3>
           <LineChart data={haAnalyticsMonthlyData} darkMode={darkMode} />
         </div>
 
         {/* Doctor performance */}
         <div className={cardBase}>
-          <h3 className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>Shifokor faoliyati</h3>
-          <p className={`text-xs mb-4 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Qatorni bosing — shifokor profiliga o‘tadi</p>
+          <h3 className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("analytics.doctorPerformance")}</h3>
+          <p className={`text-xs mb-4 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("analytics.rowHint")}</p>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                   <th className="text-left pb-3 font-medium">#</th>
-                  <th className="text-left pb-3 font-medium">Shifokor</th>
-                  <th className="text-left pb-3 font-medium">Mutaxassislik</th>
-                  <th className="text-left pb-3 font-medium">Bugungi bemorlar</th>
-                  <th className="text-left pb-3 font-medium">Reyting</th>
-                  <th className="text-left pb-3 font-medium">Faollik</th>
+                  <th className="text-left pb-3 font-medium">{t("analytics.table.doctor")}</th>
+                  <th className="text-left pb-3 font-medium">{t("analytics.table.specialty")}</th>
+                  <th className="text-left pb-3 font-medium">{t("analytics.table.todayPatients")}</th>
+                  <th className="text-left pb-3 font-medium">{t("analytics.table.rating")}</th>
+                  <th className="text-left pb-3 font-medium">{t("analytics.table.activity")}</th>
                 </tr>
               </thead>
               <tbody>

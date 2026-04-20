@@ -1,0 +1,187 @@
+{
+  "titles": {
+    "dashboard": "Панель управления"
+  },
+  "sidebar": {
+    "dashboard": "Панель управления",
+    "doctors": "Врачи",
+    "patients": "Пациенты",
+    "questions": "Вопросы",
+    "analytics": "Аналитика",
+    "settings": "Настройки",
+    "hospitalName": "Ташкентская клиника",
+    "hospitalAdmin": "Админ клиники",
+    "logout": "Выйти"
+  },
+  "header": {
+    "searchPlaceholder": "Поиск...",
+    "globalSearch": "Глобальный поиск",
+    "actions": {
+      "openSidebar": "Открыть боковую панель",
+      "switchToLight": "Переключиться на светлую тему",
+      "switchToDark": "Переключиться на темную тему",
+      "hideNotifications": "Скрыть уведомления",
+      "showNotifications": "Показать уведомления",
+      "closeNotifications": "Закрыть уведомления"
+    },
+    "notifications": {
+      "title": "Уведомления",
+      "newPatient": "Зарегистрирован новый пациент",
+      "doctorDone": "Д-р Каримов завершил сегодняшний прием",
+      "queueError": "Ошибка в системе очереди",
+      "fiveMin": "5 минут назад",
+      "thirtyMin": "30 минут назад",
+      "twoHours": "2 часа назад"
+    }
+  },
+  "doctors": {
+    "search": "Поиск врача...",
+    "add": "Добавить врача",
+    "total": "Всего:",
+    "doctorsCount": "врачей",
+    "empty": "Врач не найден",
+    "confirmDelete": "Подтвердите удаление",
+    "confirmDeleteDesc": "Вы хотите удалить этого врача? Это действие нельзя отменить.",
+    "filters": {
+      "allStatuses": "Все статусы"
+    },
+    "table": {
+      "doctor": "Врач",
+      "specialty": "Специальность",
+      "phone": "Телефон",
+      "todayPatients": "Пациенты сегодня",
+      "rating": "Рейтинг",
+      "status": "Статус",
+      "actions": "Действия"
+    },
+    "card": {
+      "todayPatientsPrefix": "Сегодня:",
+      "patientUnit": "пациент",
+      "qrCodeLabel": "QR-код",
+      "viewButton": "Просмотр",
+      "status": {
+        "active": "Активный",
+        "inactive": "Неактивный"
+      }
+    }
+  },
+  "patients": {
+    "search": "Поиск пациента...",
+    "empty": "Пациент не найден",
+    "confirmDelete": "Подтвердите удаление",
+    "confirmDeleteDesc": "Вы хотите удалить этого пациента?",
+    "filters": {
+      "allStatuses": "Все статусы"
+    },
+    "status": {
+      "scheduled": "Запланирован",
+      "discharged": "Выписан"
+    }
+  },
+  "analytics": {
+    "summary": {
+      "weeklyPatients": "Пациенты за неделю",
+      "dailyAverage": "Среднее за день",
+      "peakHour": "Пиковый час",
+      "activeDoctors": "Активные врачи"
+    },
+    "patientFlow": "Поток пациентов",
+    "timeStats": "Статистика по времени",
+    "period": {
+      "daily": "Дневной",
+      "weekly": "Недельный",
+      "monthly": "Месячный"
+    },
+    "yearlyTrend": "Годовая динамика",
+    "doctorPerformance": "Эффективность врачей",
+    "rowHint": "Нажмите на строку — переход к профилю врача",
+    "table": {
+      "doctor": "Врач",
+      "specialty": "Специальность",
+      "todayPatients": "Пациенты сегодня",
+      "rating": "Рейтинг",
+      "activity": "Активность"
+    }
+  },
+  "questions": {
+    "templates": "Шаблоны",
+    "categories": "Категории",
+    "search": "Поиск...",
+    "addTemplate": "Добавить шаблон",
+    "addCategory": "Добавить категорию",
+    "templateNotFound": "Шаблон не найден",
+    "backToTemplates": "Вернуться к шаблонам",
+    "addQuestion": "Добавить вопрос",
+    "noQuestions": "Пока нет вопросов. Добавьте первый вопрос!"
+  },
+  "settings": {
+    "tabs": {
+      "profile": "Профиль",
+      "security": "Безопасность",
+      "language": "Язык и внешний вид",
+      "notifications": "Уведомления"
+    },
+    "languageAppearance": "Язык и внешний вид"
+  },
+  "dashboard": {
+    "title": "Панель администратора клиники",
+    "subtitle": "Управление и мониторинг клиники",
+    "stats": {
+      "todayPatients": {
+        "label": "Пациенты сегодня",
+        "sub": "Все врачи"
+      },
+      "weeklyPatients": {
+        "label": "Пациенты за неделю",
+        "sub": "Текущая неделя"
+      },
+      "monthlyPatients": {
+        "label": "Пациенты за месяц",
+        "sub": "Апрель 2026"
+      },
+      "activeDoctors": {
+        "label": "Активные врачи",
+        "sub": "Всего {{total}}"
+      }
+    },
+    "flow": {
+      "title": "Поток пациентов",
+      "growth": "+12% рост",
+      "periodAriaLabel": "Отображение по периоду",
+      "period": {
+        "daily": "Дневной",
+        "weekly": "Недельный",
+        "monthly": "Месячный"
+      },
+      "subtitle": {
+        "daily": "Последние 7 дней (дни недели)",
+        "weekly": "Текущий месяц — по неделям",
+        "monthly": "По месяцам за год"
+      }
+    },
+    "topDoctors": {
+      "title": "Топ врачи",
+      "patientUnit": "пациент"
+    },
+    "yearlyTrend": {
+      "title": "Годовая динамика пациентов",
+      "subtitle": "За 2026 год"
+    },
+    "recentPatients": {
+      "title": "Последние пациенты",
+      "viewAll": "Смотреть всех",
+      "table": {
+        "patient": "Пациент",
+        "doctor": "Врач",
+        "diagnosis": "Диагноз",
+        "lastVisit": "Последний визит",
+        "status": "Статус"
+      },
+      "status": {
+        "active": "Активный",
+        "scheduled": "Запланирован",
+        "discharged": "Выписан"
+      }
+    }
+  }
+}

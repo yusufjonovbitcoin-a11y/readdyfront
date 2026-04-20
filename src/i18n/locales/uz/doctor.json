@@ -1,0 +1,127 @@
+{
+  "titles": {
+    "newPatients": "Yangi Bemorlar"
+  },
+  "sidebar": {
+    "newPatients": "Yangi Bemorlar",
+    "history": "Tarix",
+    "questions": "Savollar",
+    "analytics": "Tahlil",
+    "settings": "Sozlamalar",
+    "doctorName": "Dr. Alisher Karimov",
+    "specialty": "Kardiologiya",
+    "today": "Bugun",
+    "queue": "Navbat",
+    "completed": "Tugallandi"
+  },
+  "header": {
+    "actions": {
+      "openSidebar": "Yon panelni ochish",
+      "switchToLight": "Yorug' rejimga o'tish",
+      "switchToDark": "Qorong'i rejimga o'tish",
+      "hideNotifications": "Bildirishnomalarni yashirish",
+      "showNotifications": "Bildirishnomalarni ko'rsatish",
+      "openProfile": "Profilni ochish"
+    },
+    "notifications": {
+      "title": "Bildirishnomalar",
+      "newPatient": "Yangi bemor navbatga qo'shildi: Sardor Umarov",
+      "critical": "Firdavs Normatov — KRITIK holat aniqlandi",
+      "todayQueue": "Bugungi navbat: 7 bemor",
+      "twoMin": "2 daqiqa oldin",
+      "fifteenMin": "15 daqiqa oldin",
+      "oneHour": "1 soat oldin"
+    }
+  },
+  "patients": {
+    "todayPatients": "Bugungi Bemorlar",
+    "search": "Bemor qidirish...",
+    "reorderHint": "Navbat tartibini o'zgartirish: kartani ushlab sudrang.",
+    "tabs": {
+      "queue": "Navbat",
+      "inProgress": "Taxlil",
+      "completed": "Tugallandi"
+    },
+    "empty": {
+      "title": "Bemor topilmadi",
+      "queue": "Navbatda hech kim yo'q",
+      "inProgress": "Taxlilda bemor yo'q — navbatdan tahlilga yuboring",
+      "completed": "Tugallangan ko'rik yo'q"
+    }
+  },
+  "history": {
+    "title": "Bemorlar Tarixi",
+    "subtitle": "Jami {{count}} ta arxivlangan bemor",
+    "search": "Qidirish...",
+    "empty": "Tarix topilmadi",
+    "diagnosis": "Tashxis",
+    "filters": {
+      "allTime": "Barcha vaqt",
+      "today": "Bugun",
+      "week": "Bu hafta",
+      "month": "Bu oy"
+    },
+    "risk": {
+      "low": "Past",
+      "medium": "O'rta",
+      "high": "Yuqori",
+      "critical": "Kritik"
+    }
+  },
+  "questions": {
+    "title": "Mening Savollarim",
+    "subtitle": "Jami {{count}} ta savol",
+    "cloneTemplate": "Shablondan klonlash",
+    "add": "Savol qo'shish",
+    "search": "Savol qidirish...",
+    "empty": "Savol topilmadi",
+    "editTitle": "Savolni tahrirlash",
+    "newTitle": "Yangi savol qo'shish",
+    "questionText": "Savol matni",
+    "questionPlaceholder": "Savol matnini kiriting...",
+    "category": "Kategoriya",
+    "save": "Saqlash",
+    "globalTemplates": "Global shablonlar",
+    "chooseTemplate": "Klonlash uchun shablonni tanlang",
+    "clone": "Klonlash",
+    "confirmDelete": "O'chirishni tasdiqlang",
+    "deleteWarning": "Bu amalni qaytarib bo'lmaydi"
+  },
+  "analytics": {
+    "title": "Mening Tahlilim",
+    "period": {
+      "daily": "Kunlik",
+      "weekly": "Haftalik",
+      "monthly": "Oylik"
+    },
+    "flow": "Bemor Oqimi",
+    "patients": "Bemorlar",
+    "diagnoses": "Tashxislar",
+    "totalDiagnoses": "Jami tashxislar:",
+    "peakHours": "Eng Yuqori Soatlar",
+    "peakTime": "Eng band vaqt:"
+  },
+  "profile": {
+    "title": "Profil",
+    "qrTitle": "QR Kod",
+    "qrSubtitle": "Bemorlar bu QR orqali navbatga yoziladi",
+    "copied": "Nusxalandi!",
+    "copyLink": "Havolani nusxalash",
+    "openCheckin": "Check-in sahifasini ko'rish",
+    "quickLinks": "Tezkor havolalar"
+  },
+  "settings": {
+    "title": "Sozlamalar",
+    "subtitle": "Profil va tizim sozlamalarini boshqaring",
+    "tabs": {
+      "profile": "Profil",
+      "security": "Xavfsizlik",
+      "languageTheme": "Til & Tema",
+      "notifications": "Bildirishnomalar"
+    }
+  },
+  "dashboard": {
+    "title": "Shifokor paneli",
+    "subtitle": "Kundalik ishlar va bemorlar boshqaruvi"
+  }
+}

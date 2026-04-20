@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
@@ -6,16 +7,19 @@ import { currentDoctorSession } from "@/mocks/current_doctor";
 type SettingsTab = 'profile' | 'security' | 'language' | 'notifications';
 
 export default function DocSettingsPage() {
+  const { t } = useTranslation("doctor");
   return (
-    <DocLayout title="Sozlamalar">
+    <DocLayout title={t("sidebar.settings")}>
       <DocSettingsContent />
     </DocLayout>
   );
 }
 
-function DocSettingsContent() {
+export function DocSettingsContent() {
+  const { t, i18n } = useTranslation("doctor");
+  const isMockMode = import.meta.env.VITE_USE_MOCK === "true";
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-  const [language, setLanguage] = useState<'uz' | 'ru'>('uz');
+  const [language, setLanguage] = useState<'uz' | 'ru'>(i18n.language === "ru" ? "ru" : "uz");
   const [saved, setSaved] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   /** Tanlangan rasm (faqat brauzerda; serverga yuklanmaydi) */
@@ -101,17 +105,22 @@ function DocSettingsContent() {
   };
 
   const tabs: { id: SettingsTab; label: string; icon: string }[] = [
-    { id: 'profile', label: 'Profil', icon: 'ri-user-settings-line' },
-    { id: 'security', label: 'Xavfsizlik', icon: 'ri-shield-keyhole-line' },
-    { id: 'language', label: 'Til & Tema', icon: 'ri-translate-2' },
-    { id: 'notifications', label: 'Bildirishnomalar', icon: 'ri-notification-3-line' },
+    { id: 'profile', label: t("settings.tabs.profile"), icon: 'ri-user-settings-line' },
+    { id: 'security', label: t("settings.tabs.security"), icon: 'ri-shield-keyhole-line' },
+    { id: 'language', label: t("settings.tabs.languageTheme"), icon: 'ri-translate-2' },
+    { id: 'notifications', label: t("settings.tabs.notifications"), icon: 'ri-notification-3-line' },
   ];
 
   return (
       <div className="w-full min-w-0 space-y-5">
         <div>
-          <h2 className={`text-xl font-bold ${pageTitle}`}>Sozlamalar</h2>
-          <p className={`text-sm mt-0.5 ${pageMuted}`}>Profil va tizim sozlamalarini boshqaring</p>
+          <h2 className={`text-xl font-bold ${pageTitle}`}>{t("settings.title")}</h2>
+          <p className={`text-sm mt-0.5 ${pageMuted}`}>{t("settings.subtitle")}</p>
+          {!isMockMode && (
+            <p className={`text-xs mt-2 ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
+              Eslatma: profile/password sozlamalari uchun backend endpointlar hali ulanmagan.
+            </p>
+          )}
         </div>
 
         <div className="flex min-w-0 gap-5">
@@ -151,7 +160,9 @@ function DocSettingsContent() {
                 {saved && (
                   <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 flex items-center gap-2">
                     <i className="ri-checkbox-circle-line text-green-600"></i>
-                    <span className="text-sm text-green-700 font-medium">Muvaffaqiyatli saqlandi</span>
+                    <span className="text-sm text-green-700 font-medium">
+                      {isMockMode ? "Demo: lokal ko'rinishda saqlandi" : "Endpoint ulanmagani sababli serverga yuborilmadi"}
+                    </span>
                   </div>
                 )}
 
@@ -196,8 +207,9 @@ function DocSettingsContent() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className={`block text-sm font-medium mb-1.5 ${cardText}`}>To'liq ism</label>
+                    <label htmlFor="doctor-settings-name" className={`block text-sm font-medium mb-1.5 ${cardText}`}>To'liq ism</label>
                     <input
+                      id="doctor-settings-name"
                       type="text"
                       value={profile.name}
                       onChange={(e) => setProfile({ ...profile, name: e.target.value })}
@@ -205,8 +217,9 @@ function DocSettingsContent() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1.5 ${cardText}`}>Mutaxassislik</label>
+                    <label htmlFor="doctor-settings-specialty" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Mutaxassislik</label>
                     <input
+                      id="doctor-settings-specialty"
                       type="text"
                       value={profile.specialty}
                       onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
@@ -214,8 +227,9 @@ function DocSettingsContent() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1.5 ${cardText}`}>Telefon</label>
+                    <label htmlFor="doctor-settings-phone" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Telefon</label>
                     <input
+                      id="doctor-settings-phone"
                       type="text"
                       value={profile.phone}
                       onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
@@ -223,8 +237,9 @@ function DocSettingsContent() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1.5 ${cardText}`}>Tajriba</label>
+                    <label htmlFor="doctor-settings-experience" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Tajriba</label>
                     <input
+                      id="doctor-settings-experience"
                       type="text"
                       value={profile.experience}
                       onChange={(e) => setProfile({ ...profile, experience: e.target.value })}
@@ -234,8 +249,9 @@ function DocSettingsContent() {
                 </div>
 
                 <div>
-                  <label className={`block text-sm font-medium mb-1.5 ${cardText}`}>Bio</label>
+                  <label htmlFor="doctor-settings-bio" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Bio</label>
                   <textarea
+                    id="doctor-settings-bio"
                     value={profile.bio}
                     onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                     rows={3}
@@ -262,7 +278,9 @@ function DocSettingsContent() {
                 {passSaved && (
                   <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 flex items-center gap-2">
                     <i className="ri-checkbox-circle-line text-green-600"></i>
-                    <span className="text-sm text-green-700 font-medium">Parol muvaffaqiyatli o'zgartirildi</span>
+                    <span className="text-sm text-green-700 font-medium">
+                      {isMockMode ? "Demo: parol o'zgarishi lokal ko'rinishda" : "Endpoint ulanmagani sababli parol serverda o'zgarmadi"}
+                    </span>
                   </div>
                 )}
 
@@ -275,8 +293,9 @@ function DocSettingsContent() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className={`block text-sm font-medium mb-1.5 ${cardText}`}>Joriy parol</label>
+                    <label htmlFor="doctor-settings-current-password" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Joriy parol</label>
                     <input
+                      id="doctor-settings-current-password"
                       type="password"
                       value={passwords.current}
                       onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
@@ -285,8 +304,9 @@ function DocSettingsContent() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1.5 ${cardText}`}>Yangi parol</label>
+                    <label htmlFor="doctor-settings-new-password" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Yangi parol</label>
                     <input
+                      id="doctor-settings-new-password"
                       type="password"
                       value={passwords.newPass}
                       onChange={(e) => setPasswords({ ...passwords, newPass: e.target.value })}
@@ -295,8 +315,9 @@ function DocSettingsContent() {
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1.5 ${cardText}`}>Yangi parolni tasdiqlang</label>
+                    <label htmlFor="doctor-settings-confirm-password" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Yangi parolni tasdiqlang</label>
                     <input
+                      id="doctor-settings-confirm-password"
                       type="password"
                       value={passwords.confirm}
                       onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
@@ -345,7 +366,11 @@ function DocSettingsContent() {
                     ].map((lang) => (
                       <button
                         key={lang.id}
-                        onClick={() => setLanguage(lang.id as 'uz' | 'ru')}
+                        onClick={() => {
+                          const next = lang.id as "uz" | "ru";
+                          setLanguage(next);
+                          void i18n.changeLanguage(next);
+                        }}
                         className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
                           language === lang.id
                             ? darkMode

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { HADoctor } from "@/mocks/ha_doctors";
+import { useTranslation } from "react-i18next";
+import type { DoctorDto as HADoctor } from "@/api/types/doctor.types";
 
 interface DoctorCardProps {
   doctor: HADoctor;
@@ -10,6 +11,7 @@ interface DoctorCardProps {
 
 export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: DoctorCardProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation("hospital");
 
   return (
     <div className={`rounded-xl overflow-hidden border transition-all hover:border-teal-300 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
@@ -24,7 +26,7 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
               doctor.status === "active" ? "bg-white/20 text-white" : "bg-red-500/20 text-red-200"
             }`}
           >
-            {doctor.status === "active" ? "Faol" : "Nofaol"}
+            {doctor.status === "active" ? t("doctors.card.status.active") : t("doctors.card.status.inactive")}
           </span>
         </div>
         <div className="absolute left-3 top-1/2 z-10 w-14 h-14 -translate-y-1/2 sm:left-4 sm:w-16 sm:h-16 rounded-lg border-[2.5px] border-white shadow-md overflow-hidden ring-1 ring-black/10">
@@ -55,7 +57,7 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
             <i className={`ri-user-heart-line text-xs ${darkMode ? "text-gray-400" : "text-gray-400"}`}></i>
           </div>
           <span className={`text-xs ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
-            Bugun: <strong className={darkMode ? "text-white" : "text-gray-900"}>{doctor.todayPatients}</strong> bemor
+            {t("doctors.card.todayPatientsPrefix")} <strong className={darkMode ? "text-white" : "text-gray-900"}>{doctor.todayPatients}</strong> {t("doctors.card.patientUnit")}
           </span>
         </div>
 
@@ -65,14 +67,14 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
             <i className={`ri-qr-code-line text-lg ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i>
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`text-xs font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>QR Kod</p>
+            <p className={`text-xs font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{t("doctors.card.qrCodeLabel")}</p>
             <p className={`text-xs truncate ${darkMode ? "text-gray-500" : "text-gray-400"}`}>/checkin?doctor_id={doctor.id}</p>
           </div>
           <button
             onClick={() => navigate(`/hospital-admin/doctors/${doctor.id}?tab=qr`)}
             className="text-xs text-teal-600 hover:text-teal-700 font-medium cursor-pointer whitespace-nowrap"
           >
-            Ko'rish
+            {t("doctors.card.viewButton")}
           </button>
         </div>
 
@@ -83,7 +85,7 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
             className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-xs font-medium transition-colors cursor-pointer whitespace-nowrap"
           >
             <i className="ri-eye-line text-xs"></i>
-            Ko'rish
+            {t("doctors.card.viewButton")}
           </button>
           <button
             onClick={() => onEdit(doctor)}

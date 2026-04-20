@@ -1,10 +1,17 @@
+import type { TFunction } from "i18next";
+import { CHECKIN_SYMPTOMS } from "@/pages/checkin/constants/symptoms";
+
 export type QuestionType = 'yes_no' | 'text' | 'select' | 'body_map';
+export interface SelectOption {
+  value: string;
+  label: string;
+}
 
 export interface CheckinQuestion {
   id: string;
   text: string;
   type: QuestionType;
-  options?: string[];
+  options?: SelectOption[];
   required: boolean;
   conditionalOn?: { questionId: string; answer: string };
   category: string;
@@ -23,190 +30,203 @@ export interface AIRecommendation {
   disclaimer: string;
 }
 
-export const checkinQuestions: CheckinQuestion[] = [
+interface BodyPart {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+}
+
+export const getCheckinQuestions = (t: TFunction<"checkin">): CheckinQuestion[] => [
   {
     id: 'q1',
-    text: 'Asosiy shikoyatingiz nima?',
+    text: t("questions.q1.text"),
     type: 'select',
-    options: ['Bosh og\'riq', 'Ko\'krak og\'rig\'i', 'Qorin og\'rig\'i', 'Bo\'g\'im og\'rig\'i', 'Nafas qisishi', 'Harorat', 'Boshqa'],
+    options: [
+      { value: CHECKIN_SYMPTOMS.HEADACHE, label: t("questions.q1.options.headache") },
+      { value: CHECKIN_SYMPTOMS.CHEST_PAIN, label: t("questions.q1.options.chest_pain") },
+      { value: CHECKIN_SYMPTOMS.ABDOMINAL_PAIN, label: t("questions.q1.options.abdominal_pain") },
+      { value: CHECKIN_SYMPTOMS.JOINT_PAIN, label: t("questions.q1.options.joint_pain") },
+      { value: CHECKIN_SYMPTOMS.BREATH_SHORTNESS, label: t("questions.q1.options.breath_shortness") },
+      { value: CHECKIN_SYMPTOMS.FEVER, label: t("questions.q1.options.fever") },
+      { value: CHECKIN_SYMPTOMS.OTHER, label: t("questions.q1.options.other") },
+    ],
     required: true,
-    category: 'Asosiy shikoyat',
+    category: t("questions.q1.category"),
   },
   {
     id: 'q2',
-    text: 'Og\'riq qayerda joylashgan? (Tana xaritasida belgilang)',
+    text: t("questions.q2.text"),
     type: 'body_map',
     required: false,
-    category: 'Og\'riq joylashuvi',
+    category: t("questions.q2.category"),
   },
   {
     id: 'q3',
-    text: 'Og\'riq qachondan boshlanganini ayting',
+    text: t("questions.q3.text"),
     type: 'select',
-    options: ['Bugun', '1-3 kun oldin', '1 hafta oldin', '1 oy oldin', '1 oydan ko\'proq'],
+    options: [
+      { value: "today", label: t("questions.q3.options.today") },
+      { value: "day_1_3", label: t("questions.q3.options.day_1_3") },
+      { value: "week_1", label: t("questions.q3.options.week_1") },
+      { value: "month_1", label: t("questions.q3.options.month_1") },
+      { value: "more_than_month", label: t("questions.q3.options.more_than_month") },
+    ],
     required: true,
-    category: 'Davomiyligi',
+    category: t("questions.q3.category"),
   },
   {
     id: 'q4',
-    text: 'Haroratiz ko\'tarilganmi?',
+    text: t("questions.q4.text"),
     type: 'yes_no',
     required: true,
-    category: 'Simptomlar',
+    category: t("questions.q4.category"),
   },
   {
     id: 'q5',
-    text: 'Haroratiz qancha? (°C)',
+    text: t("questions.q5.text"),
     type: 'text',
     required: false,
     conditionalOn: { questionId: 'q4', answer: 'yes' },
-    category: 'Simptomlar',
+    category: t("questions.q5.category"),
   },
   {
     id: 'q6',
-    text: 'Ko\'ngil aynishi yoki qusish bormi?',
+    text: t("questions.q6.text"),
     type: 'yes_no',
     required: true,
-    category: 'Simptomlar',
+    category: t("questions.q6.category"),
   },
   {
     id: 'q7',
-    text: 'Bosh aylanishi bormi?',
+    text: t("questions.q7.text"),
     type: 'yes_no',
     required: true,
-    category: 'Simptomlar',
+    category: t("questions.q7.category"),
   },
   {
     id: 'q8',
-    text: 'Nafas qisishini his qilyapsizmi?',
+    text: t("questions.q8.text"),
     type: 'yes_no',
     required: true,
-    category: 'Nafas',
+    category: t("questions.q8.category"),
   },
   {
     id: 'q9',
-    text: 'Nafas qisishi qanchalik kuchli?',
+    text: t("questions.q9.text"),
     type: 'select',
-    options: ['Engil', 'O\'rtacha', 'Kuchli', 'Juda kuchli'],
+    options: [
+      { value: "mild", label: t("questions.q9.options.mild") },
+      { value: "medium", label: t("questions.q9.options.medium") },
+      { value: "strong", label: t("questions.q9.options.strong") },
+      { value: "very_strong", label: t("questions.q9.options.very_strong") },
+    ],
     required: false,
     conditionalOn: { questionId: 'q8', answer: 'yes' },
-    category: 'Nafas',
+    category: t("questions.q9.category"),
   },
   {
     id: 'q10',
-    text: 'Qon bosimingiz yuqori bo\'lganmi?',
+    text: t("questions.q10.text"),
     type: 'yes_no',
     required: true,
-    category: 'Yurak-qon tomir',
+    category: t("questions.q10.category"),
   },
   {
     id: 'q11',
-    text: 'Yurak urishi tezlashganmi yoki notekis bo\'lganmi?',
+    text: t("questions.q11.text"),
     type: 'yes_no',
     required: true,
-    category: 'Yurak-qon tomir',
+    category: t("questions.q11.category"),
   },
   {
     id: 'q12',
-    text: 'Hozirda qanday dorilar qabul qilyapsiz?',
+    text: t("questions.q12.text"),
     type: 'text',
     required: false,
-    category: 'Dorilar',
+    category: t("questions.q12.category"),
   },
   {
     id: 'q13',
-    text: 'Allergiyangiz bormi?',
+    text: t("questions.q13.text"),
     type: 'yes_no',
     required: true,
-    category: 'Tibbiy tarix',
+    category: t("questions.q13.category"),
   },
   {
     id: 'q14',
-    text: 'Qanday allergiyangiz bor?',
+    text: t("questions.q14.text"),
     type: 'text',
     required: false,
     conditionalOn: { questionId: 'q13', answer: 'yes' },
-    category: 'Tibbiy tarix',
+    category: t("questions.q14.category"),
   },
   {
     id: 'q15',
-    text: 'Surunkali kasalliklaringiz bormi?',
+    text: t("questions.q15.text"),
     type: 'yes_no',
     required: true,
-    category: 'Tibbiy tarix',
+    category: t("questions.q15.category"),
   },
   {
     id: 'q16',
-    text: 'Qanday surunkali kasalliklaringiz bor?',
+    text: t("questions.q16.text"),
     type: 'select',
-    options: ['Diabet', 'Gipertoniya', 'Yurak kasalligi', 'Astma', 'Boshqa'],
+    options: [
+      { value: "diabetes", label: t("questions.q16.options.diabetes") },
+      { value: "hypertension", label: t("questions.q16.options.hypertension") },
+      { value: "heart_disease", label: t("questions.q16.options.heart_disease") },
+      { value: "asthma", label: t("questions.q16.options.asthma") },
+      { value: "other", label: t("questions.q16.options.other") },
+    ],
     required: false,
     conditionalOn: { questionId: 'q15', answer: 'yes' },
-    category: 'Tibbiy tarix',
+    category: t("questions.q16.category"),
   },
   {
     id: 'q17',
-    text: 'Oilada yurak kasalligi yoki diabet bormi?',
+    text: t("questions.q17.text"),
     type: 'yes_no',
     required: true,
-    category: 'Oilaviy tarix',
+    category: t("questions.q17.category"),
   },
   {
     id: 'q18',
-    text: 'Chekasizmi?',
+    text: t("questions.q18.text"),
     type: 'yes_no',
     required: true,
-    category: 'Turmush tarzi',
+    category: t("questions.q18.category"),
   },
   {
     id: 'q19',
-    text: 'Spirtli ichimlik ichasizmi?',
+    text: t("questions.q19.text"),
     type: 'yes_no',
     required: true,
-    category: 'Turmush tarzi',
+    category: t("questions.q19.category"),
   },
   {
     id: 'q20',
-    text: 'Qo\'shimcha ma\'lumot yoki shikoyat',
+    text: t("questions.q20.text"),
     type: 'text',
     required: false,
-    category: 'Qo\'shimcha',
+    category: t("questions.q20.category"),
   },
 ];
 
-export const bodyParts = [
-  { id: 'head', label: 'Bosh', x: 50, y: 8 },
-  { id: 'neck', label: 'Bo\'yin', x: 50, y: 16 },
-  { id: 'chest', label: 'Ko\'krak', x: 50, y: 28 },
-  { id: 'left_shoulder', label: 'Chap yelka', x: 30, y: 24 },
-  { id: 'right_shoulder', label: 'O\'ng yelka', x: 70, y: 24 },
-  { id: 'left_arm', label: 'Chap qo\'l', x: 22, y: 38 },
-  { id: 'right_arm', label: 'O\'ng qo\'l', x: 78, y: 38 },
-  { id: 'abdomen', label: 'Qorin', x: 50, y: 42 },
-  { id: 'lower_back', label: 'Bel', x: 50, y: 52 },
-  { id: 'left_hip', label: 'Chap son', x: 38, y: 60 },
-  { id: 'right_hip', label: 'O\'ng son', x: 62, y: 60 },
-  { id: 'left_knee', label: 'Chap tizza', x: 36, y: 74 },
-  { id: 'right_knee', label: 'O\'ng tizza', x: 64, y: 74 },
-  { id: 'left_foot', label: 'Chap oyoq', x: 36, y: 90 },
-  { id: 'right_foot', label: 'O\'ng oyoq', x: 64, y: 90 },
-];
-
-export const aiChatResponses = [
-  {
-    trigger: 'start',
-    message: 'Salom! Men sizning javoblaringizni tahlil qildim. Bir nechta savollarim bor, to\'liqroq baholash uchun.',
-  },
-  {
-    trigger: 'follow1',
-    message: 'Og\'riq doimiy yoki vaqti-vaqti bilan bo\'ladimi?',
-  },
-  {
-    trigger: 'follow2',
-    message: 'Og\'riq kuchaygan paytlarda qanday holat bo\'ladi?',
-  },
-  {
-    trigger: 'result',
-    message: 'Tahlil tugadi. Quyida dastlabki baholash natijalarini ko\'rishingiz mumkin.',
-  },
+export const getBodyParts = (t: TFunction<"checkin">): BodyPart[] => [
+  { id: "head", label: t("questions.bodyParts.head"), x: 50, y: 8 },
+  { id: "neck", label: t("questions.bodyParts.neck"), x: 50, y: 16 },
+  { id: "chest", label: t("questions.bodyParts.chest"), x: 50, y: 28 },
+  { id: "left_shoulder", label: t("questions.bodyParts.left_shoulder"), x: 30, y: 24 },
+  { id: "right_shoulder", label: t("questions.bodyParts.right_shoulder"), x: 70, y: 24 },
+  { id: "left_arm", label: t("questions.bodyParts.left_arm"), x: 22, y: 38 },
+  { id: "right_arm", label: t("questions.bodyParts.right_arm"), x: 78, y: 38 },
+  { id: "abdomen", label: t("questions.bodyParts.abdomen"), x: 50, y: 42 },
+  { id: "lower_back", label: t("questions.bodyParts.lower_back"), x: 50, y: 52 },
+  { id: "left_hip", label: t("questions.bodyParts.left_hip"), x: 38, y: 60 },
+  { id: "right_hip", label: t("questions.bodyParts.right_hip"), x: 62, y: 60 },
+  { id: "left_knee", label: t("questions.bodyParts.left_knee"), x: 36, y: 74 },
+  { id: "right_knee", label: t("questions.bodyParts.right_knee"), x: 64, y: 74 },
+  { id: "left_foot", label: t("questions.bodyParts.left_foot"), x: 36, y: 90 },
+  { id: "right_foot", label: t("questions.bodyParts.right_foot"), x: 64, y: 90 },
 ];

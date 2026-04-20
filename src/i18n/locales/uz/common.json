@@ -1,0 +1,60 @@
+{
+  "language": {
+    "uz": "O'zbekcha",
+    "ru": "Русский",
+    "switcherLabel": "Til"
+  },
+  "buttons": {
+    "continue": "Davom etish",
+    "back": "Orqaga",
+    "skip": "O'tkazib yuborish",
+    "finish": "Tugatish",
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish"
+  },
+  "filters": {
+    "all": "Barchasi"
+  },
+  "status": {
+    "active": "Faol",
+    "inactive": "Nofaol"
+  },
+  "actions": {
+    "view": "Ko'rish",
+    "toggleStatus": "Holat o'zgartirish"
+  },
+  "stats": {
+    "total": "Jami"
+  },
+  "pagination": {
+    "previous": "Oldingi sahifa",
+    "next": "Keyingi sahifa"
+  },
+  "notFound": {
+    "title": "Bu sahifa hali yaratilmagan",
+    "description": "Sahifa haqida ko'proq ma'lumot bering, shunda uni yarataman"
+  },
+  "login": {
+    "title": "Tizimga kirish",
+    "subtitle": "Hisobingizga kiring va boshqaruvni boshlang",
+    "demoAccounts": "Demo hisoblar",
+    "phoneLabel": "Telefon raqami",
+    "phonePlaceholder": "90 123 45 67",
+    "phoneAria": "Telefon raqami, +998 dan keyin",
+    "passwordLabel": "Parol",
+    "rememberMe": "Eslab qolish",
+    "checking": "Tekshirilmoqda...",
+    "submit": "Kirish",
+    "roleRouting": "Rol asosida yo'naltirish",
+    "roles": {
+      "superAdmin": "Super Admin",
+      "hospitalAdmin": "Hospital Admin",
+      "doctor": "Doctor"
+    },
+    "errors": {
+      "phoneRequired": "To'liq telefon raqamini kiriting (+998 dan keyin 9 raqam)",
+      "passwordRequired": "Parolni kiriting",
+      "invalidCredentials": "Telefon yoki parol noto'g'ri. Demo tugmalaridan foydalaning."
+    }
+  }
+}

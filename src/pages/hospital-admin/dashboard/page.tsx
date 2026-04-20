@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useId, useMemo, useState } from "react";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
@@ -9,6 +10,7 @@ import {
   haAnalyticsWeeklyData,
   haDoctorPerformance,
 } from "@/mocks/ha_analytics";
+import { layoutSystem } from "@/styles/layoutSystem";
 
 type FlowPeriod = "daily" | "weekly" | "monthly";
 
@@ -16,7 +18,7 @@ function StatCard({ icon, label, value, sub, color, darkMode }: {
   icon: string; label: string; value: string | number; sub: string; color: string; darkMode: boolean;
 }) {
   return (
-    <div className={`rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+    <div className={`rounded-xl ${layoutSystem.cardPadding} ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className={`text-xs font-medium mb-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{label}</p>
@@ -194,14 +196,16 @@ function MonthlyChart({ data, darkMode }: { data: { month: string; patients: num
 }
 
 export default function HADashboardPage() {
+  const { t } = useTranslation("hospital");
   return (
-    <HALayout title="Boshqaruv paneli">
+    <HALayout title={t("titles.dashboard")}>
       <HADashboardContent />
     </HALayout>
   );
 }
 
-function HADashboardContent() {
+export function HADashboardContent() {
+  const { t } = useTranslation("hospital");
   const darkMode = useHospitalAdminDarkMode();
   const [flowPeriod, setFlowPeriod] = useState<FlowPeriod>("daily");
 
@@ -217,47 +221,51 @@ function HADashboardContent() {
 
   const flowSubtitle =
     flowPeriod === "daily"
-      ? "So'nggi 7 kun (hafta kunlari)"
+      ? t("dashboard.flow.subtitle.daily")
       : flowPeriod === "weekly"
-        ? "Joriy oy — haftalar bo'yicha"
-        : "Yil bo'yicha oylar";
+        ? t("dashboard.flow.subtitle.weekly")
+        : t("dashboard.flow.subtitle.monthly");
 
-  const activeDoctors = haDoctors.filter(d => d.status === 'active').length;
-  const todayTotal = haDoctors.reduce((s, d) => s + d.todayPatients, 0);
-  const weeklyTotal = haAnalyticsDailyData.reduce((s, d) => s + d.patients, 0);
-  const monthlyTotal = haAnalyticsMonthlyData[3].patients;
+  const summaryStats = useMemo(() => {
+    const activeDoctors = haDoctors.filter((doctor) => doctor.status === "active").length;
+    const todayTotal = haDoctors.reduce((sum, doctor) => sum + doctor.todayPatients, 0);
+    const weeklyTotal = haAnalyticsDailyData.reduce((sum, row) => sum + row.patients, 0);
+    const monthlyTotal = haAnalyticsMonthlyData[3].patients;
+    return { activeDoctors, todayTotal, weeklyTotal, monthlyTotal };
+  }, []);
 
-  const recentPatients = haPatients.slice(0, 5);
+  const topDoctors = useMemo(() => haDoctorPerformance.slice(0, 4), []);
+  const recentPatients = useMemo(() => haPatients.slice(0, 5), []);
 
   const periodTabs: { key: FlowPeriod; label: string }[] = [
-    { key: "daily", label: "Kunlik" },
-    { key: "weekly", label: "Haftalik" },
-    { key: "monthly", label: "Oylik" },
+    { key: "daily", label: t("dashboard.flow.period.daily") },
+    { key: "weekly", label: t("dashboard.flow.period.weekly") },
+    { key: "monthly", label: t("dashboard.flow.period.monthly") },
   ];
 
   return (
-      <div className="space-y-6">
+      <div className={layoutSystem.pageStack}>
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon="ri-user-heart-line" label="Bugungi bemorlar" value={todayTotal} sub="Barcha shifokorlar" color="bg-teal-500" darkMode={darkMode} />
-          <StatCard icon="ri-calendar-check-line" label="Haftalik bemorlar" value={weeklyTotal} sub="Joriy hafta" color="bg-indigo-500" darkMode={darkMode} />
-          <StatCard icon="ri-bar-chart-line" label="Oylik bemorlar" value={monthlyTotal} sub="Aprel 2026" color="bg-amber-500" darkMode={darkMode} />
-          <StatCard icon="ri-stethoscope-line" label="Faol shifokorlar" value={activeDoctors} sub={`Jami ${haDoctors.length} ta`} color="bg-emerald-500" darkMode={darkMode} />
+          <StatCard icon="ri-user-heart-line" label={t("dashboard.stats.todayPatients.label")} value={summaryStats.todayTotal} sub={t("dashboard.stats.todayPatients.sub")} color="bg-teal-500" darkMode={darkMode} />
+          <StatCard icon="ri-calendar-check-line" label={t("dashboard.stats.weeklyPatients.label")} value={summaryStats.weeklyTotal} sub={t("dashboard.stats.weeklyPatients.sub")} color="bg-indigo-500" darkMode={darkMode} />
+          <StatCard icon="ri-bar-chart-line" label={t("dashboard.stats.monthlyPatients.label")} value={summaryStats.monthlyTotal} sub={t("dashboard.stats.monthlyPatients.sub")} color="bg-amber-500" darkMode={darkMode} />
+          <StatCard icon="ri-stethoscope-line" label={t("dashboard.stats.activeDoctors.label")} value={summaryStats.activeDoctors} sub={t("dashboard.stats.activeDoctors.sub", { total: haDoctors.length })} color="bg-emerald-500" darkMode={darkMode} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 lg:grid-cols-3 ${layoutSystem.sectionGridGap}`}>
           {/* Bemor oqimi — kunlik / haftalik / oylik */}
-          <div className={`lg:col-span-2 rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+          <div className={`lg:col-span-2 rounded-xl ${layoutSystem.cardPadding} ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
               <div className="min-w-0">
-                <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>Bemor oqimi</h3>
+                <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{t("dashboard.flow.title")}</h3>
                 <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{flowSubtitle}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div
                   className={`flex gap-0.5 p-0.5 rounded-lg ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}
                   role="tablist"
-                  aria-label="Davr bo'yicha ko'rinish"
+                  aria-label={t("dashboard.flow.periodAriaLabel")}
                 >
                   {periodTabs.map((t) => (
                     <button
@@ -285,7 +293,7 @@ function HADashboardContent() {
                     darkMode ? "bg-teal-500/15 text-teal-400" : "bg-teal-50 text-teal-600"
                   }`}
                 >
-                  +12% o'sish
+                  {t("dashboard.flow.growth")}
                 </span>
               </div>
             </div>
@@ -293,10 +301,10 @@ function HADashboardContent() {
           </div>
 
           {/* Top doctors */}
-          <div className={`rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
-            <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>Top shifokorlar</h3>
+          <div className={`rounded-xl ${layoutSystem.cardPadding} ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+            <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("dashboard.topDoctors.title")}</h3>
             <div className="space-y-3">
-              {haDoctorPerformance.slice(0, 4).map((doc, i) => (
+              {topDoctors.map((doc, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div
                     className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold flex-shrink-0 ${
@@ -321,7 +329,7 @@ function HADashboardContent() {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className={`text-xs font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{doc.patients}</p>
-                    <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>bemor</p>
+                    <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("dashboard.topDoctors.patientUnit")}</p>
                   </div>
                 </div>
               ))}
@@ -330,38 +338,92 @@ function HADashboardContent() {
         </div>
 
         {/* Monthly trend */}
-        <div className={`rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+        <div className={`rounded-xl ${layoutSystem.cardPadding} ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>Yillik bemor dinamikasi</h3>
-              <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>2026 yil bo'yicha</p>
+              <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{t("dashboard.yearlyTrend.title")}</h3>
+              <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("dashboard.yearlyTrend.subtitle")}</p>
             </div>
           </div>
           <MonthlyChart data={haAnalyticsMonthlyData} darkMode={darkMode} />
         </div>
 
         {/* Recent patients */}
-        <div className={`rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>So'nggi bemorlar</h3>
+        <div className={`rounded-xl ${layoutSystem.cardPadding} ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{t("dashboard.recentPatients.title")}</h3>
             <a
               href="/hospital-admin/patients"
               className={`text-xs font-medium cursor-pointer ${
                 darkMode ? "text-teal-400 hover:text-teal-300" : "text-teal-600 hover:text-teal-700"
               }`}
             >
-              Barchasini ko'rish
+              {t("dashboard.recentPatients.viewAll")}
             </a>
           </div>
-          <div className="overflow-x-auto">
+          <div className="space-y-3 md:hidden">
+            {recentPatients.map((p) => (
+              <article
+                key={p.id}
+                className={`rounded-lg border p-3 ${darkMode ? "border-[#1E2130] bg-[#0F1117]/40" : "border-gray-100 bg-white"}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        darkMode ? "bg-teal-500/20" : "bg-teal-100"
+                      }`}
+                    >
+                      <span className={`text-xs font-bold ${darkMode ? "text-teal-300" : "text-teal-700"}`}>
+                        {p.name.charAt(0)}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`text-xs font-medium truncate ${darkMode ? "text-white" : "text-gray-900"}`}>{p.name}</p>
+                      <p className={`text-xs truncate ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{p.phone}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${
+                      p.status === "active"
+                        ? darkMode
+                          ? "bg-teal-500/15 text-teal-400"
+                          : "bg-teal-50 text-teal-700"
+                        : p.status === "scheduled"
+                          ? darkMode
+                            ? "bg-indigo-500/15 text-indigo-400"
+                            : "bg-indigo-50 text-indigo-700"
+                          : darkMode
+                            ? "bg-gray-500/20 text-gray-400"
+                            : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {p.status === "active" ? t("dashboard.recentPatients.status.active") : p.status === "scheduled" ? t("dashboard.recentPatients.status.scheduled") : t("dashboard.recentPatients.status.discharged")}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    <span className="font-medium">{t("dashboard.recentPatients.table.doctor")}:</span> {p.doctorName}
+                  </p>
+                  <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    <span className="font-medium">{t("dashboard.recentPatients.table.lastVisit")}:</span> {p.lastVisit}
+                  </p>
+                </div>
+                <p className={`mt-2 text-xs ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  <span className="font-medium">{t("dashboard.recentPatients.table.diagnosis")}:</span> {p.diagnosis}
+                </p>
+              </article>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full">
               <thead>
                 <tr className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                  <th className="text-left pb-3 font-medium">Bemor</th>
-                  <th className="text-left pb-3 font-medium">Shifokor</th>
-                  <th className="text-left pb-3 font-medium">Tashxis</th>
-                  <th className="text-left pb-3 font-medium">So'nggi tashrif</th>
-                  <th className="text-left pb-3 font-medium">Holat</th>
+                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.patient")}</th>
+                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.doctor")}</th>
+                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.diagnosis")}</th>
+                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.lastVisit")}</th>
+                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.status")}</th>
                 </tr>
               </thead>
               <tbody className="space-y-2">
@@ -403,7 +465,7 @@ function HADashboardContent() {
                                 : "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {p.status === "active" ? "Faol" : p.status === "scheduled" ? "Rejalashtirilgan" : "Chiqarilgan"}
+                        {p.status === "active" ? t("dashboard.recentPatients.status.active") : p.status === "scheduled" ? t("dashboard.recentPatients.status.scheduled") : t("dashboard.recentPatients.status.discharged")}
                       </span>
                     </td>
                   </tr>

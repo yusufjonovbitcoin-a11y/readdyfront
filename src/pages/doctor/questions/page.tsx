@@ -1,24 +1,20 @@
-import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useCallback, useEffect, useRef, useState } from "react";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
-import { docQuestions, type DocQuestion } from "@/mocks/doc_patients";
-
-const categories = [
-  { id: "all", name: "Barchasi" },
-  { id: "cat-001", name: "Umumiy" },
-  { id: "cat-002", name: "Yurak-qon tomir" },
-  { id: "cat-003", name: "Nevrologiya" },
-  { id: "cat-004", name: "Pediatriya" },
-  { id: "cat-005", name: "Ortopediya" },
-];
-
-const globalTemplates = [
-  { id: "gt-001", text: "Allergiyangiz bormi?", category: "Umumiy", categoryId: "cat-001" },
-  { id: "gt-002", text: "Qanday dorilar qabul qilmoqdasiz?", category: "Umumiy", categoryId: "cat-001" },
-  { id: "gt-003", text: "Oilada surunkali kasalliklar bormi?", category: "Umumiy", categoryId: "cat-001" },
-  { id: "gt-004", text: "Bosh aylanishi kuzatiladimi?", category: "Nevrologiya", categoryId: "cat-003" },
-  { id: "gt-005", text: "Uyqu muammolari bormi?", category: "Nevrologiya", categoryId: "cat-003" },
-];
+import { useModalA11y } from "@/hooks/useModalA11y";
+import {
+  getDoctorQuestionCategories,
+  getDoctorQuestions,
+  getDoctorQuestionTemplates,
+} from "@/api/doctor";
+import type {
+  DoctorQuestionCategoryDto,
+  DoctorQuestionDto as DocQuestion,
+  DoctorQuestionTemplateDto,
+} from "@/api/types/doctor.types";
+import { usePageState } from "@/hooks/usePageState";
+import PageStateBoundary from "@/components/ui/PageStateBoundary";
 
 interface QuestionFormData {
   text: string;
@@ -26,23 +22,72 @@ interface QuestionFormData {
   categoryId: string;
 }
 
+interface DoctorQuestionsPageData {
+  questions: DocQuestion[];
+  categories: DoctorQuestionCategoryDto[];
+  templates: DoctorQuestionTemplateDto[];
+}
+
+function getDefaultQuestionFormData(categories: DoctorQuestionCategoryDto[]): QuestionFormData {
+  const defaultCategory =
+    categories.find((category) => category.id === "cat-001") ??
+    categories.find((category) => category.id !== "all") ??
+    categories[0];
+  return {
+    text: "",
+    category: defaultCategory?.name ?? "Umumiy",
+    categoryId: defaultCategory?.id ?? "cat-001",
+  };
+}
+
 export default function DocQuestionsPage() {
+  const { t } = useTranslation("doctor");
   return (
-    <DocLayout title="Savollar">
+    <DocLayout title={t("sidebar.questions")}>
       <DocQuestionsContent />
     </DocLayout>
   );
 }
 
-function DocQuestionsContent() {
+export function DocQuestionsContent() {
+  const { t } = useTranslation("doctor");
   const { darkMode } = useDoctorTheme();
-  const [questions, setQuestions] = useState<DocQuestion[]>(docQuestions);
+  const canMutateQuestions = import.meta.env.VITE_USE_MOCK === "true";
+  const [questions, setQuestions] = useState<DocQuestion[]>([]);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCloneModal, setShowCloneModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<DocQuestion | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [categories, setCategories] = useState<DoctorQuestionCategoryDto[]>([]);
+  const [templates, setTemplates] = useState<DoctorQuestionTemplateDto[]>([]);
   const [formData, setFormData] = useState<QuestionFormData>({ text: "", category: "Umumiy", categoryId: "cat-001" });
+  const fetchPageData = useCallback(async (): Promise<DoctorQuestionsPageData> => {
+    const [questionsData, categoriesData, templatesData] = await Promise.all([
+      getDoctorQuestions(),
+      getDoctorQuestionCategories(),
+      getDoctorQuestionTemplates(),
+    ]);
+    return { questions: questionsData, categories: categoriesData, templates: templatesData };
+  }, []);
+  const pageState = usePageState(fetchPageData);
+  useEffect(() => {
+    if (!pageState.data) return;
+    const loadedData = pageState.data;
+    setQuestions(loadedData.questions);
+    setCategories(loadedData.categories);
+    setTemplates(loadedData.templates);
+    setFormData((prev) => {
+      if (prev.text.trim().length > 0) return prev;
+      if (loadedData.categories.some((category) => category.id === prev.categoryId)) {
+        return prev;
+      }
+      return getDefaultQuestionFormData(loadedData.categories);
+    });
+  }, [pageState.data]);
+
+  const addQuestionButtonRef = useRef<HTMLButtonElement>(null);
+  const cloneButtonRef = useRef<HTMLButtonElement>(null);
 
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
@@ -85,10 +130,15 @@ function DocQuestionsContent() {
   const cloneBtn = darkMode
     ? "bg-violet-900/40 text-violet-200 hover:bg-violet-900/60"
     : "bg-violet-50 text-violet-700 hover:bg-violet-100";
+  const questionTextId = "doctor-question-form-text";
+  const questionTextHelpId = "doctor-question-form-text-help";
+  const questionCategoryId = "doctor-question-form-category";
+  const questionCategoryHelpId = "doctor-question-form-category-help";
 
   const filtered = questions.filter((q) => q.text.toLowerCase().includes(search.toLowerCase()));
 
   const handleAdd = () => {
+    if (!canMutateQuestions) return;
     if (!formData.text.trim()) return;
     const newQ: DocQuestion = {
       id: `dq-${Date.now()}`,
@@ -101,11 +151,12 @@ function DocQuestionsContent() {
       createdAt: new Date().toISOString().split("T")[0],
     };
     setQuestions((prev) => [newQ, ...prev]);
-    setFormData({ text: "", category: "Umumiy", categoryId: "cat-001" });
+    setFormData(getDefaultQuestionFormData(categories));
     setShowAddModal(false);
   };
 
   const handleEdit = () => {
+    if (!canMutateQuestions) return;
     if (!editingQuestion || !formData.text.trim()) return;
     setQuestions((prev) =>
       prev.map((q) =>
@@ -113,21 +164,24 @@ function DocQuestionsContent() {
       )
     );
     setEditingQuestion(null);
-    setFormData({ text: "", category: "Umumiy", categoryId: "cat-001" });
+    setFormData(getDefaultQuestionFormData(categories));
   };
 
   const handleDelete = (id: string) => {
+    if (!canMutateQuestions) return;
     setQuestions((prev) => prev.filter((q) => q.id !== id));
     setDeleteConfirm(null);
   };
 
   const handleToggleStatus = (id: string) => {
+    if (!canMutateQuestions) return;
     setQuestions((prev) =>
       prev.map((q) => (q.id === id ? { ...q, status: q.status === "active" ? "inactive" : "active" } : q))
     );
   };
 
-  const handleClone = (template: (typeof globalTemplates)[0]) => {
+  const handleClone = (template: DoctorQuestionTemplateDto) => {
+    if (!canMutateQuestions) return;
     const newQ: DocQuestion = {
       id: `dq-${Date.now()}`,
       text: template.text,
@@ -146,42 +200,76 @@ function DocQuestionsContent() {
     setEditingQuestion(q);
     setFormData({ text: q.text, category: q.category, categoryId: q.categoryId });
   };
+  const closeAddEditModal = () => {
+    setShowAddModal(false);
+    setEditingQuestion(null);
+  };
+  const addEditModalRef = useModalA11y({
+    isOpen: showAddModal || Boolean(editingQuestion),
+    onClose: closeAddEditModal,
+    returnFocusRef: addQuestionButtonRef,
+    inertSelectors: ["header", "main", "aside"],
+  });
+  const cloneModalRef = useModalA11y({
+    isOpen: showCloneModal,
+    onClose: () => setShowCloneModal(false),
+    returnFocusRef: cloneButtonRef,
+    inertSelectors: ["header", "main", "aside"],
+  });
+  const deleteModalRef = useModalA11y({
+    isOpen: Boolean(deleteConfirm),
+    onClose: () => setDeleteConfirm(null),
+    inertSelectors: ["header", "main", "aside"],
+  });
 
   return (
-    <div className="space-y-5">
+    <PageStateBoundary state={pageState}>
+      {() => (
+        <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className={`text-xl font-bold ${pageTitle}`}>Mening Savollarim</h2>
-          <p className={`text-sm mt-0.5 ${pageMuted}`}>Jami {questions.length} ta savol</p>
+          <h2 className={`text-xl font-bold ${pageTitle}`}>{t("questions.title")}</h2>
+          <p className={`text-sm mt-0.5 ${pageMuted}`}>{t("questions.subtitle")} {questions.length}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
+            ref={cloneButtonRef}
+            type="button"
+            disabled={!canMutateQuestions}
             onClick={() => setShowCloneModal(true)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm cursor-pointer transition-colors whitespace-nowrap ${btnGhost}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${btnGhost}`}
           >
             <i className="ri-file-copy-line text-sm"></i>
-            Shablondan klonlash
+            {t("questions.cloneTemplate")}
           </button>
           <button
+            ref={addQuestionButtonRef}
+            type="button"
+            disabled={!canMutateQuestions}
             onClick={() => {
               setShowAddModal(true);
-              setFormData({ text: "", category: "Umumiy", categoryId: "cat-001" });
+              setFormData(getDefaultQuestionFormData(categories));
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <i className="ri-add-line text-sm"></i>
-            Savol qo'shish
+            {t("questions.add")}
           </button>
         </div>
       </div>
+      {!canMutateQuestions && (
+        <p className={`text-xs ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
+          Backend mutation endpointlari tayyor bo'lmagani uchun savollarni o'zgartirish vaqtincha o'chirilgan.
+        </p>
+      )}
 
-      {/* Qidiruv */}
+      {/* Search */}
       <div className="relative max-w-md">
         <i className={`ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-sm ${searchIcon}`}></i>
         <input
           type="text"
-          placeholder="Savol qidirish..."
+          placeholder={t("questions.search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className={inputBase}
@@ -207,7 +295,7 @@ function DocQuestionsContent() {
           <div className={`w-16 h-16 flex items-center justify-center rounded-full mb-4 ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
             <i className={`ri-questionnaire-line text-2xl ${darkMode ? "text-gray-500" : "text-gray-400"}`}></i>
           </div>
-          <p className={`font-medium ${pageMuted}`}>Savol topilmadi</p>
+          <p className={`font-medium ${pageMuted}`}>{t("questions.empty")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -233,11 +321,12 @@ function DocQuestionsContent() {
                 </div>
                 <button
                   type="button"
+                  disabled={!canMutateQuestions}
                   role="switch"
                   aria-checked={q.status === "active"}
                   aria-label={q.status === "active" ? "Savolni nofaol qilish" : "Savolni faollashtirish"}
                   onClick={() => handleToggleStatus(q.id)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                     darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
                   } ${
                     q.status === "active"
@@ -261,16 +350,22 @@ function DocQuestionsContent() {
                 <span className={`text-xs ${textMuted}`}>{q.createdAt}</span>
                 <div className="flex items-center gap-1">
                   <button
+                    type="button"
+                    disabled={!canMutateQuestions}
                     onClick={() => openEdit(q)}
-                    className={`w-7 h-7 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${iconBtn}`}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${iconBtn}`}
+                    aria-label={`Savolni tahrirlash: ${q.text}`}
                   >
-                    <i className="ri-edit-2-line text-sm"></i>
+                    <i className="ri-edit-2-line text-sm" aria-hidden="true"></i>
                   </button>
                   <button
+                    type="button"
+                    disabled={!canMutateQuestions}
                     onClick={() => setDeleteConfirm(q.id)}
-                    className={`w-7 h-7 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${iconBtnDel}`}
+                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${iconBtnDel}`}
+                    aria-label={`Savolni o'chirish: ${q.text}`}
                   >
-                    <i className="ri-delete-bin-line text-sm"></i>
+                    <i className="ri-delete-bin-line text-sm" aria-hidden="true"></i>
                   </button>
                 </div>
               </div>
@@ -282,43 +377,52 @@ function DocQuestionsContent() {
       {/* Add/Edit Modal */}
       {(showAddModal || editingQuestion) && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className={`rounded-2xl p-6 w-full max-w-md mx-4 ${modalPanel}`}>
+          <div
+            ref={addEditModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="doctor-question-edit-title"
+            tabIndex={-1}
+            className={`rounded-2xl p-6 w-full max-w-md mx-4 ${modalPanel}`}
+          >
             <div className="flex items-center justify-between mb-5">
-              <h3 className={`text-base font-semibold ${modalTitle}`}>
-                {editingQuestion ? "Savolni tahrirlash" : "Yangi savol qo'shish"}
+              <h3 id="doctor-question-edit-title" className={`text-base font-semibold ${modalTitle}`}>
+                {editingQuestion ? t("questions.editTitle") : t("questions.newTitle")}
               </h3>
               <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setEditingQuestion(null);
-                }}
+                onClick={closeAddEditModal}
                 className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer ${closeBtn}`}
+                aria-label="Savol oynasini yopish"
               >
-                <i className="ri-close-line text-base"></i>
+                <i className="ri-close-line text-base" aria-hidden="true"></i>
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className={`block text-sm font-medium mb-1.5 ${labelCls}`}>Savol matni</label>
+                <label htmlFor={questionTextId} className={`block text-sm font-medium mb-1.5 ${labelCls}`}>{t("questions.questionText")}</label>
                 <textarea
+                  id={questionTextId}
                   value={formData.text}
                   onChange={(e) => setFormData({ ...formData, text: e.target.value })}
-                  placeholder="Savol matnini kiriting..."
+                  placeholder={t("questions.questionPlaceholder")}
                   rows={3}
                   maxLength={500}
+                  aria-describedby={questionTextHelpId}
                   className={`${fieldBase} resize-none`}
                 />
-                <p className={`text-xs mt-1 ${textMuted}`}>{formData.text.length}/500</p>
+                <p id={questionTextHelpId} className={`text-xs mt-1 ${textMuted}`}>{formData.text.length}/500</p>
               </div>
               <div>
-                <label className={`block text-sm font-medium mb-1.5 ${labelCls}`}>Kategoriya</label>
+                <label htmlFor={questionCategoryId} className={`block text-sm font-medium mb-1.5 ${labelCls}`}>{t("questions.category")}</label>
                 <select
+                  id={questionCategoryId}
                   value={formData.categoryId}
                   onChange={(e) => {
                     const cat = categories.find((c) => c.id === e.target.value);
                     setFormData({ ...formData, categoryId: e.target.value, category: cat?.name || "Umumiy" });
                   }}
+                  aria-describedby={questionCategoryHelpId}
                   className={`${fieldBase} cursor-pointer`}
                 >
                   {categories
@@ -329,25 +433,25 @@ function DocQuestionsContent() {
                       </option>
                     ))}
                 </select>
+                <p id={questionCategoryHelpId} className={`text-xs mt-1 ${textMuted}`}>
+                  {t("questions.category")}
+                </p>
               </div>
             </div>
 
             <div className="flex gap-2 mt-5">
               <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setEditingQuestion(null);
-                }}
+                onClick={closeAddEditModal}
                 className={`flex-1 py-2.5 rounded-lg text-sm cursor-pointer transition-colors whitespace-nowrap ${btnSecondary}`}
               >
-                Bekor qilish
+                {t("common:buttons.cancel")}
               </button>
               <button
                 onClick={editingQuestion ? handleEdit : handleAdd}
                 disabled={!formData.text.trim()}
                 className="flex-1 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors disabled:opacity-50 whitespace-nowrap"
               >
-                {editingQuestion ? "Saqlash" : "Qo'shish"}
+                {editingQuestion ? t("questions.save") : t("questions.add")}
               </button>
             </div>
           </div>
@@ -357,26 +461,37 @@ function DocQuestionsContent() {
       {/* Clone Modal */}
       {showCloneModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className={`rounded-2xl p-6 w-full max-w-md mx-4 ${modalPanel}`}>
+          <div
+            ref={cloneModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="doctor-question-clone-title"
+            tabIndex={-1}
+            className={`rounded-2xl p-6 w-full max-w-md mx-4 ${modalPanel}`}
+          >
             <div className="flex items-center justify-between mb-5">
-              <h3 className={`text-base font-semibold ${modalTitle}`}>Global shablonlar</h3>
-              <button onClick={() => setShowCloneModal(false)} className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer ${closeBtn}`}>
-                <i className="ri-close-line text-base"></i>
+              <h3 id="doctor-question-clone-title" className={`text-base font-semibold ${modalTitle}`}>{t("questions.globalTemplates")}</h3>
+              <button
+                onClick={() => setShowCloneModal(false)}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer ${closeBtn}`}
+                aria-label="Template oynasini yopish"
+              >
+                <i className="ri-close-line text-base" aria-hidden="true"></i>
               </button>
             </div>
-            <p className={`text-sm mb-4 ${pageMuted}`}>Klonlash uchun shablonni tanlang</p>
+            <p className={`text-sm mb-4 ${pageMuted}`}>{t("questions.chooseTemplate")}</p>
             <div className="space-y-2 max-h-72 overflow-y-auto">
-              {globalTemplates.map((t) => (
-                <div key={t.id} className={`flex items-center justify-between p-3 rounded-lg transition-colors ${cloneRow}`}>
+              {templates.map((tpl) => (
+                <div key={tpl.id} className={`flex items-center justify-between p-3 rounded-lg transition-colors ${cloneRow}`}>
                   <div>
-                    <p className={`text-sm ${cloneText}`}>{t.text}</p>
-                    <span className={`text-xs ${cloneCat}`}>{t.category}</span>
+                    <p className={`text-sm ${cloneText}`}>{tpl.text}</p>
+                    <span className={`text-xs ${cloneCat}`}>{tpl.category}</span>
                   </div>
                   <button
-                    onClick={() => handleClone(t)}
+                    onClick={() => handleClone(tpl)}
                     className={`ml-3 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${cloneBtn}`}
                   >
-                    Klonlash
+                    {t("questions.clone")}
                   </button>
                 </div>
               ))}
@@ -385,36 +500,45 @@ function DocQuestionsContent() {
         </div>
       )}
 
-      {/* Delete Confirm */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className={`rounded-2xl p-6 w-full max-w-sm mx-4 ${modalPanel}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className={`w-10 h-10 flex items-center justify-center rounded-full ${darkMode ? "bg-red-950/50" : "bg-red-100"}`}>
-                <i className="ri-delete-bin-line text-red-600 text-lg"></i>
-              </div>
-              <div>
-                <h3 className={`text-base font-semibold ${modalTitle}`}>O'chirishni tasdiqlang</h3>
-                <p className={`text-sm ${pageMuted}`}>Bu amalni qaytarib bo'lmaydi</p>
+          {/* Delete Confirm */}
+          {deleteConfirm && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+              <div
+                ref={deleteModalRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="doctor-question-delete-title"
+                tabIndex={-1}
+                className={`rounded-2xl p-6 w-full max-w-sm mx-4 ${modalPanel}`}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-10 h-10 flex items-center justify-center rounded-full ${darkMode ? "bg-red-950/50" : "bg-red-100"}`}>
+                    <i className="ri-delete-bin-line text-red-600 text-lg"></i>
+                  </div>
+                  <div>
+                    <h3 id="doctor-question-delete-title" className={`text-base font-semibold ${modalTitle}`}>{t("questions.confirmDelete")}</h3>
+                    <p className={`text-sm ${pageMuted}`}>{t("questions.deleteWarning")}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setDeleteConfirm(null)}
+                    className={`flex-1 py-2.5 rounded-lg text-sm cursor-pointer transition-colors whitespace-nowrap ${btnSecondary}`}
+                  >
+                    {t("common:buttons.cancel")}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(deleteConfirm)}
+                    className="flex-1 py-2.5 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 cursor-pointer transition-colors whitespace-nowrap"
+                  >
+                    {t("common:buttons.delete")}
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className={`flex-1 py-2.5 rounded-lg text-sm cursor-pointer transition-colors whitespace-nowrap ${btnSecondary}`}
-              >
-                Bekor qilish
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                className="flex-1 py-2.5 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 cursor-pointer transition-colors whitespace-nowrap"
-              >
-                O'chirish
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       )}
-    </div>
+    </PageStateBoundary>
   );
 }

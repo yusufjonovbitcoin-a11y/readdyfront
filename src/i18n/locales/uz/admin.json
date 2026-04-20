@@ -1,0 +1,288 @@
+{
+  "titles": {
+    "dashboard": "Boshqaruv Paneli",
+    "hospitals": "Kasalxonalar",
+    "analytics": "Tahlil",
+    "users": "Foydalanuvchilar",
+    "auditLogs": "Audit Logs",
+    "settings": "Sozlamalar"
+  },
+  "sidebar": {
+    "dashboard": "Boshqaruv paneli",
+    "hospitals": "Kasalxonalar",
+    "analytics": "Tahlil",
+    "users": "Foydalanuvchilar",
+    "auditLogs": "Audit Logs",
+    "settings": "Sozlamalar",
+    "logout": "Chiqish",
+    "superAdmin": "Super Admin"
+  },
+  "header": {
+    "pages": {
+      "dashboard": "Boshqaruv paneli",
+      "home": "Bosh sahifa",
+      "hospitals": "Kasalxonalar",
+      "list": "Ro'yxat",
+      "analytics": "Tahlil",
+      "users": "Foydalanuvchilar",
+      "auditLogs": "Audit Logs",
+      "settings": "Sozlamalar"
+    },
+    "notifications": {
+      "title": "Xabarnomalar",
+      "items": {
+        "deactivated": "Buxoro kasalxonasi faolsizlashtirildi",
+        "newDoctor": "Yangi shifokor ro'yxatdan o'tdi",
+        "monthlyReport": "Toshkent klinikasi oylik hisobotini yubordi"
+      },
+      "times": {
+        "fiveMin": "5 daqiqa oldin",
+        "oneHour": "1 soat oldin",
+        "threeHour": "3 soat oldin"
+      }
+    },
+    "search": {
+      "trigger": "Qidirish...",
+      "close": "Yopish",
+      "placeholder": "Sahifa yoki kasalxona qidirish...",
+      "global": "Global qidiruv",
+      "results": "Natijalar",
+      "notFound": "Hech narsa topilmadi",
+      "page": "Sahifa",
+      "hospital": "Kasalxona",
+      "help": "↑↓ tanlash · Enter ochish · "
+    },
+    "actions": {
+      "openSidebar": "Yon panelni ochish",
+      "switchToLight": "Yorug' rejimga o'tish",
+      "switchToDark": "Qorong'i rejimga o'tish",
+      "hideNotifications": "Bildirishnomalarni yashirish",
+      "showNotifications": "Bildirishnomalarni ko'rsatish"
+    }
+  },
+  "home": {
+    "stats": {
+      "totalHospitals": "Jami Kasalxonalar",
+      "activeDoctors": "Faol Shifokorlar",
+      "todayPatients": "Bugungi Bemorlar",
+      "monthlyVisits": "Oylik Tashriflar"
+    },
+    "statsChanges": {
+      "hospitals": "+1 bu oy",
+      "doctors": "+12 bu hafta",
+      "patients": "+8.3% kecha",
+      "visits": "-2.1% o'tgan oy"
+    },
+    "alerts": {
+      "title": "Tizim Ogohlantirishlari",
+      "items": {
+        "inactive": "Buxoro kasalxonasi 30 kundan beri faolsiz",
+        "shortage": "Namangan klinikasida shifokorlar yetishmayapti",
+        "report": "Toshkent klinikasi oylik hisobotini yubordi",
+        "newHospital": "Yangi kasalxona qo'shildi: Farg'ona Viloyat"
+      },
+      "times": {
+        "twoDays": "2 kun oldin",
+        "fiveHours": "5 soat oldin",
+        "oneHour": "1 soat oldin",
+        "threeDays": "3 kun oldin"
+      }
+    }
+  },
+  "hospitals": {
+    "add": "Kasalxona qo'shish",
+    "searchPlaceholder": "Kasalxona qidirish...",
+    "empty": "Kasalxona topilmadi",
+    "table": {
+      "hospital": "Kasalxona",
+      "address": "Manzil",
+      "phone": "Telefon",
+      "doctors": "Shifokorlar",
+      "dailyPatients": "Kunlik bemorlar",
+      "status": "Holat",
+      "actions": "Amallar",
+      "adminPrefix": "Admin:"
+    },
+    "deleteConfirm": {
+      "title": "O'chirishni tasdiqlang",
+      "description": "Bu kasalxona va unga bog'liq barcha ma'lumotlar o'chiriladi."
+    },
+    "toast": {
+      "added": "Kasalxona muvaffaqiyatli qo'shildi!",
+      "deleted": "Kasalxona o'chirildi"
+    },
+    "pagination": {
+      "totalZero": "Jami 0 ta kasalxona",
+      "range": "{{from}}–{{to}} / {{total}} ta"
+    }
+  },
+  "analytics": {
+    "period": {
+      "daily": "Kunlik",
+      "weekly": "Haftalik",
+      "monthly": "Oylik"
+    },
+    "allHospitals": "Barcha kasalxonalar",
+    "summary": {
+      "totalPatients": "Jami Bemorlar",
+      "appointments": "Uchrashuvlar",
+      "completed": "Yakunlangan",
+      "completionRate": "Yakunlash darajasi"
+    },
+    "flowDynamics": "Bemor Oqimi Dinamikasi",
+    "patients": "Bemorlar",
+    "appointments": "Uchrashuvlar",
+    "appointmentShort": "Uchrashuv",
+    "completeShort": "Yakun",
+    "flowChartAria": "Bemor oqimi dinamikasi — grafik",
+    "doctorPerformance": "Shifokor Faoliyati",
+    "patientUnit": "bemor",
+    "hospitalComparison": "Kasalxonalar Taqqoslama",
+    "peakHours": "ENG YUQORI SOATLAR"
+  },
+  "users": {
+    "search": "Foydalanuvchi qidirish...",
+    "add": "Foydalanuvchi qo'shish",
+    "newUser": "Yangi Foydalanuvchi",
+    "save": "Saqlash",
+    "toast": {
+      "added": "Foydalanuvchi muvaffaqiyatli qo'shildi!"
+    },
+    "roles": {
+      "admins": "Adminlar",
+      "doctors": "Shifokorlar"
+    },
+    "form": {
+      "fullNameLabel": "To'liq Ism *",
+      "fullNamePlaceholder": "Ism Familiya",
+      "phoneLabel": "Telefon *",
+      "phonePlaceholder": "+998 XX XXX XX XX",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@example.com",
+      "roleLabel": "Rol *",
+      "hospitalLabel": "Kasalxona *",
+      "passwordLabel": "Parol *",
+      "passwordPlaceholder": "Kamida 6 ta belgi",
+      "roleOptions": {
+        "hospitalAdmin": "Hospital Admin",
+        "doctor": "Doktor",
+        "reception": "Qabulxona"
+      }
+    },
+    "actions": {
+      "toggleStatusTitle": "Holat o'zgartirish",
+      "editTitle": "Tahrirlash",
+      "deleteTitle": "O'chirish"
+    }
+  },
+  "audit": {
+    "title": "Audit Logs",
+    "subtitle": "Tizimda amalga oshirilgan barcha amallar tarixi",
+    "tableView": "Jadval",
+    "cardsView": "Kartalar",
+    "exportCsv": "CSV Eksport",
+    "totalFound": "Jami",
+    "empty": "Hech qanday log topilmadi",
+    "csv": {
+      "time": "Vaqt",
+      "user": "Foydalanuvchi",
+      "role": "Rol",
+      "action": "Amal",
+      "resource": "Resurs",
+      "description": "Tavsif",
+      "status": "Status"
+    }
+  },
+  "settings": {
+    "tabs": {
+      "profile": "Profil",
+      "security": "Xavfsizlik",
+      "language": "Til",
+      "appearance": "Ko'rinish",
+      "notifications": "Xabarnomalar"
+    },
+    "languageTitle": "Til Sozlamalari",
+    "languageChanged": "Til o'zgartirildi",
+    "profile": {
+      "title": "Profil Ma'lumotlari",
+      "changePhoto": "Rasm o'zgartirish",
+      "saveButton": "Saqlash",
+      "toastUpdated": "Profil muvaffaqiyatli yangilandi!",
+      "fields": {
+        "fullName": "To'liq Ism",
+        "email": "Email",
+        "phone": "Telefon",
+        "role": "Rol"
+      }
+    },
+    "security": {
+      "title": "Xavfsizlik",
+      "changePasswordButton": "Parolni O'zgartirish",
+      "toastPasswordUpdated": "Parol muvaffaqiyatli o'zgartirildi!",
+      "activeSessionsTitle": "Faol Sessiyalar",
+      "currentSessionChip": "Joriy",
+      "signOutButton": "Chiqarish",
+      "fields": {
+        "currentPassword": "Joriy Parol",
+        "newPassword": "Yangi Parol",
+        "confirmPassword": "Parolni Tasdiqlash"
+      },
+      "placeholders": {
+        "maskedPassword": "••••••••",
+        "newPassword": "Kamida 8 ta belgi",
+        "confirmPassword": "Parolni qayta kiriting"
+      },
+      "sessions": {
+        "chromeWindows": "Chrome — Windows 11",
+        "safariIphone": "Safari — iPhone 15",
+        "nowActive": "Hozir faol",
+        "twoHoursAgo": "2 soat oldin"
+      }
+    },
+    "language": {
+      "selected": "Tanlangan",
+      "options": {
+        "uz": "O'zbek",
+        "ru": "Русский"
+      }
+    },
+    "appearance": {
+      "title": "Ko'rinish",
+      "activeChip": "Faol",
+      "toastEnabled": "{{mode}} yoqildi!",
+      "options": {
+        "light": {
+          "label": "Yorug' Rejim",
+          "description": "Och fon"
+        },
+        "dark": {
+          "label": "Qorong'u Rejim",
+          "description": "Qorong'u fon"
+        }
+      }
+    },
+    "notifications": {
+      "title": "Xabarnoma Sozlamalari",
+      "saveButton": "Saqlash",
+      "toastSaved": "Xabarnoma sozlamalari saqlandi!",
+      "channels": {
+        "email": {
+          "label": "Email Xabarnomalar",
+          "description": "Muhim yangiliklar emailga yuboriladi"
+        },
+        "system": {
+          "label": "Tizim Ogohlantirishlari",
+          "description": "Xatolar va muhim tizim xabarlari"
+        },
+        "reports": {
+          "label": "Hisobotlar",
+          "description": "Haftalik va oylik hisobotlar"
+        },
+        "security": {
+          "label": "Xavfsizlik Ogohlantirishlari",
+          "description": "Noma'lum kirish urinishlari"
+        }
+      }
+    }
+  }
+}

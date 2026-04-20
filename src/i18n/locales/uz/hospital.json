@@ -1,0 +1,187 @@
+{
+  "titles": {
+    "dashboard": "Boshqaruv paneli"
+  },
+  "sidebar": {
+    "dashboard": "Boshqaruv paneli",
+    "doctors": "Shifokorlar",
+    "patients": "Bemorlar",
+    "questions": "Savollar",
+    "analytics": "Tahlil",
+    "settings": "Sozlamalar",
+    "hospitalName": "Toshkent Klinikasi",
+    "hospitalAdmin": "Hospital Admin",
+    "logout": "Chiqish"
+  },
+  "header": {
+    "searchPlaceholder": "Qidirish...",
+    "globalSearch": "Global qidiruv",
+    "actions": {
+      "openSidebar": "Yon panelni ochish",
+      "switchToLight": "Yorug' rejimga o'tish",
+      "switchToDark": "Qorong'i rejimga o'tish",
+      "hideNotifications": "Bildirishnomalarni yashirish",
+      "showNotifications": "Bildirishnomalarni ko'rsatish",
+      "closeNotifications": "Bildirishnomalarni yopish"
+    },
+    "notifications": {
+      "title": "Xabarnomalar",
+      "newPatient": "Yangi bemor ro'yxatdan o'tdi",
+      "doctorDone": "Dr. Karimov bugungi qabulni yakunladi",
+      "queueError": "Navbat tizimida xatolik",
+      "fiveMin": "5 daqiqa oldin",
+      "thirtyMin": "30 daqiqa oldin",
+      "twoHours": "2 soat oldin"
+    }
+  },
+  "doctors": {
+    "search": "Shifokor qidirish...",
+    "add": "Shifokor qo'shish",
+    "total": "Jami:",
+    "doctorsCount": "ta shifokor",
+    "empty": "Shifokor topilmadi",
+    "confirmDelete": "O'chirishni tasdiqlang",
+    "confirmDeleteDesc": "Bu shifokorni o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.",
+    "filters": {
+      "allStatuses": "Barcha holat"
+    },
+    "table": {
+      "doctor": "Shifokor",
+      "specialty": "Mutaxassislik",
+      "phone": "Telefon",
+      "todayPatients": "Bugungi bemorlar",
+      "rating": "Reyting",
+      "status": "Holat",
+      "actions": "Amallar"
+    },
+    "card": {
+      "todayPatientsPrefix": "Bugun:",
+      "patientUnit": "bemor",
+      "qrCodeLabel": "QR Kod",
+      "viewButton": "Ko'rish",
+      "status": {
+        "active": "Faol",
+        "inactive": "Nofaol"
+      }
+    }
+  },
+  "patients": {
+    "search": "Bemor qidirish...",
+    "empty": "Bemor topilmadi",
+    "confirmDelete": "O'chirishni tasdiqlang",
+    "confirmDeleteDesc": "Bu bemorni o'chirishni xohlaysizmi?",
+    "filters": {
+      "allStatuses": "Barcha holat"
+    },
+    "status": {
+      "scheduled": "Rejalashtirilgan",
+      "discharged": "Chiqarilgan"
+    }
+  },
+  "analytics": {
+    "summary": {
+      "weeklyPatients": "Haftalik bemorlar",
+      "dailyAverage": "Kunlik o'rtacha",
+      "peakHour": "Eng yuqori soat",
+      "activeDoctors": "Faol shifokorlar"
+    },
+    "patientFlow": "Bemor oqimi",
+    "timeStats": "Vaqt bo'yicha statistika",
+    "period": {
+      "daily": "Kunlik",
+      "weekly": "Haftalik",
+      "monthly": "Oylik"
+    },
+    "yearlyTrend": "Yillik dinamika",
+    "doctorPerformance": "Shifokor faoliyati",
+    "rowHint": "Qatorni bosing — shifokor profiliga o‘tadi",
+    "table": {
+      "doctor": "Shifokor",
+      "specialty": "Mutaxassislik",
+      "todayPatients": "Bugungi bemorlar",
+      "rating": "Reyting",
+      "activity": "Faollik"
+    }
+  },
+  "questions": {
+    "templates": "Shablonlar",
+    "categories": "Kategoriyalar",
+    "search": "Qidirish...",
+    "addTemplate": "Shablon qo'shish",
+    "addCategory": "Kategoriya qo'shish",
+    "templateNotFound": "Shablon topilmadi",
+    "backToTemplates": "Shablonlarga qaytish",
+    "addQuestion": "Savol qo'shish",
+    "noQuestions": "Hali savollar yo'q. Birinchi savolni qo'shing!"
+  },
+  "settings": {
+    "tabs": {
+      "profile": "Profil",
+      "security": "Xavfsizlik",
+      "language": "Til va ko'rinish",
+      "notifications": "Xabarnomalar"
+    },
+    "languageAppearance": "Til va ko'rinish"
+  },
+  "dashboard": {
+    "title": "Hospital Admin panel",
+    "subtitle": "Kasalxona boshqaruvi va monitoring",
+    "stats": {
+      "todayPatients": {
+        "label": "Bugungi bemorlar",
+        "sub": "Barcha shifokorlar"
+      },
+      "weeklyPatients": {
+        "label": "Haftalik bemorlar",
+        "sub": "Joriy hafta"
+      },
+      "monthlyPatients": {
+        "label": "Oylik bemorlar",
+        "sub": "Aprel 2026"
+      },
+      "activeDoctors": {
+        "label": "Faol shifokorlar",
+        "sub": "Jami {{total}} ta"
+      }
+    },
+    "flow": {
+      "title": "Bemor oqimi",
+      "growth": "+12% o'sish",
+      "periodAriaLabel": "Davr bo'yicha ko'rinish",
+      "period": {
+        "daily": "Kunlik",
+        "weekly": "Haftalik",
+        "monthly": "Oylik"
+      },
+      "subtitle": {
+        "daily": "So'nggi 7 kun (hafta kunlari)",
+        "weekly": "Joriy oy — haftalar bo'yicha",
+        "monthly": "Yil bo'yicha oylar"
+      }
+    },
+    "topDoctors": {
+      "title": "Top shifokorlar",
+      "patientUnit": "bemor"
+    },
+    "yearlyTrend": {
+      "title": "Yillik bemor dinamikasi",
+      "subtitle": "2026 yil bo'yicha"
+    },
+    "recentPatients": {
+      "title": "So'nggi bemorlar",
+      "viewAll": "Barchasini ko'rish",
+      "table": {
+        "patient": "Bemor",
+        "doctor": "Shifokor",
+        "diagnosis": "Tashxis",
+        "lastVisit": "So'nggi tashrif",
+        "status": "Holat"
+      },
+      "status": {
+        "active": "Faol",
+        "scheduled": "Rejalashtirilgan",
+        "discharged": "Chiqarilgan"
+      }
+    }
+  }
+}

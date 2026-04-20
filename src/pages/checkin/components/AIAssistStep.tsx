@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { CHECKIN_SYMPTOMS } from "@/pages/checkin/constants/symptoms";
 
 interface Message {
   id: string;
-  role: 'ai' | 'user';
+  role: "ai" | "user";
   text: string;
   timestamp: Date;
 }
@@ -12,19 +14,14 @@ interface AIAssistStepProps {
   onFinish: (usedAI: boolean) => void;
 }
 
-const riskColors = {
-  low: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', badge: 'bg-emerald-100 text-emerald-700', label: 'Past xavf' },
-  medium: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-700', label: "O'rta xavf" },
-  high: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', badge: 'bg-orange-100 text-orange-700', label: 'Yuqori xavf' },
-  critical: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', badge: 'bg-red-100 text-red-700', label: 'Kritik xavf' },
-};
+type RiskLevel = "low" | "medium" | "high" | "critical";
 
-function analyzeAnswers(answers: Record<string, string | string[]>) {
-  const hasHighTemp = answers['q4'] === 'yes';
-  const hasBreathing = answers['q8'] === 'yes';
-  const hasChestPain = answers['q1'] === 'Ko\'krak og\'rig\'i';
-  const hasHeartIssue = answers['q11'] === 'yes';
-  const hasChronic = answers['q15'] === 'yes';
+function analyzeAnswers(answers: Record<string, string | string[]>, tr: (key: string, def: string) => string) {
+  const hasHighTemp = answers["q4"] === "yes";
+  const hasBreathing = answers["q8"] === "yes";
+  const hasChestPain = answers["q1"] === CHECKIN_SYMPTOMS.CHEST_PAIN;
+  const hasHeartIssue = answers["q11"] === "yes";
+  const hasChronic = answers["q15"] === "yes";
 
   let riskScore = 0;
   if (hasHighTemp) riskScore += 1;
@@ -33,58 +30,90 @@ function analyzeAnswers(answers: Record<string, string | string[]>) {
   if (hasHeartIssue) riskScore += 2;
   if (hasChronic) riskScore += 1;
 
-  const riskLevel = riskScore >= 5 ? 'critical' : riskScore >= 3 ? 'high' : riskScore >= 1 ? 'medium' : 'low';
+  const riskLevel: RiskLevel = riskScore >= 5 ? "critical" : riskScore >= 3 ? "high" : riskScore >= 1 ? "medium" : "low";
 
-  const conditions = [];
+  const conditions: { name: string; probability: number; description: string }[] = [];
   if (hasChestPain || hasHeartIssue) {
-    conditions.push({ name: 'Yurak-qon tomir muammolari', probability: 65, description: 'Ko\'krak og\'rig\'i va yurak urishi o\'zgarishi kuzatilgan' });
+    conditions.push({
+      name: tr("checkin:ai.conditions.cardiovascular.name", "Yurak-qon tomir muammolari"),
+      probability: 65,
+      description: tr("checkin:ai.conditions.cardiovascular.description", "Ko'krak og'rig'i va yurak urishi o'zgarishi kuzatilgan"),
+    });
   }
   if (hasHighTemp) {
-    conditions.push({ name: 'Infeksion kasallik', probability: 55, description: 'Harorat ko\'tarilishi infeksiya belgisi bo\'lishi mumkin' });
+    conditions.push({
+      name: tr("checkin:ai.conditions.infection.name", "Infeksion kasallik"),
+      probability: 55,
+      description: tr("checkin:ai.conditions.infection.description", "Harorat ko'tarilishi infeksiya belgisi bo'lishi mumkin"),
+    });
   }
   if (hasBreathing) {
-    conditions.push({ name: 'Nafas yo\'llari muammosi', probability: 45, description: 'Nafas qisishi kuzatilgan' });
+    conditions.push({
+      name: tr("checkin:ai.conditions.respiratory.name", "Nafas yo'llari muammosi"),
+      probability: 45,
+      description: tr("checkin:ai.conditions.respiratory.description", "Nafas qisishi kuzatilgan"),
+    });
   }
   if (conditions.length === 0) {
-    conditions.push({ name: 'Umumiy holsizlik', probability: 40, description: 'Aniq simptomlar kuzatilmagan, shifokor ko\'rigi tavsiya etiladi' });
+    conditions.push({
+      name: tr("checkin:ai.conditions.general.name", "Umumiy holsizlik"),
+      probability: 40,
+      description: tr("checkin:ai.conditions.general.description", "Aniq simptomlar kuzatilmagan, shifokor ko'rigi tavsiya etiladi"),
+    });
   }
 
-  const actions = [];
-  if (riskLevel === 'critical' || riskLevel === 'high') {
-    actions.push('Zudlik bilan shifokorga murojaat qiling');
-    actions.push('Yolg\'iz qolmang, yaqinlaringizni xabardor qiling');
+  const actions: string[] = [];
+  if (riskLevel === "critical" || riskLevel === "high") {
+    actions.push(tr("checkin:ai.actions.urgent", "Zudlik bilan shifokorga murojaat qiling"));
+    actions.push(tr("checkin:ai.actions.informFamily", "Yolg'iz qolmang, yaqinlaringizni xabardor qiling"));
   }
-  actions.push('Shifokor ko\'rigini kuting');
-  actions.push('Dori qabul qilishdan oldin shifokor bilan maslahatlashing');
-  if (hasHighTemp) actions.push('Ko\'p suv iching va dam oling');
+  actions.push(tr("checkin:ai.actions.waitDoctor", "Shifokor ko'rigini kuting"));
+  actions.push(tr("checkin:ai.actions.medication", "Dori qabul qilishdan oldin shifokor bilan maslahatlashing"));
+  if (hasHighTemp) actions.push(tr("checkin:ai.actions.hydration", "Ko'p suv iching va dam oling"));
 
   return { riskLevel, conditions, actions };
 }
 
 export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
+  const { t, i18n } = useTranslation("checkin");
+  const tr = (key: Parameters<typeof t>[0], defaultValue: string) => t(key, { defaultValue });
+
   const [showChat, setShowChat] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [userInput, setUserInput] = useState('');
+  const [userInput, setUserInput] = useState("");
   const [chatStep, setChatStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [messageCount, setMessageCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const analysis = analyzeAnswers(answers);
+  const analysis = useMemo(() => analyzeAnswers(answers, tr), [answers, i18n.language]);
+  const riskColors = useMemo(
+    () => ({
+      low: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-700", label: tr("checkin:ai.risk.low", "Past xavf") },
+      medium: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", badge: "bg-amber-100 text-amber-700", label: tr("checkin:ai.risk.medium", "O'rta xavf") },
+      high: { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200", badge: "bg-orange-100 text-orange-700", label: tr("checkin:ai.risk.high", "Yuqori xavf") },
+      critical: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", badge: "bg-red-100 text-red-700", label: tr("checkin:ai.risk.critical", "Kritik xavf") },
+    }),
+    [i18n.language],
+  );
   const risk = riskColors[analysis.riskLevel];
 
-  const aiMessages = [
-    'Salom! Men sizning javoblaringizni tahlil qildim. Bir nechta qo\'shimcha savollarim bor.',
-    'Og\'riq doimiy yoki vaqti-vaqti bilan bo\'ladimi?',
-    'Og\'riq kuchaygan paytlarda qanday holat bo\'ladi? Masalan, harakat qilganda yoki dam olganda?',
-    'Rahmat! Barcha ma\'lumotlarni tahlil qildim. Quyida dastlabki baholash natijalarini ko\'rishingiz mumkin.',
-  ];
+  const aiMessages = useMemo(
+    () => [
+      tr("checkin:ai.chat.start", "Salom! Men sizning javoblaringizni tahlil qildim. Bir nechta qo'shimcha savollarim bor."),
+      tr("checkin:ai.chat.follow1", "Og'riq doimiy yoki vaqti-vaqti bilan bo'ladimi?"),
+      tr("checkin:ai.chat.follow2", "Og'riq kuchaygan paytlarda qanday holat bo'ladi? Masalan, harakat qilganda yoki dam olganda?"),
+      tr("checkin:ai.chat.result", "Rahmat! Barcha ma'lumotlarni tahlil qildim. Quyida dastlabki baholash natijalarini ko'rishingiz mumkin."),
+    ],
+    [i18n.language],
+  );
 
   useEffect(() => {
     if (showChat && messages.length === 0) {
       setIsTyping(true);
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setIsTyping(false);
         setMessages([{
           id: '1',
@@ -94,8 +123,20 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
         }]);
         setChatStep(1);
       }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [showChat]);
+  }, [showChat, aiMessages]);
+
+  useEffect(() => {
+    return () => {
+      if (sendTimerRef.current) {
+        clearTimeout(sendTimerRef.current);
+      }
+      if (showResultTimerRef.current) {
+        clearTimeout(showResultTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -111,11 +152,10 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
     };
     setMessages(prev => [...prev, userMsg]);
     setUserInput('');
-    setMessageCount(prev => prev + 1);
-
     if (chatStep < aiMessages.length - 1) {
       setIsTyping(true);
-      setTimeout(() => {
+      sendTimerRef.current = setTimeout(() => {
+        sendTimerRef.current = null;
         setIsTyping(false);
         const nextStep = chatStep + 1;
         setChatStep(nextStep);
@@ -127,7 +167,10 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
         };
         setMessages(prev => [...prev, aiMsg]);
         if (nextStep === aiMessages.length - 1) {
-          setTimeout(() => setShowResult(true), 500);
+          showResultTimerRef.current = setTimeout(() => {
+            showResultTimerRef.current = null;
+            setShowResult(true);
+          }, 500);
         }
       }, 1200);
     }
@@ -148,9 +191,9 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-200">
               <i className="ri-robot-line text-white text-3xl"></i>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">AI Yordamchi</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{tr("checkin:ai.title", "AI Yordamchi")}</h2>
             <p className="text-sm text-gray-500 leading-relaxed">
-              Javoblaringiz asosida qo'shimcha tahlil o'tkazishni xohlaysizmi?
+              {tr("checkin:ai.subtitle", "Javoblaringiz asosida qo'shimcha tahlil o'tkazishni xohlaysizmi?")}
             </p>
           </div>
 
@@ -160,9 +203,9 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
                 <i className="ri-information-line text-amber-600 text-sm"></i>
               </div>
               <div>
-                <p className="text-xs font-semibold text-gray-700 mb-1">Muhim eslatma</p>
+                <p className="text-xs font-semibold text-gray-700 mb-1">{tr("checkin:ai.noticeTitle", "Muhim eslatma")}</p>
                 <p className="text-xs text-gray-500 leading-relaxed">
-                  AI tavsiyasi tibbiy tashxis emas. Bu faqat dastlabki baholash bo'lib, shifokor ko'rigini almashtirmaydi.
+                  {tr("checkin:ai.noticeText", "AI tavsiyasi tibbiy tashxis emas. Bu faqat dastlabki baholash bo'lib, shifokor ko'rigini almashtirmaydi.")}
                 </p>
               </div>
             </div>
@@ -175,14 +218,14 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
               style={{ height: '52px' }}
             >
               <i className="ri-robot-line text-base"></i>
-              AI Yordamchi
+              {tr("checkin:ai.startButton", "AI Yordamchi")}
             </button>
             <button
               onClick={() => onFinish(false)}
               className="w-full h-13 rounded-xl border-2 border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
               style={{ height: '52px' }}
             >
-              O'tkazib yuborish
+              {tr("checkin:ai.skip", "O'tkazib yuborish")}
             </button>
           </div>
         </div>
@@ -198,14 +241,14 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
           <i className="ri-robot-line text-white text-base"></i>
         </div>
         <div className="flex-1">
-          <p className="text-sm font-bold text-gray-900">AI Yordamchi</p>
+          <p className="text-sm font-bold text-gray-900">{tr("checkin:ai.title", "AI Yordamchi")}</p>
           <p className="text-xs text-emerald-500 flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
-            Faol
+            {tr("checkin:ai.active", "Faol")}
           </p>
         </div>
         <div className="text-xs text-gray-400 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">
-          Tibbiy tashxis emas
+          {tr("checkin:ai.notDiagnosis", "Tibbiy tashxis emas")}
         </div>
       </div>
 
@@ -250,7 +293,7 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
           <div className={`rounded-2xl border p-4 ${risk.bg} ${risk.border}`}>
             <div className="flex items-center gap-2 mb-3">
               <i className="ri-shield-check-line text-base"></i>
-              <span className={`text-sm font-bold ${risk.text}`}>Tahlil natijasi</span>
+              <span className={`text-sm font-bold ${risk.text}`}>{tr("checkin:ai.resultTitle", "Tahlil natijasi")}</span>
               <span className={`ml-auto text-xs font-semibold px-2 py-0.5 rounded-full ${risk.badge}`}>
                 {risk.label}
               </span>
@@ -272,7 +315,7 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
             </div>
 
             <div className="bg-white/70 rounded-xl p-3 mb-3">
-              <p className="text-xs font-semibold text-gray-700 mb-2">Tavsiya etilgan harakatlar:</p>
+              <p className="text-xs font-semibold text-gray-700 mb-2">{tr("checkin:ai.recommendedActions", "Tavsiya etilgan harakatlar:")}</p>
               <ul className="space-y-1">
                 {analysis.actions.map((a, i) => (
                   <li key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
@@ -286,7 +329,7 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
               <p className="text-xs text-amber-700 flex items-start gap-1.5">
                 <i className="ri-error-warning-line flex-shrink-0 mt-0.5"></i>
-                <span><strong>Eslatma:</strong> Bu AI tavsiyasi tibbiy tashxis emas. Shifokor ko'rigini almashtirmaydi.</span>
+                <span><strong>{tr("checkin:ai.note", "Eslatma")}:</strong> {tr("checkin:ai.noticeText", "AI tavsiyasi tibbiy tashxis emas. Bu faqat dastlabki baholash bo'lib, shifokor ko'rigini almashtirmaydi.")}</span>
               </p>
             </div>
 
@@ -295,7 +338,7 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
               className="w-full h-11 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-sm font-semibold cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
             >
               <i className="ri-check-line text-base"></i>
-              Tugatish
+              {tr("checkin:ai.finish", "Tugatish")}
             </button>
           </div>
         )}
@@ -310,7 +353,7 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
             <input
               type="text"
               className="flex-1 px-4 h-11 rounded-xl border border-gray-200 focus:border-teal-500 text-sm outline-none transition-colors"
-              placeholder="Javob yozing..."
+              placeholder={tr("checkin:ai.inputPlaceholder", "Javob yozing...")}
               value={userInput}
               onChange={e => setUserInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -319,15 +362,16 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
               onClick={sendMessage}
               disabled={!userInput.trim()}
               className="w-11 h-11 rounded-xl bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white flex items-center justify-center cursor-pointer transition-colors flex-shrink-0"
+              aria-label={tr("checkin:ai.sendMessage", "Xabar yuborish")}
             >
-              <i className="ri-send-plane-line text-base"></i>
+              <i className="ri-send-plane-line text-base" aria-hidden="true"></i>
             </button>
           </div>
           <button
             onClick={() => onFinish(false)}
             className="w-full mt-2 text-xs text-gray-400 hover:text-gray-600 cursor-pointer py-1 transition-colors"
           >
-            Chatsiz davom etish
+            {tr("checkin:ai.continueWithoutChat", "Chatsiz davom etish")}
           </button>
         </div>
       )}

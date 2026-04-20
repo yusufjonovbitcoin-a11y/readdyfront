@@ -3,6 +3,7 @@ import HASidebar from "./HASidebar";
 import HAHeader from "./HAHeader";
 import { usePersistedHospitalAdminTheme } from "@/hooks/usePersistedHospitalAdminTheme";
 import { HospitalAdminThemeProvider } from "@/context/HospitalAdminThemeContext";
+import { layoutSystem } from "@/styles/layoutSystem";
 
 interface HALayoutProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ interface HALayoutProps {
 
 export default function HALayout({ children, title }: HALayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode] = usePersistedHospitalAdminTheme();
 
   return (
@@ -20,19 +22,30 @@ export default function HALayout({ children, title }: HALayoutProps) {
           collapsed={collapsed}
           onToggle={() => setCollapsed(!collapsed)}
           darkMode={darkMode}
+          mobileOpen={mobileSidebarOpen}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
         />
         <HAHeader
           title={title}
           darkMode={darkMode}
           onToggleDark={toggleDarkMode}
           sidebarCollapsed={collapsed}
+          onToggleMobile={() => setMobileSidebarOpen((v) => !v)}
         />
+        {mobileSidebarOpen && (
+          <button
+            type="button"
+            aria-label="Close sidebar"
+            onClick={() => setMobileSidebarOpen(false)}
+            className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          />
+        )}
         <main
           className={`transition-[margin-left] duration-300 ease-out pt-16 min-h-screen ${
-            collapsed ? "ml-16" : "ml-64"
+            collapsed ? "md:ml-16" : "md:ml-64"
           }`}
         >
-          <div className="p-6">{children}</div>
+          <div className={layoutSystem.pagePadding}>{children}</div>
         </main>
       </div>
     </HospitalAdminThemeProvider>

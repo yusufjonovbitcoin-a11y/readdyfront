@@ -1,0 +1,288 @@
+{
+  "titles": {
+    "dashboard": "Панель управления",
+    "hospitals": "Клиники",
+    "analytics": "Аналитика",
+    "users": "Пользователи",
+    "auditLogs": "Аудит-логи",
+    "settings": "Настройки"
+  },
+  "sidebar": {
+    "dashboard": "Панель управления",
+    "hospitals": "Клиники",
+    "analytics": "Аналитика",
+    "users": "Пользователи",
+    "auditLogs": "Аудит-логи",
+    "settings": "Настройки",
+    "logout": "Выйти",
+    "superAdmin": "Супер админ"
+  },
+  "header": {
+    "pages": {
+      "dashboard": "Панель управления",
+      "home": "Главная",
+      "hospitals": "Клиники",
+      "list": "Список",
+      "analytics": "Аналитика",
+      "users": "Пользователи",
+      "auditLogs": "Аудит-логи",
+      "settings": "Настройки"
+    },
+    "notifications": {
+      "title": "Уведомления",
+      "items": {
+        "deactivated": "Клиника Бухары была деактивирована",
+        "newDoctor": "Зарегистрирован новый врач",
+        "monthlyReport": "Ташкентская клиника отправила месячный отчет"
+      },
+      "times": {
+        "fiveMin": "5 минут назад",
+        "oneHour": "1 час назад",
+        "threeHour": "3 часа назад"
+      }
+    },
+    "search": {
+      "trigger": "Поиск...",
+      "close": "Закрыть",
+      "placeholder": "Поиск страницы или клиники...",
+      "global": "Глобальный поиск",
+      "results": "Результаты",
+      "notFound": "Ничего не найдено",
+      "page": "Страница",
+      "hospital": "Клиника",
+      "help": "↑↓ выбрать · Enter открыть · "
+    },
+    "actions": {
+      "openSidebar": "Открыть боковую панель",
+      "switchToLight": "Переключиться на светлую тему",
+      "switchToDark": "Переключиться на темную тему",
+      "hideNotifications": "Скрыть уведомления",
+      "showNotifications": "Показать уведомления"
+    }
+  },
+  "home": {
+    "stats": {
+      "totalHospitals": "Всего клиник",
+      "activeDoctors": "Активные врачи",
+      "todayPatients": "Пациенты сегодня",
+      "monthlyVisits": "Месячные визиты"
+    },
+    "statsChanges": {
+      "hospitals": "+1 в этом месяце",
+      "doctors": "+12 за неделю",
+      "patients": "+8.3% к вчерашнему дню",
+      "visits": "-2.1% к прошлому месяцу"
+    },
+    "alerts": {
+      "title": "Системные уведомления",
+      "items": {
+        "inactive": "Клиника Бухары неактивна уже 30 дней",
+        "shortage": "В клинике Намангана не хватает врачей",
+        "report": "Ташкентская клиника отправила месячный отчет",
+        "newHospital": "Добавлена новая клиника: Ферганская область"
+      },
+      "times": {
+        "twoDays": "2 дня назад",
+        "fiveHours": "5 часов назад",
+        "oneHour": "1 час назад",
+        "threeDays": "3 дня назад"
+      }
+    }
+  },
+  "hospitals": {
+    "add": "Добавить клинику",
+    "searchPlaceholder": "Поиск клиники...",
+    "empty": "Клиника не найдена",
+    "table": {
+      "hospital": "Клиника",
+      "address": "Адрес",
+      "phone": "Телефон",
+      "doctors": "Врачи",
+      "dailyPatients": "Пациенты в день",
+      "status": "Статус",
+      "actions": "Действия",
+      "adminPrefix": "Админ:"
+    },
+    "deleteConfirm": {
+      "title": "Подтвердите удаление",
+      "description": "Эта клиника и все связанные данные будут удалены."
+    },
+    "toast": {
+      "added": "Клиника успешно добавлена!",
+      "deleted": "Клиника удалена"
+    },
+    "pagination": {
+      "totalZero": "Всего 0 клиник",
+      "range": "{{from}}–{{to}} / {{total}}"
+    }
+  },
+  "analytics": {
+    "period": {
+      "daily": "Дневной",
+      "weekly": "Недельный",
+      "monthly": "Месячный"
+    },
+    "allHospitals": "Все клиники",
+    "summary": {
+      "totalPatients": "Всего пациентов",
+      "appointments": "Приемы",
+      "completed": "Завершено",
+      "completionRate": "Процент завершения"
+    },
+    "flowDynamics": "Динамика потока пациентов",
+    "patients": "Пациенты",
+    "appointments": "Приемы",
+    "appointmentShort": "Прием",
+    "completeShort": "Заверш.",
+    "flowChartAria": "График динамики потока пациентов",
+    "doctorPerformance": "Эффективность врачей",
+    "patientUnit": "пациент",
+    "hospitalComparison": "Сравнение клиник",
+    "peakHours": "ПИКОВЫЕ ЧАСЫ"
+  },
+  "users": {
+    "search": "Поиск пользователя...",
+    "add": "Добавить пользователя",
+    "newUser": "Новый пользователь",
+    "save": "Сохранить",
+    "toast": {
+      "added": "Пользователь успешно добавлен!"
+    },
+    "roles": {
+      "admins": "Админы",
+      "doctors": "Врачи"
+    },
+    "form": {
+      "fullNameLabel": "Полное имя *",
+      "fullNamePlaceholder": "Имя Фамилия",
+      "phoneLabel": "Телефон *",
+      "phonePlaceholder": "+998 XX XXX XX XX",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@example.com",
+      "roleLabel": "Роль *",
+      "hospitalLabel": "Клиника *",
+      "passwordLabel": "Пароль *",
+      "passwordPlaceholder": "Минимум 6 символов",
+      "roleOptions": {
+        "hospitalAdmin": "Админ клиники",
+        "doctor": "Врач",
+        "reception": "Регистратура"
+      }
+    },
+    "actions": {
+      "toggleStatusTitle": "Изменить статус",
+      "editTitle": "Редактировать",
+      "deleteTitle": "Удалить"
+    }
+  },
+  "audit": {
+    "title": "Аудит-логи",
+    "subtitle": "История всех действий в системе",
+    "tableView": "Таблица",
+    "cardsView": "Карточки",
+    "exportCsv": "Экспорт CSV",
+    "totalFound": "Всего",
+    "empty": "Логи не найдены",
+    "csv": {
+      "time": "Время",
+      "user": "Пользователь",
+      "role": "Роль",
+      "action": "Действие",
+      "resource": "Ресурс",
+      "description": "Описание",
+      "status": "Статус"
+    }
+  },
+  "settings": {
+    "tabs": {
+      "profile": "Профиль",
+      "security": "Безопасность",
+      "language": "Язык",
+      "appearance": "Внешний вид",
+      "notifications": "Уведомления"
+    },
+    "languageTitle": "Настройки языка",
+    "languageChanged": "Язык изменен",
+    "profile": {
+      "title": "Данные профиля",
+      "changePhoto": "Изменить фото",
+      "saveButton": "Сохранить",
+      "toastUpdated": "Профиль успешно обновлен!",
+      "fields": {
+        "fullName": "Полное имя",
+        "email": "Email",
+        "phone": "Телефон",
+        "role": "Роль"
+      }
+    },
+    "security": {
+      "title": "Безопасность",
+      "changePasswordButton": "Изменить пароль",
+      "toastPasswordUpdated": "Пароль успешно изменен!",
+      "activeSessionsTitle": "Активные сессии",
+      "currentSessionChip": "Текущая",
+      "signOutButton": "Выйти",
+      "fields": {
+        "currentPassword": "Текущий пароль",
+        "newPassword": "Новый пароль",
+        "confirmPassword": "Подтвердите пароль"
+      },
+      "placeholders": {
+        "maskedPassword": "••••••••",
+        "newPassword": "Минимум 8 символов",
+        "confirmPassword": "Повторно введите пароль"
+      },
+      "sessions": {
+        "chromeWindows": "Chrome — Windows 11",
+        "safariIphone": "Safari — iPhone 15",
+        "nowActive": "Сейчас активна",
+        "twoHoursAgo": "2 часа назад"
+      }
+    },
+    "language": {
+      "selected": "Выбрано",
+      "options": {
+        "uz": "O'zbek",
+        "ru": "Русский"
+      }
+    },
+    "appearance": {
+      "title": "Внешний вид",
+      "activeChip": "Активно",
+      "toastEnabled": "{{mode}} включен!",
+      "options": {
+        "light": {
+          "label": "Светлая тема",
+          "description": "Светлый фон"
+        },
+        "dark": {
+          "label": "Темная тема",
+          "description": "Темный фон"
+        }
+      }
+    },
+    "notifications": {
+      "title": "Настройки уведомлений",
+      "saveButton": "Сохранить",
+      "toastSaved": "Настройки уведомлений сохранены!",
+      "channels": {
+        "email": {
+          "label": "Email-уведомления",
+          "description": "Важные обновления будут отправлены на email"
+        },
+        "system": {
+          "label": "Системные уведомления",
+          "description": "Ошибки и важные системные сообщения"
+        },
+        "reports": {
+          "label": "Отчеты",
+          "description": "Еженедельные и ежемесячные отчеты"
+        },
+        "security": {
+          "label": "Оповещения безопасности",
+          "description": "Неизвестные попытки входа"
+        }
+      }
+    }
+  }
+}

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useDocPatients } from "@/context/DocPatientsContext";
-import type { DocPatient, RiskLevel } from "@/mocks/doc_patients";
+import type { DoctorPatientDto as DocPatient } from "@/api/types/doctor.types";
 import {
   AiTavsiyaCard,
   BemorVaAmallarGrid,
@@ -11,6 +11,8 @@ import {
   ShifokorIzohlariCard,
   patientDetailBlockProps,
 } from "./PatientDetailBlocks";
+
+type RiskLevel = DocPatient["riskLevel"];
 
 const riskConfig: Record<RiskLevel, { label: string; color: string; bg: string; border: string; icon: string; desc: string }> = {
   low: {
@@ -82,6 +84,7 @@ const riskAccent: Record<RiskLevel, { left: string; badge: string }> = {
 };
 
 type PatientDetailTab = "javoblar" | "ai" | "izohlar" | "bemor";
+type DoctorPatientsTab = "queue" | "in_progress" | "completed";
 
 const PATIENT_DETAIL_TAB_DEFS: { key: PatientDetailTab; label: string; icon: string }[] = [
   { key: "javoblar", label: "Javoblar", icon: "ri-questionnaire-line" },
@@ -89,6 +92,27 @@ const PATIENT_DETAIL_TAB_DEFS: { key: PatientDetailTab; label: string; icon: str
   { key: "izohlar", label: "Izohlar", icon: "ri-edit-2-line" },
   { key: "bemor", label: "Bemor", icon: "ri-user-line" },
 ];
+
+const CANONICAL_DOCTOR_PATIENTS_TAB = "in_progress";
+const DEFAULT_DOCTOR_PATIENTS_TAB: DoctorPatientsTab = "queue";
+
+function normalizeDoctorPatientsTab(raw: string | null): DoctorPatientsTab {
+  if (raw === "taxlil") return "in_progress";
+  if (raw === "queue" || raw === "in_progress" || raw === "completed") return raw;
+  return DEFAULT_DOCTOR_PATIENTS_TAB;
+}
+
+export function DocPatientDetailRouteContent() {
+  const { id } = useParams<{ id: string }>();
+  const { patients } = useDocPatients();
+  const patient = patients.find((p) => p.id === id);
+
+  if (!patient) {
+    return <PatientNotFoundContent />;
+  }
+
+  return <PatientDetailContent patient={patient} />;
+}
 
 export default function DocPatientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -110,7 +134,7 @@ export default function DocPatientDetailPage() {
   );
 }
 
-function PatientNotFoundContent() {
+export function PatientNotFoundContent() {
   const { darkMode } = useDoctorTheme();
   const navigate = useNavigate();
   return (
@@ -127,14 +151,24 @@ function PatientNotFoundContent() {
   );
 }
 
-function PatientDetailContent({ patient }: { patient: DocPatient }) {
+export function PatientDetailContent({ patient }: { patient: DocPatient }) {
   const { darkMode, patientDetailLayout } = useDoctorTheme();
-  const { updatePatient } = useDocPatients();
+  const { transitionPatientStatus, updatePatient } = useDocPatients();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [notes, setNotes] = useState(patient.notes || "");
   const [actionDone, setActionDone] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<PatientDetailTab>("javoblar");
+  const rawListTab = searchParams.get("tab");
+  const canonicalListTab = normalizeDoctorPatientsTab(rawListTab);
+
+  useEffect(() => {
+    if (rawListTab === canonicalListTab) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", canonicalListTab);
+    setSearchParams(next, { replace: true });
+  }, [rawListTab, canonicalListTab, searchParams, setSearchParams]);
 
   useEffect(() => {
     setDetailTab("javoblar");
@@ -175,10 +209,16 @@ function PatientDetailContent({ patient }: { patient: DocPatient }) {
   const confirmAction = () => {
     if (!showConfirm) return;
     if (showConfirm === "test") {
-      updatePatient(patient.id, { status: "in_progress" });
+      transitionPatientStatus(patient.id, "in_progress");
       setShowConfirm(null);
-      navigate("/doctor/patients?tab=taxlil");
+      navigate(`/doctor/patients?tab=${CANONICAL_DOCTOR_PATIENTS_TAB}`);
       return;
+    }
+    if (showConfirm === "diagnosed") {
+      transitionPatientStatus(patient.id, "completed");
+      if (notes !== patient.notes) {
+        updatePatient(patient.id, { notes });
+      }
     }
     setActionDone(showConfirm);
     setShowConfirm(null);
@@ -212,10 +252,12 @@ function PatientDetailContent({ patient }: { patient: DocPatient }) {
     <div className="w-full min-w-0 space-y-5">
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate("/doctor/patients")}
+          type="button"
+          onClick={() => navigate(`/doctor/patients?tab=${canonicalListTab}`)}
+          aria-label="Bemorlar ro'yxatiga qaytish"
           className={`w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${backBtn}`}
         >
-          <i className="ri-arrow-left-line text-base"></i>
+          <i className="ri-arrow-left-line text-base" aria-hidden="true"></i>
         </button>
         <div>
           <h2 className={`text-xl font-bold ${pageTitle}`}>{patient.name}</h2>

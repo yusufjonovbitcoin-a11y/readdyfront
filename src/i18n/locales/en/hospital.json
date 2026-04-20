@@ -1,0 +1,73 @@
+{
+  "doctors": {
+    "card": {
+      "todayPatientsPrefix": "Today:",
+      "patientUnit": "patients",
+      "qrCodeLabel": "QR Code",
+      "viewButton": "View",
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      }
+    }
+  },
+  "dashboard": {
+    "stats": {
+      "todayPatients": {
+        "label": "Today's patients",
+        "sub": "All doctors"
+      },
+      "weeklyPatients": {
+        "label": "Weekly patients",
+        "sub": "Current week"
+      },
+      "monthlyPatients": {
+        "label": "Monthly patients",
+        "sub": "April 2026"
+      },
+      "activeDoctors": {
+        "label": "Active doctors",
+        "sub": "Total {{total}}"
+      }
+    },
+    "flow": {
+      "title": "Patient flow",
+      "growth": "+12% growth",
+      "periodAriaLabel": "Period view selector",
+      "period": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      },
+      "subtitle": {
+        "daily": "Last 7 days (weekdays)",
+        "weekly": "Current month by weeks",
+        "monthly": "Months across the year"
+      }
+    },
+    "topDoctors": {
+      "title": "Top doctors",
+      "patientUnit": "patients"
+    },
+    "yearlyTrend": {
+      "title": "Yearly patient trend",
+      "subtitle": "Across 2026"
+    },
+    "recentPatients": {
+      "title": "Recent patients",
+      "viewAll": "View all",
+      "table": {
+        "patient": "Patient",
+        "doctor": "Doctor",
+        "diagnosis": "Diagnosis",
+        "lastVisit": "Last visit",
+        "status": "Status"
+      },
+      "status": {
+        "active": "Active",
+        "scheduled": "Scheduled",
+        "discharged": "Discharged"
+      }
+    }
+  }
+}

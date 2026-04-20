@@ -1,0 +1,188 @@
+{
+  "notFound": {
+    "title": "Shifokor topilmadi",
+    "desc": "Noto'g'ri QR kod yoki shifokor mavjud emas. Iltimos, to'g'ri QR kodni skanerlang."
+  },
+  "languageStep": {
+    "title": "Tilni tanlang",
+    "subtitle": "Выберите язык / Choose language",
+    "hint": "Keyingi bosqichda telefon raqamingiz so'raladi, so'ngra savollar",
+    "uzSecondary": "Uzbek",
+    "ruSecondary": "Russian"
+  },
+  "phoneStep": {
+    "appName": "MedCore",
+    "title": "Navbatga yozilish tizimi",
+    "active": "Qabul qilmoqda",
+    "phoneLabel": "Telefon raqamingizni kiriting",
+    "phonePlaceholder": "90 123 45 67",
+    "phoneError": "Telefon raqamni to'liq kiriting (9 ta raqam)",
+    "continue": "Davom etish",
+    "checking": "Tekshirilmoqda...",
+    "back": "Orqaga",
+    "securityHint": "Ma'lumotlaringiz xavfsiz saqlanadi va faqat shifokorga ko'rsatiladi",
+    "draftFound": "Saqlangan ma'lumot topildi",
+    "draftAnswered": "Siz avval {{count}} ta savolga javob bergansiz",
+    "restart": "Qaytadan boshlash"
+  },
+  "questions": {
+    "optional": "Ixtiyoriy savol",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "answerPlaceholder": "Javobingizni yozing...",
+    "skip": "O'tkazib yuborish",
+    "continue": "Davom etish",
+    "autosave": "Javoblaringiz avtomatik saqlanmoqda",
+    "bodyMapHint": "Og'riq sezayotgan joylarni bosing",
+    "selectedParts": "Tanlangan joylar:",
+    "q1": {
+      "text": "Asosiy shikoyatingiz nima?",
+      "category": "Asosiy shikoyat",
+      "options": {
+        "headache": "Bosh og'riq",
+        "chest_pain": "Ko'krak og'rig'i",
+        "abdominal_pain": "Qorin og'rig'i",
+        "joint_pain": "Bo'g'im og'rig'i",
+        "breath_shortness": "Nafas qisishi",
+        "fever": "Harorat",
+        "other": "Boshqa"
+      }
+    },
+    "q2": { "text": "Og'riq qayerda joylashgan? (Tana xaritasida belgilang)", "category": "Og'riq joylashuvi" },
+    "q3": {
+      "text": "Og'riq qachondan boshlanganini ayting",
+      "category": "Davomiyligi",
+      "options": { "today": "Bugun", "day_1_3": "1-3 kun oldin", "week_1": "1 hafta oldin", "month_1": "1 oy oldin", "more_than_month": "1 oydan ko'proq" }
+    },
+    "q4": { "text": "Haroratiz ko'tarilganmi?", "category": "Simptomlar" },
+    "q5": { "text": "Haroratiz qancha? (°C)", "category": "Simptomlar" },
+    "q6": { "text": "Ko'ngil aynishi yoki qusish bormi?", "category": "Simptomlar" },
+    "q7": { "text": "Bosh aylanishi bormi?", "category": "Simptomlar" },
+    "q8": { "text": "Nafas qisishini his qilyapsizmi?", "category": "Nafas" },
+    "q9": {
+      "text": "Nafas qisishi qanchalik kuchli?",
+      "category": "Nafas",
+      "options": { "mild": "Engil", "medium": "O'rtacha", "strong": "Kuchli", "very_strong": "Juda kuchli" }
+    },
+    "q10": { "text": "Qon bosimingiz yuqori bo'lganmi?", "category": "Yurak-qon tomir" },
+    "q11": { "text": "Yurak urishi tezlashganmi yoki notekis bo'lganmi?", "category": "Yurak-qon tomir" },
+    "q12": { "text": "Hozirda qanday dorilar qabul qilyapsiz?", "category": "Dorilar" },
+    "q13": { "text": "Allergiyangiz bormi?", "category": "Tibbiy tarix" },
+    "q14": { "text": "Qanday allergiyangiz bor?", "category": "Tibbiy tarix" },
+    "q15": { "text": "Surunkali kasalliklaringiz bormi?", "category": "Tibbiy tarix" },
+    "q16": {
+      "text": "Qanday surunkali kasalliklaringiz bor?",
+      "category": "Tibbiy tarix",
+      "options": { "diabetes": "Diabet", "hypertension": "Gipertoniya", "heart_disease": "Yurak kasalligi", "asthma": "Astma", "other": "Boshqa" }
+    },
+    "q17": { "text": "Oilada yurak kasalligi yoki diabet bormi?", "category": "Oilaviy tarix" },
+    "q18": { "text": "Chekasizmi?", "category": "Turmush tarzi" },
+    "q19": { "text": "Spirtli ichimlik ichasizmi?", "category": "Turmush tarzi" },
+    "q20": { "text": "Qo'shimcha ma'lumot yoki shikoyat", "category": "Qo'shimcha" },
+    "bodyParts": {
+      "head": "Bosh",
+      "neck": "Bo'yin",
+      "chest": "Ko'krak",
+      "left_shoulder": "Chap yelka",
+      "right_shoulder": "O'ng yelka",
+      "left_arm": "Chap qo'l",
+      "right_arm": "O'ng qo'l",
+      "abdomen": "Qorin",
+      "lower_back": "Bel",
+      "left_hip": "Chap son",
+      "right_hip": "O'ng son",
+      "left_knee": "Chap tizza",
+      "right_knee": "O'ng tizza",
+      "left_foot": "Chap oyoq",
+      "right_foot": "O'ng oyoq"
+    }
+  },
+  "ai": {
+    "title": "AI Yordamchi",
+    "subtitle": "Javoblaringiz asosida qo'shimcha tahlil o'tkazishni xohlaysizmi?",
+    "noticeTitle": "Muhim eslatma",
+    "noticeText": "AI tavsiyasi tibbiy tashxis emas. Bu faqat dastlabki baholash bo'lib, shifokor ko'rigini almashtirmaydi.",
+    "startButton": "AI Yordamchi",
+    "skip": "O'tkazib yuborish",
+    "active": "Faol",
+    "notDiagnosis": "Tibbiy tashxis emas",
+    "resultTitle": "Tahlil natijasi",
+    "recommendedActions": "Tavsiya etilgan harakatlar:",
+    "note": "Eslatma",
+    "finish": "Tugatish",
+    "inputPlaceholder": "Javob yozing...",
+    "continueWithoutChat": "Chatsiz davom etish",
+    "risk": {
+      "low": "Past xavf",
+      "medium": "O'rta xavf",
+      "high": "Yuqori xavf",
+      "critical": "Kritik xavf"
+    },
+    "chat": {
+      "start": "Salom! Men sizning javoblaringizni tahlil qildim. Bir nechta qo'shimcha savollarim bor.",
+      "follow1": "Og'riq doimiy yoki vaqti-vaqti bilan bo'ladimi?",
+      "follow2": "Og'riq kuchaygan paytlarda qanday holat bo'ladi? Masalan, harakat qilganda yoki dam olganda?",
+      "result": "Rahmat! Barcha ma'lumotlarni tahlil qildim. Quyida dastlabki baholash natijalarini ko'rishingiz mumkin."
+    },
+    "conditions": {
+      "cardiovascular": {
+        "name": "Yurak-qon tomir muammolari",
+        "description": "Ko'krak og'rig'i va yurak urishi o'zgarishi kuzatilgan"
+      },
+      "infection": {
+        "name": "Infeksion kasallik",
+        "description": "Harorat ko'tarilishi infeksiya belgisi bo'lishi mumkin"
+      },
+      "respiratory": {
+        "name": "Nafas yo'llari muammosi",
+        "description": "Nafas qisishi kuzatilgan"
+      },
+      "general": {
+        "name": "Umumiy holsizlik",
+        "description": "Aniq simptomlar kuzatilmagan, shifokor ko'rigi tavsiya etiladi"
+      }
+    },
+    "actions": {
+      "urgent": "Zudlik bilan shifokorga murojaat qiling",
+      "informFamily": "Yolg'iz qolmang, yaqinlaringizni xabardor qiling",
+      "waitDoctor": "Shifokor ko'rigini kuting",
+      "medication": "Dori qabul qilishdan oldin shifokor bilan maslahatlashing",
+      "hydration": "Ko'p suv iching va dam oling"
+    }
+  },
+  "result": {
+    "queueAccepted": "Navbatingiz qabul qilindi!",
+    "queueAcceptedDesc": "Siz navbatga muvaffaqiyatli yozildingiz",
+    "detected": "aniqlandi",
+    "priorityDesc": "Shifokor siz bilan tezroq ko'rishadi",
+    "queueNumber": "Navbat raqami",
+    "waitMinutes": "Daqiqa kutish",
+    "estimatedWait": "Taxminiy kutish vaqti",
+    "doctor": "Shifokor",
+    "department": "Bo'lim",
+    "phone": "Telefon",
+    "date": "Sana",
+    "notifyWhenTurn": "Navbatim kelganda xabar bering",
+    "smsSent": "SMS xabar yuboriladi",
+    "busyTitle": "Shifokor band",
+    "busyDesc": "Hozirda navbat to'liq. Iltimos, biroz kuting yoki keyinroq qayta urinib ko'ring.",
+    "nextAvailable": "Keyingi bo'sh vaqt",
+    "nextAvailableDesc": "Taxminan 45-60 daqiqadan keyin",
+    "notificationWillBeSent": "Xabar yuboriladi",
+    "notifyWhenFree": "Bo'sh bo'lganda xabar bering",
+    "thanks": "Rahmat!",
+    "infoDesc": "Javoblaringiz qabul qilindi. Shifokor siz bilan bog'lanadi.",
+    "acceptedData": "Qabul qilingan ma'lumotlar:",
+    "answersCount": "Javoblar soni",
+    "answersCountValue": "{{count}} ta",
+    "aiAnalysis": "AI tahlil",
+    "completed": "O'tkazildi",
+    "newRegistration": "Yangi ro'yxat",
+    "risk": {
+      "low": "Past xavf",
+      "medium": "O'rta xavf",
+      "high": "Yuqori xavf",
+      "critical": "Kritik xavf"
+    }
+  }
+}

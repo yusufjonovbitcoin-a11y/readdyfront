@@ -1,33 +1,33 @@
 export const haAnalyticsDailyData = [
-  { day: 'Dush', patients: 42, appointments: 38 },
-  { day: 'Sesh', patients: 58, appointments: 52 },
-  { day: 'Chor', patients: 65, appointments: 60 },
-  { day: 'Pay', patients: 71, appointments: 68 },
-  { day: 'Jum', patients: 55, appointments: 50 },
-  { day: 'Shan', patients: 30, appointments: 28 },
-  { day: 'Yak', patients: 18, appointments: 15 },
+  { id: 'dush', day: 'Dush', patients: 42, appointments: 38 },
+  { id: 'sesh', day: 'Sesh', patients: 58, appointments: 52 },
+  { id: 'chor', day: 'Chor', patients: 65, appointments: 60 },
+  { id: 'pay', day: 'Pay', patients: 71, appointments: 68 },
+  { id: 'jum', day: 'Jum', patients: 55, appointments: 50 },
+  { id: 'shan', day: 'Shan', patients: 30, appointments: 28 },
+  { id: 'yak', day: 'Yak', patients: 18, appointments: 15 },
 ];
 
 export const haAnalyticsWeeklyData = [
-  { week: '1-hafta', patients: 280, appointments: 260 },
-  { week: '2-hafta', patients: 320, appointments: 300 },
-  { week: '3-hafta', patients: 295, appointments: 275 },
-  { week: '4-hafta', patients: 340, appointments: 315 },
+  { id: 'week-1', week: '1-hafta', patients: 280, appointments: 260 },
+  { id: 'week-2', week: '2-hafta', patients: 320, appointments: 300 },
+  { id: 'week-3', week: '3-hafta', patients: 295, appointments: 275 },
+  { id: 'week-4', week: '4-hafta', patients: 340, appointments: 315 },
 ];
 
 export const haAnalyticsMonthlyData = [
-  { month: 'Yan', patients: 1100 },
-  { month: 'Fev', patients: 980 },
-  { month: 'Mar', patients: 1250 },
-  { month: 'Apr', patients: 1180 },
-  { month: 'May', patients: 1320 },
-  { month: 'Iyn', patients: 1450 },
-  { month: 'Iyl', patients: 1380 },
-  { month: 'Avg', patients: 1290 },
-  { month: 'Sen', patients: 1410 },
-  { month: 'Okt', patients: 1520 },
-  { month: 'Noy', patients: 1350 },
-  { month: 'Dek', patients: 1200 },
+  { id: 'yan', month: 'Yan', patients: 1100 },
+  { id: 'fev', month: 'Fev', patients: 980 },
+  { id: 'mar', month: 'Mar', patients: 1250 },
+  { id: 'apr', month: 'Apr', patients: 1180 },
+  { id: 'may', month: 'May', patients: 1320 },
+  { id: 'iyn', month: 'Iyn', patients: 1450 },
+  { id: 'iyl', month: 'Iyl', patients: 1380 },
+  { id: 'avg', month: 'Avg', patients: 1290 },
+  { id: 'sen', month: 'Sen', patients: 1410 },
+  { id: 'okt', month: 'Okt', patients: 1520 },
+  { id: 'noy', month: 'Noy', patients: 1350 },
+  { id: 'dek', month: 'Dek', patients: 1200 },
 ];
 
 export const haPeakHoursData = [

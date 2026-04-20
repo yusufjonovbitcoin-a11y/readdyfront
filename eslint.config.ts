@@ -49,6 +49,48 @@ export default [
   { ignores: ['dist', 'node_modules'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  /**
+   * Guardrail: prevent new mock imports from page layer.
+   * Legacy files are temporarily excluded until migration is completed.
+   */
+  {
+    files: ['src/pages/**/*.{ts,tsx}'],
+    ignores: [
+      'src/pages/checkin/components/BodyMap.tsx',
+      'src/pages/doctor/components/DocHeader.tsx',
+      'src/pages/doctor/history/page.tsx',
+      'src/pages/doctor/patients/components/PatientCard.tsx',
+      'src/pages/doctor/patients/components/PatientTableRow.tsx',
+      'src/pages/doctor/patients/components/QueueDraggableGrid.tsx',
+      'src/pages/doctor/patients/detail/PatientDetailBlocks.tsx',
+      'src/pages/doctor/patients/page.tsx',
+      'src/pages/doctor/settings/page.tsx',
+      'src/pages/home/components/ActivityChart.tsx',
+      'src/pages/home/components/RecentActivity.tsx',
+      'src/pages/home/components/TopHospitals.tsx',
+      'src/pages/home/page.tsx',
+      'src/pages/hospital-admin/analytics/page.tsx',
+      'src/pages/hospital-admin/dashboard/page.tsx',
+      'src/pages/hospital-admin/patients/components/PatientsTable.tsx',
+      'src/pages/hospital-admin/patients/page.tsx',
+      'src/pages/hospital-admin/patients/usePatientsPageState.ts',
+      'src/pages/hospital-admin/questions/page.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/mocks', '@/mocks/*'],
+              message:
+                "Page layerda '@/mocks/*' import qilish taqiqlangan. API adapter/type qatlamidan foydalaning.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ['src/**/*.{ts,tsx}'],
     languageOptions: {

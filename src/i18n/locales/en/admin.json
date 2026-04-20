@@ -1,0 +1,109 @@
+{
+  "users": {
+    "form": {
+      "fullNameLabel": "Full Name *",
+      "fullNamePlaceholder": "First Last",
+      "phoneLabel": "Phone *",
+      "phonePlaceholder": "+998 XX XXX XX XX",
+      "emailLabel": "Email",
+      "emailPlaceholder": "email@example.com",
+      "roleLabel": "Role *",
+      "hospitalLabel": "Hospital *",
+      "passwordLabel": "Password *",
+      "passwordPlaceholder": "At least 6 characters",
+      "roleOptions": {
+        "hospitalAdmin": "Hospital Admin",
+        "doctor": "Doctor",
+        "reception": "Reception"
+      }
+    },
+    "actions": {
+      "toggleStatusTitle": "Change status",
+      "editTitle": "Edit",
+      "deleteTitle": "Delete"
+    }
+  },
+  "settings": {
+    "profile": {
+      "title": "Profile Information",
+      "changePhoto": "Change photo",
+      "saveButton": "Save",
+      "toastUpdated": "Profile updated successfully!",
+      "fields": {
+        "fullName": "Full Name",
+        "email": "Email",
+        "phone": "Phone",
+        "role": "Role"
+      }
+    },
+    "security": {
+      "title": "Security",
+      "changePasswordButton": "Change Password",
+      "toastPasswordUpdated": "Password changed successfully!",
+      "activeSessionsTitle": "Active Sessions",
+      "currentSessionChip": "Current",
+      "signOutButton": "Sign out",
+      "fields": {
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm Password"
+      },
+      "placeholders": {
+        "maskedPassword": "••••••••",
+        "newPassword": "At least 8 characters",
+        "confirmPassword": "Re-enter password"
+      },
+      "sessions": {
+        "chromeWindows": "Chrome — Windows 11",
+        "safariIphone": "Safari — iPhone 15",
+        "nowActive": "Active now",
+        "twoHoursAgo": "2 hours ago"
+      }
+    },
+    "language": {
+      "selected": "Selected",
+      "options": {
+        "uz": "Uzbek",
+        "ru": "Russian"
+      }
+    },
+    "appearance": {
+      "title": "Appearance",
+      "activeChip": "Active",
+      "toastEnabled": "{{mode}} enabled!",
+      "options": {
+        "light": {
+          "label": "Light Mode",
+          "description": "Light background"
+        },
+        "dark": {
+          "label": "Dark Mode",
+          "description": "Dark background"
+        }
+      }
+    },
+    "notifications": {
+      "title": "Notification Settings",
+      "saveButton": "Save",
+      "toastSaved": "Notification settings saved!",
+      "channels": {
+        "email": {
+          "label": "Email Notifications",
+          "description": "Important updates will be sent by email"
+        },
+        "system": {
+          "label": "System Alerts",
+          "description": "Errors and important system messages"
+        },
+        "reports": {
+          "label": "Reports",
+          "description": "Weekly and monthly reports"
+        },
+        "security": {
+          "label": "Security Alerts",
+          "description": "Unknown login attempts"
+        }
+      }
+    }
+  }
+}

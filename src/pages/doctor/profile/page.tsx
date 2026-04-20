@@ -1,21 +1,26 @@
+import { useTranslation } from "react-i18next";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import QrCodeImage from "@/components/QrCodeImage";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
+import { copyTextWithFallback } from "@/utils/clipboard";
 
 export default function DocProfilePage() {
+  const { t } = useTranslation("doctor");
   return (
-    <DocLayout title="Profil">
+    <DocLayout title={t("profile.title")}>
       <DocProfileContent />
     </DocLayout>
   );
 }
 
-function DocProfileContent() {
+export function DocProfileContent() {
+  const { t } = useTranslation("doctor");
   const { darkMode } = useDoctorTheme();
   const navigate = useNavigate();
   const [qrCopied, setQrCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
@@ -62,16 +67,22 @@ function DocProfileContent() {
 
   const handleCopyLink = () => {
     if (!checkinFullUrl) return;
-    navigator.clipboard.writeText(checkinFullUrl);
-    setQrCopied(true);
-    setTimeout(() => setQrCopied(false), 2000);
+    void (async () => {
+      const copied = await copyTextWithFallback(checkinFullUrl);
+      setQrCopied(copied);
+      setCopyError(!copied);
+      setTimeout(() => {
+        setQrCopied(false);
+        setCopyError(false);
+      }, 2000);
+    })();
   };
 
   return (
     <div className="w-full min-w-0 space-y-5">
       <button onClick={() => navigate(-1)} className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${backBtn}`}>
         <i className="ri-arrow-left-line"></i>
-        Orqaga
+        {t("common:buttons.back")}
       </button>
 
       <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-3">
@@ -142,8 +153,8 @@ function DocProfileContent() {
 
         <div className="min-w-0 space-y-4">
           <div className={`rounded-xl p-5 ${cardBase}`}>
-            <h3 className={`text-base font-semibold mb-1 ${pageTitle}`}>QR Kod</h3>
-            <p className={`text-xs mb-4 ${pageMuted}`}>Bemorlar bu QR orqali navbatga yoziladi</p>
+            <h3 className={`text-base font-semibold mb-1 ${pageTitle}`}>{t("profile.qrTitle")}</h3>
+            <p className={`text-xs mb-4 ${pageMuted}`}>{t("profile.qrSubtitle")}</p>
 
             <div className="mb-4 flex justify-center">
               <div className={qrFrame}>
@@ -154,27 +165,37 @@ function DocProfileContent() {
             <p className={`mb-4 break-all text-center text-xs ${pageMuted}`}>{checkinFullUrl || "…"}</p>
 
             <div className="space-y-2">
+              {copyError && (
+                <div className="fixed top-20 right-6 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg bg-red-500 text-white">
+                  Nusxalab bo'lmadi
+                </div>
+              )}
+              {qrCopied && (
+                <div className="fixed top-20 right-6 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg bg-emerald-500 text-white">
+                  Nusxalandi
+                </div>
+              )}
               <button
                 onClick={handleCopyLink}
                 className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
-                  qrCopied ? "border-green-300 bg-green-50 text-green-700" : copyIdle
+                  qrCopied ? "border-green-300 bg-green-50 text-green-700" : copyError ? "border-red-300 bg-red-50 text-red-700" : copyIdle
                 }`}
               >
-                <i className={`${qrCopied ? "ri-checkbox-circle-line" : "ri-link"} text-sm`}></i>
-                {qrCopied ? "Nusxalandi!" : "Havolani nusxalash"}
+                <i className={`${qrCopied ? "ri-checkbox-circle-line" : copyError ? "ri-close-circle-line" : "ri-link"} text-sm`}></i>
+                {qrCopied ? t("profile.copied") : copyError ? "Nusxalab bo'lmadi" : t("profile.copyLink")}
               </button>
               <button
                 onClick={() => navigate(doctor.checkinUrl)}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors whitespace-nowrap"
               >
                 <i className="ri-external-link-line text-sm"></i>
-                Check-in sahifasini ko'rish
+                {t("profile.openCheckin")}
               </button>
             </div>
           </div>
 
           <div className={`rounded-xl p-4 ${cardBase}`}>
-            <h4 className={`text-sm font-semibold mb-3 ${sectionTitle}`}>Tezkor havolalar</h4>
+            <h4 className={`text-sm font-semibold mb-3 ${sectionTitle}`}>{t("profile.quickLinks")}</h4>
             <div className="space-y-2">
               {[
                 { label: "Bugungi bemorlar", path: "/doctor/patients", icon: "ri-user-add-line" },

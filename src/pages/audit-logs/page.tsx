@@ -1,24 +1,26 @@
-import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutDarkMode } from "@/context/LayoutThemeContext";
-import { mockAuditLogs, AuditLog } from "@/mocks/audit_logs";
 import AuditFilters from "./components/AuditFilters";
 import AuditTable from "./components/AuditTable";
 import AuditCard from "./components/AuditCard";
 import AuditDetailModal from "./components/AuditDetailModal";
+import { getAuditLogs } from "@/api/audit";
+import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
+import {
+  formatLocalDateForFileName,
+  getTimestampMs,
+  resolveDateFilterRange,
+} from "./utils/date";
+import { usePageState } from "@/hooks/usePageState";
 
 const PAGE_SIZE = 12;
 
-const SUMMARY_STATS = [
-  { label: "Jami loglar", value: "1,248", icon: "ri-file-list-3-line", color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  { label: "Bugungi amallar", value: "87", icon: "ri-calendar-check-line", color: "text-teal-500", bg: "bg-teal-500/10" },
-  { label: "Muvaffaqiyatsiz", value: "12", icon: "ri-close-circle-line", color: "text-red-500", bg: "bg-red-500/10" },
-  { label: "Ogohlantirishlar", value: "5", icon: "ri-alert-line", color: "text-amber-500", bg: "bg-amber-500/10" },
-];
-
 type ViewMode = "table" | "card";
 
-function AuditLogsPageContent() {
+export function AuditLogsPageContent() {
+  const { t } = useTranslation("admin");
   const darkMode = useMainLayoutDarkMode();
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
@@ -31,20 +33,41 @@ function AuditLogsPageContent() {
   const [dateTo, setDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [baseLogs, setBaseLogs] = useState<AuditLog[]>([]);
+  const fetchAuditLogs = useCallback(async () => getAuditLogs(), []);
+  const pageState = usePageState(fetchAuditLogs);
 
-  const allLogs = useMemo(() => {
-    const stored = JSON.parse(localStorage.getItem("medcore_audit_logs") || "[]") as AuditLog[];
-    const combined = [...stored, ...mockAuditLogs];
+  useEffect(() => {
+    if (!pageState.data) return;
+    setBaseLogs(pageState.data);
+  }, [pageState.data]);
+
+  const authoritativeLogs = useMemo(() => {
     const seen = new Set<string>();
-    return combined.filter((l) => {
+    return baseLogs.filter((l) => {
       if (seen.has(l.id)) return false;
       seen.add(l.id);
       return true;
-    }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, []);
+    }).sort((a, b) => {
+      const aMs = getTimestampMs(a.timestamp);
+      const bMs = getTimestampMs(b.timestamp);
+      if (aMs == null && bMs == null) return 0;
+      if (aMs == null) return 1;
+      if (bMs == null) return -1;
+      return bMs - aMs;
+    });
+  }, [baseLogs]);
+
+  const dateRange = useMemo(
+    () => resolveDateFilterRange(dateFrom, dateTo),
+    [dateFrom, dateTo],
+  );
 
   const filtered = useMemo(() => {
-    return allLogs.filter((log) => {
+    return authoritativeLogs.filter((log) => {
+      const logMs = getTimestampMs(log.timestamp);
+      if (logMs == null) return false;
+
       if (search) {
         const q = search.toLowerCase();
         if (
@@ -58,17 +81,36 @@ function AuditLogsPageContent() {
       if (actionFilter && log.action !== actionFilter) return false;
       if (resourceFilter && log.resource !== resourceFilter) return false;
       if (statusFilter && log.status !== statusFilter) return false;
-      if (dateFrom) {
-        const logDate = new Date(log.timestamp).toISOString().split("T")[0];
-        if (logDate < dateFrom) return false;
-      }
-      if (dateTo) {
-        const logDate = new Date(log.timestamp).toISOString().split("T")[0];
-        if (logDate > dateTo) return false;
-      }
+      if (dateRange.fromMs != null && logMs < dateRange.fromMs) return false;
+      if (dateRange.toMs != null && logMs > dateRange.toMs) return false;
       return true;
     });
-  }, [allLogs, search, roleFilter, actionFilter, resourceFilter, statusFilter, dateFrom, dateTo]);
+  }, [authoritativeLogs, search, roleFilter, actionFilter, resourceFilter, statusFilter, dateRange]);
+
+  const summaryStats = useMemo(() => {
+    const today = new Date();
+    const todayY = today.getFullYear();
+    const todayM = today.getMonth();
+    const todayD = today.getDate();
+
+    const todayCount = filtered.reduce((count, log) => {
+      const ms = getTimestampMs(log.timestamp);
+      if (ms == null) return count;
+      const dt = new Date(ms);
+      const isToday = dt.getFullYear() === todayY && dt.getMonth() === todayM && dt.getDate() === todayD;
+      return isToday ? count + 1 : count;
+    }, 0);
+
+    const failedCount = filtered.reduce((count, log) => (log.status === "failed" ? count + 1 : count), 0);
+    const warningCount = filtered.reduce((count, log) => (log.status === "warning" ? count + 1 : count), 0);
+
+    return [
+      { label: "Jami loglar", value: String(filtered.length), icon: "ri-file-list-3-line", color: "text-emerald-500", bg: "bg-emerald-500/10" },
+      { label: "Bugungi amallar", value: String(todayCount), icon: "ri-calendar-check-line", color: "text-teal-500", bg: "bg-teal-500/10" },
+      { label: "Muvaffaqiyatsiz", value: String(failedCount), icon: "ri-close-circle-line", color: "text-red-500", bg: "bg-red-500/10" },
+      { label: "Ogohlantirishlar", value: String(warningCount), icon: "ri-alert-line", color: "text-amber-500", bg: "bg-amber-500/10" },
+    ];
+  }, [filtered]);
 
   const pageSize = viewMode === "card" ? 12 : PAGE_SIZE;
   const totalPages = Math.ceil(filtered.length / pageSize);
@@ -87,7 +129,7 @@ function AuditLogsPageContent() {
 
   const handleExport = () => {
     const csv = [
-      ["Vaqt", "Foydalanuvchi", "Rol", "Amal", "Resurs", "Tavsif", "IP", "Status"].join(","),
+      [t("audit.csv.time"), t("audit.csv.user"), t("audit.csv.role"), t("audit.csv.action"), t("audit.csv.resource"), t("audit.csv.description"), "IP", t("audit.csv.status")].join(","),
       ...filtered.map((l) =>
         [
           new Date(l.timestamp).toLocaleString(),
@@ -106,7 +148,7 @@ function AuditLogsPageContent() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `audit-logs-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `audit-logs-${formatLocalDateForFileName()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -114,12 +156,46 @@ function AuditLogsPageContent() {
   return (
     <>
     <div className="space-y-4">
+        {pageState.status === "loading" ? (
+          <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+            <i className="ri-loader-4-line animate-spin text-2xl text-emerald-500" />
+            <p className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Audit loglar yuklanmoqda...</p>
+          </div>
+        ) : null}
+        {pageState.status === "error" ? (
+          <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+            <i className="ri-error-warning-line text-2xl text-red-500" />
+            <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{pageState.error}</p>
+            <button
+              type="button"
+              onClick={pageState.reload}
+              className="mt-4 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium"
+            >
+              Qayta yuklash
+            </button>
+          </div>
+        ) : null}
+        {pageState.status === "success" && authoritativeLogs.length === 0 ? (
+          <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+            <i className={`ri-file-search-line text-3xl ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
+            <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{t("audit.empty")}</p>
+            <button
+              type="button"
+              onClick={pageState.reload}
+              className="mt-4 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium"
+            >
+              Qayta tekshirish
+            </button>
+          </div>
+        ) : null}
+        {pageState.status !== "success" || authoritativeLogs.length === 0 ? null : (
+        <>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Audit Logs</h1>
+            <h1 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{t("audit.title")}</h1>
             <p className={`text-sm mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-              Tizimda amalga oshirilgan barcha amallar tarixi
+              {t("audit.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -136,7 +212,7 @@ function AuditLogsPageContent() {
                 <div className="w-4 h-4 flex items-center justify-center">
                   <i className="ri-table-line text-sm"></i>
                 </div>
-                <span>Jadval</span>
+                <span>{t("audit.tableView")}</span>
               </button>
               <button
                 onClick={() => { setViewMode("card"); setPage(1); }}
@@ -149,7 +225,7 @@ function AuditLogsPageContent() {
                 <div className="w-4 h-4 flex items-center justify-center">
                   <i className="ri-layout-grid-line text-sm"></i>
                 </div>
-                <span>Kartalar</span>
+                <span>{t("audit.cardsView")}</span>
               </button>
             </div>
 
@@ -158,14 +234,17 @@ function AuditLogsPageContent() {
               className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer whitespace-nowrap"
             >
               <i className="ri-download-2-line text-sm"></i>
-              <span>CSV Eksport</span>
+              <span>{t("audit.exportCsv")}</span>
             </button>
           </div>
+        </div>
+        <div className={`rounded-xl border px-4 py-3 text-xs ${darkMode ? "bg-[#1A2235] border-[#2A3448] text-gray-300" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
+          Ushbu bo'lim faqat authoritative audit manbasini ko'rsatadi. Client/local demo faoliyatlar bu ro'yxatga qo'shilmaydi.
         </div>
 
         {/* Summary Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {SUMMARY_STATS.map((stat) => (
+          {summaryStats.map((stat) => (
             <div key={stat.label} className={`rounded-xl p-4 flex items-center gap-3 ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
               <div className={`w-10 h-10 flex items-center justify-center rounded-xl flex-shrink-0 ${stat.bg}`}>
                 <i className={`${stat.icon} text-lg ${stat.color}`}></i>
@@ -194,7 +273,7 @@ function AuditLogsPageContent() {
         {/* Results count */}
         <div className="flex items-center justify-between">
           <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-            Jami <span className={`font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{filtered.length}</span> ta log topildi
+            {t("audit.totalFound")} <span className={`font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{filtered.length}</span>
           </p>
           <div className="flex items-center gap-2">
             <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
@@ -213,7 +292,7 @@ function AuditLogsPageContent() {
                 <div className="w-12 h-12 flex items-center justify-center mx-auto mb-3">
                   <i className="ri-file-search-line text-3xl text-gray-400"></i>
                 </div>
-                <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Hech qanday log topilmadi</p>
+                <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{t("audit.empty")}</p>
               </div>
             ) : (
               paginated.map((log) => (
@@ -275,6 +354,8 @@ function AuditLogsPageContent() {
             </button>
           </div>
         )}
+        </>
+        )}
       </div>
 
       {/* Detail Modal (quick view) */}
@@ -284,8 +365,9 @@ function AuditLogsPageContent() {
 }
 
 export default function AuditLogsPage() {
+  const { t } = useTranslation("admin");
   return (
-    <MainLayout title="Audit Logs">
+    <MainLayout title={t("titles.auditLogs")}>
       <AuditLogsPageContent />
     </MainLayout>
   );

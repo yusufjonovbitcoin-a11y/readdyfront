@@ -1,38 +1,191 @@
-import { useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { haDoctors } from '@/mocks/ha_doctors';
-import i18n from '@/i18n';
 import PhoneStep from './components/PhoneStep';
 import LanguageStep from './components/LanguageStep';
 import type { CheckinLang } from './components/LanguageStep';
 import QuestionsFlow from './components/QuestionsFlow';
 import AIAssistStep from './components/AIAssistStep';
 import ResultStep from './components/ResultStep';
+import { clearCheckinDraft, submitCheckin } from "@/api/checkin";
+import { getDoctors } from "@/api/doctor";
+import type { DoctorDto } from "@/api/types/doctor.types";
 
 type FlowStep = 'phone' | 'language' | 'questions' | 'ai' | 'result';
+type SubmissionState = "idle" | "submitting" | "success" | "error";
+
+function LoadingState() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
+      <div className="text-center max-w-xs">
+        <div className="w-16 h-16 flex items-center justify-center rounded-full bg-teal-50 mx-auto mb-4">
+          <i className="ri-loader-4-line text-teal-500 text-2xl animate-spin"></i>
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 mb-2">Yuklanmoqda...</h2>
+      </div>
+    </div>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
+      <div className="text-center max-w-xs">
+        <div className="w-16 h-16 flex items-center justify-center rounded-full bg-red-50 mx-auto mb-4">
+          <i className="ri-error-warning-line text-red-500 text-2xl"></i>
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 mb-2">Yuklashda xatolik</h2>
+        <p className="text-sm text-gray-500 mb-4">Iltimos, qayta urinib ko'ring.</p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium cursor-pointer transition-colors"
+        >
+          Qayta urinish
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NotFoundState({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
+      <div className="text-center max-w-xs">
+        <div className="w-16 h-16 flex items-center justify-center rounded-full bg-red-50 mx-auto mb-4">
+          <i className="ri-error-warning-line text-red-500 text-2xl"></i>
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 mb-2">{title}</h2>
+        <p className="text-sm text-gray-500">{description}</p>
+      </div>
+    </div>
+  );
+}
+
+function SubmittingState() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
+      <div className="text-center max-w-xs">
+        <div className="w-16 h-16 flex items-center justify-center rounded-full bg-teal-50 mx-auto mb-4">
+          <i className="ri-loader-4-line text-teal-500 text-2xl animate-spin" />
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 mb-2">So'rov yuborilmoqda...</h2>
+        <p className="text-sm text-gray-500">Iltimos, biroz kuting.</p>
+      </div>
+    </div>
+  );
+}
+
+function SubmitErrorState({ onRetry, onBack }: { onRetry: () => void; onBack: () => void }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
+      <div className="text-center max-w-xs">
+        <div className="w-16 h-16 flex items-center justify-center rounded-full bg-red-50 mx-auto mb-4">
+          <i className="ri-error-warning-line text-red-500 text-2xl" />
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 mb-2">So'rov yuborilmadi</h2>
+        <p className="text-sm text-gray-500 mb-5">Ulanishda xatolik yuz berdi. Ma'lumotlaringiz saqlab qolindi.</p>
+        <div className="flex gap-2 justify-center">
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-4 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium cursor-pointer transition-colors"
+          >
+            Ortga
+          </button>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium cursor-pointer transition-colors"
+          >
+            Qayta urinish
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function CheckInPage() {
+  const { t } = useTranslation("checkin");
   const [searchParams] = useSearchParams();
-  const doctorId = searchParams.get('doctor_id') || 'doc-001';
-  const doctor = haDoctors.find(d => d.id === doctorId);
+  const doctorId = searchParams.get('doctor_id')?.trim() ?? '';
+  const hasValidDoctorParam = doctorId.length > 0;
+  const [doctors, setDoctors] = useState<DoctorDto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const doctor = doctors.find(d => d.id === doctorId);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        setIsLoading(true);
+        setLoadError(null);
+        const data = await getDoctors();
+        if (!active) return;
+        setDoctors(data);
+      } catch (error) {
+        if (!active) return;
+        setLoadError(error instanceof Error ? error.message : "Unknown load error");
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [loadAttempt]);
 
   const [step, setStep] = useState<FlowStep>('language');
   const [phone, setPhone] = useState('');
   const [resumeDraft, setResumeDraft] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [usedAI, setUsedAI] = useState(false);
+  const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
 
-  if (!doctor) {
+  const submitFlow = async () => {
+    setSubmissionState("submitting");
+    try {
+      await submitCheckin({ phone, doctorId, answers });
+      try {
+        await clearCheckinDraft(phone);
+      } catch {
+        // Submission already succeeded; do not downgrade UX to error.
+      }
+      setSubmissionState("success");
+      setStep('result');
+    } catch {
+      setSubmissionState("error");
+    }
+  };
+
+  if (isLoading) return <LoadingState />;
+  if (loadError) return <ErrorState onRetry={() => setLoadAttempt((prev) => prev + 1)} />;
+  if (!hasValidDoctorParam) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
-        <div className="text-center max-w-xs">
-          <div className="w-16 h-16 flex items-center justify-center rounded-full bg-red-50 mx-auto mb-4">
-            <i className="ri-error-warning-line text-red-500 text-2xl"></i>
-          </div>
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Shifokor topilmadi</h2>
-          <p className="text-sm text-gray-500">Noto'g'ri QR kod yoki shifokor mavjud emas. Iltimos, to'g'ri QR kodni skanerlang.</p>
-        </div>
-      </div>
+      <NotFoundState
+        title={t("notFound.title")}
+        description={t("notFound.invalidDoctorParam", { defaultValue: "Noto'g'ri yoki yetishmayotgan shifokor identifikatori." })}
+      />
+    );
+  }
+  if (!doctor) return <NotFoundState title={t("notFound.title")} description={t("notFound.desc")} />;
+  if (submissionState === "submitting") return <SubmittingState />;
+  if (submissionState === "error") {
+    return (
+      <SubmitErrorState
+        onRetry={() => {
+          void submitFlow();
+        }}
+        onBack={() => {
+          setSubmissionState("idle");
+          setStep("ai");
+        }}
+      />
     );
   }
 
@@ -53,16 +206,16 @@ export default function CheckInPage() {
 
   const handleAIFinish = (ai: boolean) => {
     setUsedAI(ai);
-    setStep('result');
+    void submitFlow();
   };
 
   const handleRestart = () => {
-    void i18n.changeLanguage('uz');
     setStep('language');
     setPhone('');
     setResumeDraft(false);
     setAnswers({});
     setUsedAI(false);
+    setSubmissionState("idle");
   };
 
   return (
@@ -98,7 +251,7 @@ export default function CheckInPage() {
           onFinish={handleAIFinish}
         />
       )}
-      {step === 'result' && (
+      {step === 'result' && submissionState === "success" && (
         <ResultStep
           phone={phone}
           doctorName={doctor.name}

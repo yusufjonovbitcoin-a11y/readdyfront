@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { AuditLog } from "@/mocks/audit_logs";
+import { Link } from "react-router-dom";
+import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
 
 interface AuditCardProps {
   log: AuditLog;
@@ -46,9 +46,13 @@ function formatTime(ts: string) {
 }
 
 export default function AuditCard({ log, darkMode }: AuditCardProps) {
-  const navigate = useNavigate();
   const actionCfg = ACTION_COLORS[log.action] || { bg: "bg-gray-500/15", text: "text-gray-400", icon: "ri-question-line" };
-  const statusCfg = STATUS_CONFIG[log.status];
+  const statusCfg = STATUS_CONFIG[log.status] || {
+    icon: "ri-alert-fill",
+    cls: darkMode ? "text-amber-400" : "text-amber-600",
+    label: "Unknown",
+    bg: darkMode ? "bg-amber-500/10" : "bg-amber-100",
+  };
   const { date, time } = formatTime(log.timestamp);
 
   const avatarColor =
@@ -57,13 +61,18 @@ export default function AuditCard({ log, darkMode }: AuditCardProps) {
 
   const initials = log.userName.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase();
 
+  const roleLabel = ROLE_LABELS[log.role] ?? "Unknown";
+  const roleColor = ROLE_COLORS[log.role] ?? (darkMode ? "text-amber-400" : "text-amber-600");
+
   return (
-    <div
-      onClick={() => navigate(`/audit-logs/${log.id}`)}
+    <Link
+      to={`/audit-logs/${log.id}`}
       className={`rounded-xl p-4 cursor-pointer transition-all hover:scale-[1.01] border ${
         darkMode
           ? "bg-[#1A2235] border-[#2A3448] hover:border-emerald-500/40"
           : "bg-white border-gray-100 hover:border-emerald-300"
+      } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+        darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
       }`}
     >
       {/* Top row */}
@@ -75,7 +84,7 @@ export default function AuditCard({ log, darkMode }: AuditCardProps) {
           </div>
           <div>
             <p className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{log.userName}</p>
-            <p className={`text-xs font-medium ${ROLE_COLORS[log.role]}`}>{ROLE_LABELS[log.role]}</p>
+            <p className={`text-xs font-medium ${roleColor}`}>{roleLabel}</p>
           </div>
         </div>
 
@@ -134,6 +143,6 @@ export default function AuditCard({ log, darkMode }: AuditCardProps) {
           <p className={`text-xs ${darkMode ? "text-gray-600" : "text-gray-400"}`}>{date}</p>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

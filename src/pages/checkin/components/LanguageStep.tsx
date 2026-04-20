@@ -1,4 +1,6 @@
 import i18n from "@/i18n";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export type CheckinLang = "uz" | "ru";
 
@@ -9,32 +11,28 @@ interface LanguageStepProps {
   doctorAvatar: string;
 }
 
-const OPTIONS: {
-  lang: CheckinLang;
-  label: string;
-  labelSecondary: string;
-  icon: string;
-}[] = [
-  {
-    lang: "uz",
-    label: "O'zbek tili",
-    labelSecondary: "Uzbek",
-    icon: "ri-book-2-line",
-  },
-  {
-    lang: "ru",
-    label: "Русский язык",
-    labelSecondary: "Russian",
-    icon: "ri-book-read-line",
-  },
-];
-
 export default function LanguageStep({
   onContinue,
   doctorName,
   doctorSpecialty,
   doctorAvatar,
 }: LanguageStepProps) {
+  const { t } = useTranslation(["checkin", "common"]);
+  const options = [
+    {
+      lang: "uz" as const,
+      label: t("common:language.uz"),
+      labelSecondary: t("checkin:languageStep.uzSecondary"),
+      icon: "ri-book-2-line",
+    },
+    {
+      lang: "ru" as const,
+      label: t("common:language.ru"),
+      labelSecondary: t("checkin:languageStep.ruSecondary"),
+      icon: "ri-book-read-line",
+    },
+  ];
+
   const handlePick = async (lang: CheckinLang) => {
     await i18n.changeLanguage(lang);
     onContinue(lang);
@@ -43,12 +41,15 @@ export default function LanguageStep({
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-4">
       <div className="w-full max-w-sm">
+        <div className="mb-4 flex justify-end">
+          <LanguageSwitcher />
+        </div>
         <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-200">
             <i className="ri-translate-2 text-white text-2xl" aria-hidden />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Tilni tanlang</h1>
-          <p className="text-sm text-gray-500 mt-1">Выберите язык / Choose language</p>
+          <h1 className="text-xl font-bold text-gray-900">{t("checkin:languageStep.title")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t("checkin:languageStep.subtitle")}</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4 flex items-center gap-4 shadow-sm">
@@ -62,7 +63,7 @@ export default function LanguageStep({
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-3">
-          {OPTIONS.map((opt) => (
+          {options.map((opt) => (
             <button
               key={opt.lang}
               type="button"
@@ -82,7 +83,7 @@ export default function LanguageStep({
         </div>
 
         <p className="text-xs text-gray-400 text-center mt-5">
-          Keyingi bosqichda telefon raqamingiz so&apos;raladi, so&apos;ngra savollar
+          {t("checkin:languageStep.hint")}
         </p>
       </div>
     </div>

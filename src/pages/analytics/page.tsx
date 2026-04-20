@@ -1,9 +1,19 @@
-import { useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useEffect, useId, useRef, useState } from "react";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutDarkMode } from "@/context/LayoutThemeContext";
-import { mockDailyData, mockWeeklyData, mockMonthlyData, mockDoctorPerformance, mockTopHospitals } from "@/mocks/analytics";
+import { getAnalyticsDashboard } from "@/api/analytics";
+import type { AnalyticsDashboardDto } from "@/api/types/analytics.types";
 
 type Period = "daily" | "weekly" | "monthly";
+
+const EMPTY_ANALYTICS: AnalyticsDashboardDto = {
+  daily: [],
+  weekly: [],
+  monthly: [],
+  doctorPerformance: [],
+  topHospitals: [],
+};
 
 function nearestIndex(vx: number, pts: { x: number }[]) {
   let best = 0;
@@ -26,15 +36,36 @@ function vxFromPointer(e: React.MouseEvent<SVGSVGElement> | React.PointerEvent<S
   return ratio * 100;
 }
 
-function AnalyticsPageContent() {
+export function AnalyticsPageContent() {
+  const { t } = useTranslation("admin");
   const dm = useMainLayoutDarkMode();
   const gradId = useId().replace(/:/g, "");
+  const hospitalFilterHelpId = useId().replace(/:/g, "") + "-hospital-filter-help";
   const [period, setPeriod] = useState<Period>("daily");
   const [hospitalFilter, setHospitalFilter] = useState("all");
+  const isHospitalFilterReady = false;
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const scrubbingRef = useRef(false);
+  const [analytics, setAnalytics] = useState<AnalyticsDashboardDto>(EMPTY_ANALYTICS);
 
-  const dataMap = { daily: mockDailyData, weekly: mockWeeklyData, monthly: mockMonthlyData };
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      try {
+        const data = await getAnalyticsDashboard();
+        if (!mounted) return;
+        setAnalytics(data);
+      } catch {
+        if (!mounted) return;
+        setAnalytics(EMPTY_ANALYTICS);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const dataMap = { daily: analytics.daily, weekly: analytics.weekly, monthly: analytics.monthly };
   const data = dataMap[period];
   const maxVal = Math.max(...data.map((d) => d.patients), 1);
   const chartW = 100;
@@ -61,7 +92,7 @@ function AnalyticsPageContent() {
   const totalPatients = data.reduce((s, d) => s + d.patients, 0);
   const totalAppointments = data.reduce((s, d) => s + d.appointments, 0);
   const totalCompleted = data.reduce((s, d) => s + d.completed, 0);
-  const completionRate = Math.round((totalCompleted / totalAppointments) * 100);
+  const completionRate = totalAppointments > 0 ? Math.round((totalCompleted / totalAppointments) * 100) : 0;
 
   return (
     <div className="space-y-5">
@@ -79,30 +110,43 @@ function AnalyticsPageContent() {
                 }}
                 className={`px-4 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-none whitespace-nowrap ${period === p ? "bg-emerald-500 text-white" : dm ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}
               >
-                {p === "daily" ? "Kunlik" : p === "weekly" ? "Haftalik" : "Oylik"}
+                {p === "daily" ? t("admin:analytics.period.daily") : p === "weekly" ? t("admin:analytics.period.weekly") : t("admin:analytics.period.monthly")}
               </button>
             ))}
           </div>
 
           <select
             value={hospitalFilter}
-            onChange={(e) => setHospitalFilter(e.target.value)}
+            onChange={(e) => {
+              if (!isHospitalFilterReady) return;
+              setHospitalFilter(e.target.value);
+            }}
+            disabled={!isHospitalFilterReady}
+            aria-describedby={!isHospitalFilterReady ? hospitalFilterHelpId : undefined}
             className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dm ? "bg-[#1A2235] text-white border border-[#1E2A3A]" : "bg-white text-gray-900 border border-gray-200"}`}
           >
-            <option value="all">Barcha kasalxonalar</option>
-            {mockTopHospitals.map((h, i) => (
+            <option value="all">{t("admin:analytics.allHospitals")}</option>
+            {analytics.topHospitals.map((h, i) => (
               <option key={i} value={h.name}>{h.name}</option>
             ))}
           </select>
         </div>
+        {!isHospitalFilterReady && (
+          <p
+            id={hospitalFilterHelpId}
+            className={`text-xs -mt-1 ${dm ? "text-amber-400" : "text-amber-700"}`}
+          >
+            Demo rejim: kasalxona filtri backend kesim ma'lumotlari ulangandan keyin faollashadi.
+          </p>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Jami Bemorlar", value: totalPatients.toLocaleString(), icon: "ri-user-heart-line", color: "text-emerald-400", bg: "bg-emerald-500/20" },
-            { label: "Uchrashuvlar", value: totalAppointments.toLocaleString(), icon: "ri-calendar-check-line", color: "text-blue-400", bg: "bg-blue-500/20" },
-            { label: "Yakunlangan", value: totalCompleted.toLocaleString(), icon: "ri-checkbox-circle-line", color: "text-violet-400", bg: "bg-violet-500/20" },
-            { label: "Yakunlash darajasi", value: `${completionRate}%`, icon: "ri-percent-line", color: "text-orange-400", bg: "bg-orange-500/20" },
+            { label: t("admin:analytics.summary.totalPatients"), value: totalPatients.toLocaleString(), icon: "ri-user-heart-line", color: "text-emerald-400", bg: "bg-emerald-500/20" },
+            { label: t("admin:analytics.summary.appointments"), value: totalAppointments.toLocaleString(), icon: "ri-calendar-check-line", color: "text-blue-400", bg: "bg-blue-500/20" },
+            { label: t("admin:analytics.summary.completed"), value: totalCompleted.toLocaleString(), icon: "ri-checkbox-circle-line", color: "text-violet-400", bg: "bg-violet-500/20" },
+            { label: t("admin:analytics.summary.completionRate"), value: `${completionRate}%`, icon: "ri-percent-line", color: "text-orange-400", bg: "bg-orange-500/20" },
           ].map((s, i) => (
             <div key={i} className={`rounded-xl p-4 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
               <div className={`w-9 h-9 flex items-center justify-center rounded-lg ${s.bg} mb-3`}>
@@ -117,15 +161,15 @@ function AnalyticsPageContent() {
         {/* Main Chart */}
         <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>Bemor Oqimi Dinamikasi</h3>
+            <h3 className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>{t("admin:analytics.flowDynamics")}</h3>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
-                <span className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>Bemorlar</span>
+                <span className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("admin:analytics.patients")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-blue-400"></div>
-                <span className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>Uchrashuvlar</span>
+                <span className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("admin:analytics.appointments")}</span>
               </div>
             </div>
           </div>
@@ -148,9 +192,9 @@ function AnalyticsPageContent() {
                 >
                   <p className={`text-sm font-semibold mb-1.5 ${dm ? "text-emerald-400" : "text-emerald-600"}`}>{tooltipRow.date}</p>
                   <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-sm leading-tight">
-                    <span className={dm ? "text-gray-500" : "text-gray-500"}>Bemorlar</span>
-                    <span className={dm ? "text-gray-500" : "text-gray-500"}>Uchrashuv</span>
-                    <span className={dm ? "text-gray-500" : "text-gray-500"}>Yakun</span>
+                    <span className={dm ? "text-gray-500" : "text-gray-500"}>{t("admin:analytics.patients")}</span>
+                    <span className={dm ? "text-gray-500" : "text-gray-500"}>{t("admin:analytics.appointmentShort")}</span>
+                    <span className={dm ? "text-gray-500" : "text-gray-500"}>{t("admin:analytics.completeShort")}</span>
                     <span className="font-bold tabular-nums text-emerald-400">{tooltipRow.patients}</span>
                     <span className="font-bold tabular-nums text-blue-400">{tooltipRow.appointments}</span>
                     <span className="font-bold tabular-nums text-violet-400">{tooltipRow.completed}</span>
@@ -186,7 +230,7 @@ function AnalyticsPageContent() {
                 scrubbingRef.current = false;
               }}
               role="img"
-              aria-label="Bemor oqimi dinamikasi — grafik"
+              aria-label={t("admin:analytics.flowChartAria")}
             >
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -265,9 +309,9 @@ function AnalyticsPageContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Doctor Performance */}
           <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
-            <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>Shifokor Faoliyati</h3>
+            <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>{t("admin:analytics.doctorPerformance")}</h3>
             <div className="space-y-3">
-              {mockDoctorPerformance.map((d, i) => (
+              {analytics.doctorPerformance.map((d, i) => (
                 <div key={i} className={`flex items-center gap-3 p-3 rounded-lg ${dm ? "bg-[#0F1117]" : "bg-gray-50"}`}>
                   <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                     <span className="text-emerald-400 text-xs font-bold">{d.name.split(" ").slice(-1)[0][0]}</span>
@@ -275,7 +319,7 @@ function AnalyticsPageContent() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <p className={`text-sm font-medium truncate ${dm ? "text-white" : "text-gray-900"}`}>{d.name}</p>
-                      <span className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>{d.patients} bemor</span>
+                      <span className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>{d.patients} {t("admin:analytics.patientUnit")}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-xs ${dm ? "text-gray-500" : "text-gray-400"}`}>{d.specialty}</span>
@@ -294,9 +338,9 @@ function AnalyticsPageContent() {
 
           {/* Bar Chart - Hospitals */}
           <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
-            <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>Kasalxonalar Taqqoslama</h3>
+            <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>{t("admin:analytics.hospitalComparison")}</h3>
             <div className="space-y-4">
-              {mockTopHospitals.map((h, i) => (
+              {analytics.topHospitals.map((h, i) => (
                 <div key={i}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className={`text-xs font-medium ${dm ? "text-gray-300" : "text-gray-700"}`}>{h.name}</span>
@@ -317,7 +361,7 @@ function AnalyticsPageContent() {
 
             {/* Peak Hours */}
             <div className={`mt-5 pt-4 border-t ${dm ? "border-[#1E2130]" : "border-gray-100"}`}>
-              <p className={`text-xs font-semibold mb-3 ${dm ? "text-gray-400" : "text-gray-500"}`}>ENG YUQORI SOATLAR</p>
+              <p className={`text-xs font-semibold mb-3 ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("admin:analytics.peakHours")}</p>
               <div className="flex items-end gap-1 h-12">
                 {[20, 45, 80, 95, 100, 88, 72, 60, 55, 48, 35, 25].map((v, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
@@ -334,8 +378,9 @@ function AnalyticsPageContent() {
 }
 
 export default function AnalyticsPage() {
+  const { t } = useTranslation("admin");
   return (
-    <MainLayout title="Tahlil">
+    <MainLayout title={t("admin:titles.analytics")}>
       <AnalyticsPageContent />
     </MainLayout>
   );

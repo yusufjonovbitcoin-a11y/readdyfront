@@ -1,6 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { checkinQuestions, CheckinQuestion } from '@/mocks/checkin_questions';
-import BodyMap from './BodyMap';
+import { useTranslation } from "react-i18next";
+import { useState, useEffect, useCallback, useMemo, useReducer, useRef } from "react";
+import {
+  getCheckinDraft,
+  getCheckinQuestions,
+  saveCheckinDraft,
+} from "@/api/checkin";
+import type { CheckinQuestionDto as CheckinQuestion } from "@/api/types/checkin.types";
+import BodyMap from "./BodyMap";
 
 interface QuestionsFlowProps {
   phone: string;
@@ -9,12 +15,89 @@ interface QuestionsFlowProps {
   onComplete: (answers: Record<string, string | string[]>) => void;
 }
 
+type FlowState = {
+  answers: Record<string, string | string[]>;
+  currentQuestionId: string | null;
+  textInput: string;
+};
+
+type FlowAction =
+  | { type: "restore"; answers: Record<string, string | string[]>; currentQuestionId: string | null }
+  | { type: "set_question"; questionId: string | null }
+  | { type: "set_answer"; questionId: string; answer: string | string[] }
+  | { type: "set_text"; value: string }
+  | { type: "clear_text" };
+
+const initialFlowState: FlowState = {
+  answers: {},
+  currentQuestionId: null,
+  textInput: "",
+};
+
+function clampIndex(index: number, length: number) {
+  const maxIndex = Math.max(length - 1, 0);
+  return Math.min(Math.max(index, 0), maxIndex);
+}
+
+function flowReducer(state: FlowState, action: FlowAction): FlowState {
+  if (action.type === "restore") {
+    return {
+      answers: action.answers,
+      currentQuestionId: action.currentQuestionId,
+      textInput: "",
+    };
+  }
+
+  if (action.type === "set_question") {
+    if (state.currentQuestionId === action.questionId) return state;
+    return { ...state, currentQuestionId: action.questionId };
+  }
+
+  if (action.type === "set_answer") {
+    return {
+      ...state,
+      answers: { ...state.answers, [action.questionId]: action.answer },
+    };
+  }
+
+  if (action.type === "set_text") {
+    return { ...state, textInput: action.value };
+  }
+
+  return { ...state, textInput: "" };
+}
+
 export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete }: QuestionsFlowProps) {
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [textInput, setTextInput] = useState('');
+  const { t, i18n } = useTranslation("checkin");
+  const [checkinQuestions, setCheckinQuestions] = useState<CheckinQuestion[]>([]);
+  const [questionsLoadStatus, setQuestionsLoadStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [state, dispatch] = useReducer(flowReducer, initialFlowState);
+  const { answers, currentQuestionId, textInput } = state;
   const [animating, setAnimating] = useState(false);
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
+  const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoForwardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    void (async () => {
+      setQuestionsLoadStatus("loading");
+      try {
+        const questions = await getCheckinQuestions(t);
+        if (!mounted) return;
+        setCheckinQuestions(questions);
+        setQuestionsLoadStatus("ready");
+      } catch {
+        if (!mounted) return;
+        setCheckinQuestions([]);
+        setQuestionsLoadStatus("error");
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [t, i18n.language, loadAttempt]);
 
   const getVisibleQuestions = useCallback((ans: Record<string, string | string[]>): CheckinQuestion[] => {
     return checkinQuestions.filter(q => {
@@ -22,78 +105,139 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
       const depAnswer = ans[q.conditionalOn.questionId];
       return depAnswer === q.conditionalOn.answer;
     });
-  }, []);
+  }, [checkinQuestions]);
 
-  const visibleQuestions = getVisibleQuestions(answers);
-  const currentQuestion = visibleQuestions[currentIndex];
-  const progress = Math.round(((currentIndex) / visibleQuestions.length) * 100);
+  const visibleQuestions = useMemo(() => getVisibleQuestions(answers), [answers, getVisibleQuestions]);
+  const currentIndex = useMemo(() => {
+    if (visibleQuestions.length === 0) return 0;
+    if (!currentQuestionId) return 0;
+    const index = visibleQuestions.findIndex((q) => q.id === currentQuestionId);
+    return index === -1 ? 0 : index;
+  }, [currentQuestionId, visibleQuestions]);
+  const currentQuestion = visibleQuestions[currentIndex] ?? null;
+  // Keep denominator >= 1 to avoid NaN when dynamic filtering returns no visible questions.
+  const total = Math.max(visibleQuestions.length, 1);
+  const progress = Math.round((currentIndex / total) * 100);
 
   // Load draft on mount
   useEffect(() => {
     if (resumeDraft) {
-      try {
-        const key = `draft_${phone}`;
-        const saved = localStorage.getItem(key);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed.doctorId === doctorId) {
-            setAnswers(parsed.answers || {});
-            setCurrentIndex(parsed.currentStep || 0);
-          }
+      void (async () => {
+        try {
+          const parsed = await getCheckinDraft(phone);
+          if (!parsed || parsed.doctorId !== doctorId) return;
+          const restoredAnswers = parsed.answers || {};
+          const restoredVisible = getVisibleQuestions(restoredAnswers);
+          const persistedQuestionId =
+            typeof parsed.currentQuestionId === "string" ? parsed.currentQuestionId : null;
+          const hasPersistedQuestionId =
+            persistedQuestionId !== null && restoredVisible.some((q) => q.id === persistedQuestionId);
+          const rawStep = Number(parsed.currentStep);
+          const restoredStep = Number.isFinite(rawStep) ? rawStep : 0;
+          const restoredIndex = clampIndex(restoredStep, restoredVisible.length);
+          const fallbackQuestionId = restoredVisible[restoredIndex]?.id ?? restoredVisible[0]?.id ?? null;
+          dispatch({
+            type: "restore",
+            answers: restoredAnswers,
+            currentQuestionId: hasPersistedQuestionId ? persistedQuestionId : fallbackQuestionId,
+          });
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore
-      }
+      })();
     }
-  }, [resumeDraft, phone, doctorId]);
+  }, [resumeDraft, phone, doctorId, getVisibleQuestions]);
+
+  useEffect(() => {
+    if (visibleQuestions.length === 0) {
+      if (currentQuestionId !== null) {
+        dispatch({ type: "set_question", questionId: null });
+      }
+      return;
+    }
+
+    const stillVisible =
+      currentQuestionId !== null && visibleQuestions.some((question) => question.id === currentQuestionId);
+
+    if (!stillVisible) {
+      dispatch({ type: "set_question", questionId: visibleQuestions[0].id });
+    }
+  }, [visibleQuestions, currentQuestionId]);
 
   // Auto-save draft
   useEffect(() => {
     if (Object.keys(answers).length === 0 && currentIndex === 0) return;
-    const key = `draft_${phone}`;
     const draft = {
       phone,
       doctorId,
       answers,
+      currentQuestionId,
       currentStep: currentIndex,
       answersCount: Object.keys(answers).length,
       updatedAt: new Date().toISOString(),
     };
-    localStorage.setItem(key, JSON.stringify(draft));
-  }, [answers, currentIndex, phone, doctorId]);
+    void saveCheckinDraft(draft);
+  }, [answers, currentIndex, phone, doctorId, currentQuestionId]);
 
-  const navigate = (dir: 'forward' | 'back') => {
+  const navigate = useCallback((dir: 'forward' | 'back') => {
+    if (navigateTimerRef.current) {
+      clearTimeout(navigateTimerRef.current);
+    }
+
     setDirection(dir);
     setAnimating(true);
-    setTimeout(() => {
+    navigateTimerRef.current = setTimeout(() => {
+      navigateTimerRef.current = null;
+
       if (dir === 'forward') {
         if (currentIndex < visibleQuestions.length - 1) {
-          setCurrentIndex(prev => prev + 1);
+          dispatch({ type: "set_question", questionId: visibleQuestions[currentIndex + 1].id });
         } else {
-          // Clear draft on completion
-          localStorage.removeItem(`draft_${phone}`);
           onComplete(answers);
         }
       } else {
-        if (currentIndex > 0) setCurrentIndex(prev => prev - 1);
+        if (currentIndex > 0) {
+          dispatch({ type: "set_question", questionId: visibleQuestions[currentIndex - 1].id });
+        }
       }
-      setTextInput('');
+      dispatch({ type: "clear_text" });
       setAnimating(false);
     }, 200);
-  };
+  }, [answers, currentIndex, onComplete, visibleQuestions]);
+
+  useEffect(() => {
+    return () => {
+      if (navigateTimerRef.current) {
+        clearTimeout(navigateTimerRef.current);
+      }
+      if (autoForwardTimerRef.current) {
+        clearTimeout(autoForwardTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleAnswer = (answer: string | string[]) => {
-    const newAnswers = { ...answers, [currentQuestion.id]: answer };
-    setAnswers(newAnswers);
+    if (!currentQuestion) return;
+
+    dispatch({ type: "set_answer", questionId: currentQuestion.id, answer });
+
     if (currentQuestion.type !== 'text' && currentQuestion.type !== 'body_map') {
-      setTimeout(() => navigate('forward'), 300);
+      if (autoForwardTimerRef.current) {
+        clearTimeout(autoForwardTimerRef.current);
+      }
+      autoForwardTimerRef.current = setTimeout(() => {
+        autoForwardTimerRef.current = null;
+        navigate('forward');
+      }, 300);
     }
   };
 
   const handleTextSubmit = () => {
+    if (!currentQuestion) return;
+
     if (textInput.trim() || !currentQuestion.required) {
       if (textInput.trim()) {
-        setAnswers(prev => ({ ...prev, [currentQuestion.id]: textInput.trim() }));
+        dispatch({ type: "set_answer", questionId: currentQuestion.id, answer: textInput.trim() });
       }
       navigate('forward');
     }
@@ -103,7 +247,51 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
     navigate('forward');
   };
 
-  if (!currentQuestion) return null;
+  if (questionsLoadStatus === "loading") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4">
+        <div className="text-center">
+          <i className="ri-loader-4-line text-teal-500 text-2xl animate-spin" aria-hidden="true" />
+          <p className="mt-2 text-sm font-medium text-gray-600">Savollar yuklanmoqda...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (questionsLoadStatus === "error") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-xs">
+          <i className="ri-error-warning-line text-red-500 text-2xl" aria-hidden="true" />
+          <p className="mt-2 text-sm font-medium text-gray-700">Savollarni yuklashda xatolik yuz berdi.</p>
+          <p className="mt-1 text-xs text-gray-500">Iltimos, internet ulanishini tekshirib qayta urinib ko'ring.</p>
+          <button
+            type="button"
+            onClick={() => setLoadAttempt((prev) => prev + 1)}
+            className="mt-4 px-4 h-10 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold transition-colors cursor-pointer"
+          >
+            Qayta urinish
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (checkinQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4">
+        <p className="text-sm font-medium text-gray-600">Savollar hozircha mavjud emas</p>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4">
+        <p className="text-sm font-medium text-gray-600">No questions available</p>
+      </div>
+    );
+  }
 
   const currentAnswer = answers[currentQuestion.id];
 
@@ -155,7 +343,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
             </div>
             <h2 className="text-lg font-bold text-gray-900 leading-snug">{currentQuestion.text}</h2>
             {!currentQuestion.required && (
-              <p className="text-xs text-gray-400 mt-1">Ixtiyoriy savol</p>
+              <p className="text-xs text-gray-400 mt-1">{t("questions.optional")}</p>
             )}
           </div>
 
@@ -165,8 +353,8 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
             {currentQuestion.type === 'yes_no' && (
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { value: 'yes', label: 'Ha', icon: 'ri-check-line', color: 'teal' },
-                  { value: 'no', label: 'Yo\'q', icon: 'ri-close-line', color: 'gray' },
+                  { value: "yes", label: t("questions.yes"), icon: "ri-check-line", color: "teal" },
+                  { value: "no", label: t("questions.no"), icon: "ri-close-line", color: "gray" },
                 ].map(opt => (
                   <button
                     key={opt.value}
@@ -189,18 +377,18 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
             {/* SELECT */}
             {currentQuestion.type === 'select' && currentQuestion.options && (
               <div className="space-y-2">
-                {currentQuestion.options.map(opt => (
+                {currentQuestion.options.map((opt) => (
                   <button
-                    key={opt}
-                    onClick={() => handleAnswer(opt)}
+                    key={opt.value}
+                    onClick={() => handleAnswer(opt.value)}
                     className={`w-full px-4 py-3.5 rounded-xl border-2 text-left text-sm font-medium transition-all cursor-pointer flex items-center justify-between ${
-                      currentAnswer === opt
+                      currentAnswer === opt.value
                         ? 'border-teal-500 bg-teal-50 text-teal-700'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
-                    <span>{opt}</span>
-                    {currentAnswer === opt && (
+                    <span>{opt.label}</span>
+                    {currentAnswer === opt.value && (
                       <div className="w-5 h-5 flex items-center justify-center rounded-full bg-teal-500">
                         <i className="ri-check-line text-white text-xs"></i>
                       </div>
@@ -216,9 +404,9 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
                 <textarea
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-teal-500 text-sm outline-none transition-colors resize-none bg-white"
                   rows={4}
-                  placeholder="Javobingizni yozing..."
+                  placeholder={t("questions.answerPlaceholder")}
                   value={textInput}
-                  onChange={e => setTextInput(e.target.value)}
+                  onChange={e => dispatch({ type: "set_text", value: e.target.value })}
                   maxLength={500}
                 />
                 <div className="flex justify-between items-center">
@@ -229,14 +417,14 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
                         onClick={handleSkip}
                         className="px-4 h-10 rounded-xl border border-gray-200 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer whitespace-nowrap"
                       >
-                        O'tkazib yuborish
+                        {t("questions.skip")}
                       </button>
                     )}
                     <button
                       onClick={handleTextSubmit}
                       className="px-5 h-10 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap"
                     >
-                      Davom etish
+                      {t("questions.continue")}
                     </button>
                   </div>
                 </div>
@@ -248,7 +436,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
               <div className="space-y-4">
                 <BodyMap
                   selected={Array.isArray(currentAnswer) ? currentAnswer as string[] : []}
-                  onChange={parts => setAnswers(prev => ({ ...prev, [currentQuestion.id]: parts }))}
+                  onChange={parts => dispatch({ type: "set_answer", questionId: currentQuestion.id, answer: parts })}
                 />
                 <div className="flex gap-2">
                   {!currentQuestion.required && (
@@ -256,14 +444,14 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
                       onClick={handleSkip}
                       className="flex-1 h-11 rounded-xl border border-gray-200 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer whitespace-nowrap"
                     >
-                      O'tkazib yuborish
+                      {t("questions.skip")}
                     </button>
                   )}
                   <button
                     onClick={() => navigate('forward')}
                     className="flex-1 h-11 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap"
                   >
-                    Davom etish
+                    {t("questions.continue")}
                   </button>
                 </div>
               </div>
@@ -277,7 +465,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
         <div className="max-w-sm mx-auto">
           <p className="text-xs text-gray-400 text-center flex items-center justify-center gap-1">
             <i className="ri-save-line text-xs"></i>
-            Javoblaringiz avtomatik saqlanmoqda
+            {t("questions.autosave")}
           </p>
         </div>
       </div>

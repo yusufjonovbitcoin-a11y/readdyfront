@@ -3,6 +3,7 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { LayoutThemeProvider } from "@/context/LayoutThemeContext";
 import { usePersistedSuperAdminTheme } from "@/hooks/usePersistedSuperAdminTheme";
+import { layoutSystem } from "@/styles/layoutSystem";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -11,6 +12,7 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children, title }: MainLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode, setDarkMode] = usePersistedSuperAdminTheme();
 
   return (
@@ -19,20 +21,31 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
         collapsed={collapsed}
         onToggle={() => setCollapsed(!collapsed)}
         darkMode={darkMode}
+        mobileOpen={mobileSidebarOpen}
+        onCloseMobile={() => setMobileSidebarOpen(false)}
       />
       <Header
         title={title}
         darkMode={darkMode}
         onToggleDark={toggleDarkMode}
         sidebarCollapsed={collapsed}
+        onToggleMobile={() => setMobileSidebarOpen((v) => !v)}
       />
+      {mobileSidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+        />
+      )}
       <LayoutThemeProvider darkMode={darkMode} setDarkMode={setDarkMode}>
         <main
           className={`transition-[margin-left] duration-300 ease-out pt-16 min-h-screen ${
-            collapsed ? "ml-16" : "ml-64"
+            collapsed ? "md:ml-16" : "md:ml-64"
           }`}
         >
-          <div className="p-6">{children}</div>
+          <div className={layoutSystem.pagePadding}>{children}</div>
         </main>
       </LayoutThemeProvider>
     </div>

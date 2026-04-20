@@ -1,8 +1,11 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useMemo } from "react";
+import { useMemo, useCallback, useState } from "react";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutDarkMode } from "@/context/LayoutThemeContext";
-import { mockAuditLogs, AuditLog } from "@/mocks/audit_logs";
+import { getAuditLogById } from "@/api/audit";
+import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
+import { usePageState } from "@/hooks/usePageState";
+import { copyTextWithFallback } from "@/utils/clipboard";
 
 const ACTION_COLORS: Record<string, { bg: string; text: string; icon: string; lightBg: string; lightText: string }> = {
   LOGIN: { bg: "bg-emerald-500/15", text: "text-emerald-400", icon: "ri-login-box-line", lightBg: "bg-emerald-50", lightText: "text-emerald-700" },
@@ -61,11 +64,12 @@ interface InfoRowProps {
   darkMode: boolean;
   icon?: string;
   copyable?: boolean;
+  onCopy?: (value: string) => void;
 }
 
-function InfoRow({ label, value, mono, darkMode, icon, copyable }: InfoRowProps) {
+function InfoRow({ label, value, mono, darkMode, icon, copyable, onCopy }: InfoRowProps) {
   const handleCopy = () => {
-    navigator.clipboard.writeText(value);
+    onCopy?.(value);
   };
 
   return (
@@ -100,18 +104,58 @@ function InfoRow({ label, value, mono, darkMode, icon, copyable }: InfoRowProps)
 
 function useResolvedAuditLog() {
   const { id } = useParams<{ id: string }>();
-  const allLogs = useMemo(() => {
-    const stored = JSON.parse(localStorage.getItem("medcore_audit_logs") || "[]") as AuditLog[];
-    return [...stored, ...mockAuditLogs];
-  }, []);
-  const log = allLogs.find((l) => l.id === id);
-  return { id, log };
+  const fetchAuditLog = useCallback(async () => {
+    if (!id) return null;
+    return getAuditLogById(id);
+  }, [id]);
+  const pageState = usePageState(fetchAuditLog);
+  return { id, log: pageState.data ?? null, status: pageState.status, error: pageState.error, reload: pageState.reload };
 }
 
-function AuditLogDetailContent() {
-  const { id, log } = useResolvedAuditLog();
+export function AuditLogDetailContent({ resolved }: { resolved?: ReturnType<typeof useResolvedAuditLog> }) {
+  const hookResolved = useResolvedAuditLog();
+  const current = resolved ?? hookResolved;
+  const { id, log, status, error, reload } = current;
   const navigate = useNavigate();
   const darkMode = useMainLayoutDarkMode();
+  const [copyToast, setCopyToast] = useState<{ message: string; isError: boolean } | null>(null);
+
+  const showCopyToast = useCallback((message: string, isError = false) => {
+    setCopyToast({ message, isError });
+    window.setTimeout(() => {
+      setCopyToast(null);
+    }, 2200);
+  }, []);
+
+  const handleCopy = useCallback(async (text: string) => {
+    const copied = await copyTextWithFallback(text);
+    showCopyToast(copied ? "Nusxalandi" : "Nusxalab bo'lmadi", !copied);
+  }, [showCopyToast]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <i className="ri-loader-4-line animate-spin text-3xl text-emerald-500" />
+        <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Audit log tafsilotlari yuklanmoqda...</p>
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <i className="ri-error-warning-line text-3xl text-red-500" />
+        <p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{error}</p>
+        <button
+          type="button"
+          onClick={reload}
+          className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg"
+        >
+          Qayta yuklash
+        </button>
+      </div>
+    );
+  }
 
   if (!log) {
     return (
@@ -132,13 +176,31 @@ function AuditLogDetailContent() {
     );
   }
 
-  const actionCfg = ACTION_COLORS[log.action] || ACTION_COLORS.VIEW;
-  const statusCfg = STATUS_CONFIG[log.status];
-  const roleCfg = ROLE_COLORS[log.role];
+  const actionCfg =
+    ACTION_COLORS[log.action as keyof typeof ACTION_COLORS] ??
+    { bg: "bg-amber-500/15", text: "text-amber-500", icon: "ri-alert-line", lightBg: "bg-amber-50", lightText: "text-amber-700" };
+  const statusCfg =
+    STATUS_CONFIG[log.status as keyof typeof STATUS_CONFIG] ??
+    { icon: "ri-alert-line", cls: "text-amber-500", label: "Unknown", bg: "bg-amber-500/10", border: "border-amber-500/30" };
+  const roleCfg =
+    ROLE_COLORS[log.role as keyof typeof ROLE_COLORS] ??
+    { text: "text-amber-500", bg: "bg-amber-500" };
+  const roleLabel =
+    ROLE_LABELS[log.role as keyof typeof ROLE_LABELS] ??
+    "Unknown";
   const initials = log.userName.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase();
 
   return (
       <div className="max-w-4xl mx-auto space-y-5">
+        {copyToast && (
+          <div
+            className={`fixed top-20 right-6 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg ${
+              copyToast.isError ? "bg-red-500 text-white" : "bg-emerald-500 text-white"
+            }`}
+          >
+            {copyToast.message}
+          </div>
+        )}
         {/* Back button + breadcrumb */}
         <div className="flex items-center gap-3">
           <button
@@ -185,7 +247,7 @@ function AuditLogDetailContent() {
               <div className="flex-1">
                 <h1 className={`text-xl font-bold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{log.userName}</h1>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`text-sm font-semibold ${roleCfg.text}`}>{ROLE_LABELS[log.role]}</span>
+                  <span className={`text-sm font-semibold ${roleCfg.text}`}>{roleLabel}</span>
                   {log.hospitalName && (
                     <>
                       <span className={`text-xs ${darkMode ? "text-gray-600" : "text-gray-300"}`}>•</span>
@@ -242,23 +304,23 @@ function AuditLogDetailContent() {
           </div>
 
           <div className="px-6">
-            <InfoRow label="Log ID" value={log.id} mono darkMode={darkMode} icon="ri-fingerprint-line" copyable />
+            <InfoRow label="Log ID" value={log.id} mono darkMode={darkMode} icon="ri-fingerprint-line" copyable onCopy={handleCopy} />
             <InfoRow label="Foydalanuvchi" value={log.userName} darkMode={darkMode} icon="ri-user-line" />
-            <InfoRow label="Foydalanuvchi ID" value={log.userId} mono darkMode={darkMode} icon="ri-id-card-line" copyable />
-            <InfoRow label="Rol" value={ROLE_LABELS[log.role]} darkMode={darkMode} icon="ri-shield-line" />
+            <InfoRow label="Foydalanuvchi ID" value={log.userId} mono darkMode={darkMode} icon="ri-id-card-line" copyable onCopy={handleCopy} />
+            <InfoRow label="Rol" value={roleLabel} darkMode={darkMode} icon="ri-shield-line" />
             {log.hospitalName && (
               <InfoRow label="Kasalxona" value={log.hospitalName} darkMode={darkMode} icon="ri-hospital-line" />
             )}
             {log.hospitalId && (
-              <InfoRow label="Kasalxona ID" value={log.hospitalId} mono darkMode={darkMode} icon="ri-building-line" copyable />
+              <InfoRow label="Kasalxona ID" value={log.hospitalId} mono darkMode={darkMode} icon="ri-building-line" copyable onCopy={handleCopy} />
             )}
             <InfoRow label="Amal" value={log.action} darkMode={darkMode} icon="ri-flashlight-line" />
             <InfoRow label="Resurs" value={log.resource} darkMode={darkMode} icon="ri-database-2-line" />
             {log.resourceId && (
-              <InfoRow label="Resurs ID" value={log.resourceId} mono darkMode={darkMode} icon="ri-hashtag" copyable />
+              <InfoRow label="Resurs ID" value={log.resourceId} mono darkMode={darkMode} icon="ri-hashtag" copyable onCopy={handleCopy} />
             )}
             <InfoRow label="Tavsif" value={log.detail} darkMode={darkMode} icon="ri-text-snippet" />
-            <InfoRow label="IP Manzil" value={log.ip} mono darkMode={darkMode} icon="ri-global-line" copyable />
+            <InfoRow label="IP Manzil" value={log.ip} mono darkMode={darkMode} icon="ri-global-line" copyable onCopy={handleCopy} />
             <InfoRow label="Brauzer / Qurilma" value={log.userAgent} darkMode={darkMode} icon="ri-computer-line" />
             <InfoRow label="Sana va Vaqt" value={formatFullTime(log.timestamp)} darkMode={darkMode} icon="ri-calendar-event-line" />
             <InfoRow label="Status" value={statusCfg.label} darkMode={darkMode} icon="ri-checkbox-circle-line" />
@@ -326,7 +388,7 @@ function AuditLogDetailContent() {
           <button
             onClick={() => {
               const text = `Audit Log: ${log.id}\nFoydalanuvchi: ${log.userName}\nAmal: ${log.action}\nResurs: ${log.resource}\nVaqt: ${formatFullTime(log.timestamp)}\nIP: ${log.ip}\nStatus: ${statusCfg.label}\nTavsif: ${log.detail}`;
-              navigator.clipboard.writeText(text);
+              void handleCopy(text);
             }}
             className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer whitespace-nowrap"
           >
@@ -339,10 +401,11 @@ function AuditLogDetailContent() {
 }
 
 export default function AuditLogDetailPage() {
-  const { log } = useResolvedAuditLog();
+  const resolved = useResolvedAuditLog();
+  const { log } = resolved;
   return (
     <MainLayout title={log ? "Audit Log Tafsiloti" : "Audit Log"}>
-      <AuditLogDetailContent />
+      <AuditLogDetailContent resolved={resolved} />
     </MainLayout>
   );
 }

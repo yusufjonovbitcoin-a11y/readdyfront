@@ -1,6 +1,8 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
+import { useModalA11y } from "@/hooks/useModalA11y";
 import {
   haCategories as initCategories, HACategory,
   haQuestionTemplates as initTemplates, HAQuestionTemplate,
@@ -12,18 +14,27 @@ type ActiveView = 'templates' | 'categories';
 function CategoryModal({ cat, darkMode, onClose, onSave }: {
   cat: HACategory | null; darkMode: boolean; onClose: () => void; onSave: (name: string) => void;
 }) {
+  const modalRef = useModalA11y({ isOpen: true, onClose });
+  const fieldId = "ha-questions-category-name";
   const [name, setName] = useState(cat?.name || '');
   const inputClass = `w-full px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"}`;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className={`w-80 rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Category modal"
+        tabIndex={-1}
+        className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-sm max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{cat ? "Kategoriyani tahrirlash" : "Yangi kategoriya"}</h2>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center cursor-pointer"><i className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
+          <button aria-label="Close category modal" onClick={onClose} className="w-7 h-7 flex items-center justify-center cursor-pointer"><i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
         </div>
         <form onSubmit={e => { e.preventDefault(); onSave(name); }}>
-          <label className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Kategoriya nomi *</label>
-          <input type="text" className={inputClass} placeholder="Kategoriya nomi..." value={name} onChange={e => setName(e.target.value)} required />
+          <label htmlFor={fieldId} className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Kategoriya nomi *</label>
+          <input id={fieldId} type="text" className={inputClass} placeholder="Kategoriya nomi..." value={name} onChange={e => setName(e.target.value)} required />
           <div className="flex gap-3 mt-4">
             <button type="button" onClick={onClose} className={`flex-1 h-9 rounded-lg text-sm font-medium cursor-pointer whitespace-nowrap ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>Bekor</button>
             <button type="submit" className="flex-1 h-9 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium cursor-pointer whitespace-nowrap transition-colors">Saqlash</button>
@@ -37,24 +48,36 @@ function CategoryModal({ cat, darkMode, onClose, onSave }: {
 function TemplateModal({ tmpl, categories, darkMode, onClose, onSave }: {
   tmpl: HAQuestionTemplate | null; categories: HACategory[]; darkMode: boolean; onClose: () => void; onSave: (data: { title: string; categoryId: string }) => void;
 }) {
+  const modalRef = useModalA11y({ isOpen: true, onClose });
+  const fieldId = {
+    title: "ha-questions-template-title",
+    category: "ha-questions-template-category",
+  } as const;
   const [form, setForm] = useState({ title: tmpl?.title || '', categoryId: tmpl?.categoryId || '' });
   const inputClass = `w-full px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"}`;
   const labelClass = `block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className={`w-96 rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Template modal"
+        tabIndex={-1}
+        className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{tmpl ? "Shablonni tahrirlash" : "Yangi shablon"}</h2>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center cursor-pointer"><i className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
+          <button aria-label="Close template modal" onClick={onClose} className="w-7 h-7 flex items-center justify-center cursor-pointer"><i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
         </div>
         <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
           <div>
-            <label className={labelClass}>Shablon nomi *</label>
-            <input type="text" className={inputClass} placeholder="Shablon nomi..." value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+            <label htmlFor={fieldId.title} className={labelClass}>Shablon nomi *</label>
+            <input id={fieldId.title} type="text" className={inputClass} placeholder="Shablon nomi..." value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
           </div>
           <div>
-            <label className={labelClass}>Kategoriya *</label>
-            <select className={inputClass} value={form.categoryId} onChange={e => setForm({...form, categoryId: e.target.value})} required>
+            <label htmlFor={fieldId.category} className={labelClass}>Kategoriya *</label>
+            <select id={fieldId.category} className={inputClass} value={form.categoryId} onChange={e => setForm({...form, categoryId: e.target.value})} required>
               <option value="">Tanlang...</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -72,18 +95,38 @@ function TemplateModal({ tmpl, categories, darkMode, onClose, onSave }: {
 function QuestionModal({ templateId, question, darkMode, onClose, onSave }: {
   templateId: string; question: HAQuestion | null; darkMode: boolean; onClose: () => void; onSave: (text: string) => void;
 }) {
+  const modalRef = useModalA11y({ isOpen: true, onClose });
+  const fieldId = "ha-questions-question-text";
   const [text, setText] = useState(question?.text || '');
   const inputClass = `w-full px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"}`;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className={`w-96 rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Question modal"
+        tabIndex={-1}
+        className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{question ? "Savolni tahrirlash" : "Yangi savol"}</h2>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center cursor-pointer"><i className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
+          <button aria-label="Close question modal" onClick={onClose} className="w-7 h-7 flex items-center justify-center cursor-pointer"><i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
         </div>
         <form onSubmit={e => { e.preventDefault(); onSave(text); }}>
-          <label className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Savol matni *</label>
-          <textarea className={`${inputClass} resize-none`} rows={3} placeholder="Savol matni..." value={text} onChange={e => setText(e.target.value)} required maxLength={500} />
+          <label htmlFor={fieldId} className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Savol matni *</label>
+          <textarea
+            id={fieldId}
+            aria-describedby={`${fieldId}-help`}
+            className={`${inputClass} resize-none`}
+            rows={3}
+            placeholder="Savol matni..."
+            value={text}
+            onChange={e => setText(e.target.value)}
+            required
+            maxLength={500}
+          />
+          <p id={`${fieldId}-help`} className="sr-only">Savol matni 500 ta belgigacha bo'lishi mumkin.</p>
           <div className="flex gap-3 mt-4">
             <button type="button" onClick={onClose} className={`flex-1 h-9 rounded-lg text-sm font-medium cursor-pointer whitespace-nowrap ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>Bekor</button>
             <button type="submit" className="flex-1 h-9 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium cursor-pointer whitespace-nowrap transition-colors">Saqlash</button>
@@ -95,14 +138,16 @@ function QuestionModal({ templateId, question, darkMode, onClose, onSave }: {
 }
 
 export default function HAQuestionsPage() {
+  const { t } = useTranslation("hospital");
   return (
-    <HALayout title="Savollar">
+    <HALayout title={t("sidebar.questions")}>
       <HAQuestionsPageContent />
     </HALayout>
   );
 }
 
-function HAQuestionsPageContent() {
+export function HAQuestionsPageContent() {
+  const { t } = useTranslation("hospital");
   const darkMode = useHospitalAdminDarkMode();
   const [activeView, setActiveView] = useState<ActiveView>('templates');
   const [categories, setCategories] = useState<HACategory[]>(initCategories);
@@ -189,7 +234,7 @@ function HAQuestionsPageContent() {
                   activeView === v ? darkMode ? "bg-[#141824] text-teal-400" : "bg-white text-teal-600" : darkMode ? "text-gray-400" : "text-gray-500"
                 }`}
               >
-                {v === 'templates' ? 'Shablonlar' : 'Kategoriyalar'}
+                {v === 'templates' ? t("questions.templates") : t("questions.categories")}
               </button>
             ))}
           </div>
@@ -199,7 +244,7 @@ function HAQuestionsPageContent() {
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center">
                   <i className={`ri-search-line text-sm ${darkMode ? "text-gray-400" : "text-gray-400"}`}></i>
                 </div>
-                <input type="text" placeholder="Qidirish..." className={`${inputClass} pl-9 w-48`} value={search} onChange={e => setSearch(e.target.value)} />
+                <input type="text" placeholder={t("questions.search")} className={`${inputClass} pl-9 w-48`} value={search} onChange={e => setSearch(e.target.value)} />
               </div>
             )}
             <button
@@ -207,7 +252,7 @@ function HAQuestionsPageContent() {
               className="h-9 px-4 flex items-center gap-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
             >
               <i className="ri-add-line text-base"></i>
-              {activeView === 'templates' ? "Shablon qo'shish" : "Kategoriya qo'shish"}
+              {activeView === 'templates' ? t("questions.addTemplate") : t("questions.addCategory")}
             </button>
           </div>
         </div>
@@ -230,11 +275,11 @@ function HAQuestionsPageContent() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => { setEditingCat(cat); setShowCatModal(true); }} className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
-                      <i className="ri-edit-line text-sm"></i>
+                    <button aria-label={`Edit category ${cat.name}`} onClick={() => { setEditingCat(cat); setShowCatModal(true); }} className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+                      <i aria-hidden="true" className="ri-edit-line text-sm"></i>
                     </button>
-                    <button onClick={() => setCategories(prev => prev.filter(c => c.id !== cat.id))} className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
-                      <i className="ri-delete-bin-line text-sm"></i>
+                    <button aria-label={`Delete category ${cat.name}`} onClick={() => setCategories(prev => prev.filter(c => c.id !== cat.id))} className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
+                      <i aria-hidden="true" className="ri-delete-bin-line text-sm"></i>
                     </button>
                   </div>
                 </div>
@@ -252,36 +297,44 @@ function HAQuestionsPageContent() {
                 .sort((a, b) => a.order - b.order)
                 .slice(0, 2);
               return (
-              <div key={tmpl.id} className={`${cardBase} cursor-pointer hover:border-teal-300 transition-all`} onClick={() => setSelectedTemplate(tmpl)}>
+              <div key={tmpl.id} className={`${cardBase} hover:border-teal-300 transition-all`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-teal-50 flex-shrink-0">
                     <i className="ri-file-list-3-line text-teal-600 text-lg"></i>
                   </div>
-                  <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => { setEditingTmpl(tmpl); setShowTmplModal(true); }} className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
-                      <i className="ri-edit-line text-sm"></i>
+                  <div className="flex items-center gap-1">
+                    <button aria-label={`Edit template ${tmpl.title}`} onClick={() => { setEditingTmpl(tmpl); setShowTmplModal(true); }} className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+                      <i aria-hidden="true" className="ri-edit-line text-sm"></i>
                     </button>
-                    <button onClick={() => setTemplates(prev => prev.filter(t => t.id !== tmpl.id))} className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
-                      <i className="ri-delete-bin-line text-sm"></i>
+                    <button aria-label={`Delete template ${tmpl.title}`} onClick={() => setTemplates(prev => prev.filter(t => t.id !== tmpl.id))} className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
+                      <i aria-hidden="true" className="ri-delete-bin-line text-sm"></i>
                     </button>
                   </div>
                 </div>
-                <h3 className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{tmpl.title}</h3>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">{tmpl.categoryName}</span>
-                  <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{tmpl.questionCount} ta savol</span>
-                </div>
-                {previewQs.length > 0 && (
-                  <div className={`mt-3 space-y-1.5 border-t border-dashed pt-3 ${darkMode ? "border-[#1E2130]" : "border-gray-200"}`}>
-                    {previewQs.map((q, idx) => (
-                      <p key={q.id} className={`text-xs leading-snug line-clamp-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                        <span className={`font-semibold tabular-nums ${darkMode ? "text-teal-400" : "text-teal-600"}`}>{idx + 1}.</span>{" "}
-                        {q.text}
-                      </p>
-                    ))}
+                <button
+                  type="button"
+                  onClick={() => setSelectedTemplate(tmpl)}
+                  className={`w-full text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 ${
+                    darkMode ? "focus-visible:ring-offset-[#141824]" : "focus-visible:ring-offset-white"
+                  }`}
+                >
+                  <h3 className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{tmpl.title}</h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">{tmpl.categoryName}</span>
+                    <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{tmpl.questionCount} ta savol</span>
                   </div>
-                )}
-                <p className={`text-xs mt-2 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Yaratilgan: {tmpl.createdAt}</p>
+                  {previewQs.length > 0 && (
+                    <div className={`mt-3 space-y-1.5 border-t border-dashed pt-3 ${darkMode ? "border-[#1E2130]" : "border-gray-200"}`}>
+                      {previewQs.map((q, idx) => (
+                        <p key={q.id} className={`text-xs leading-snug line-clamp-2 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                          <span className={`font-semibold tabular-nums ${darkMode ? "text-teal-400" : "text-teal-600"}`}>{idx + 1}.</span>{" "}
+                          {q.text}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  <p className={`text-xs mt-2 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Yaratilgan: {tmpl.createdAt}</p>
+                </button>
               </div>
               );
             })}
@@ -290,7 +343,7 @@ function HAQuestionsPageContent() {
                 <div className="w-12 h-12 flex items-center justify-center mx-auto mb-3">
                   <i className={`ri-file-list-3-line text-4xl ${darkMode ? "text-gray-600" : "text-gray-300"}`}></i>
                 </div>
-                <p className={`text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Shablon topilmadi</p>
+                <p className={`text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("questions.templateNotFound")}</p>
               </div>
             )}
           </div>
@@ -302,7 +355,7 @@ function HAQuestionsPageContent() {
             <div className="flex items-center gap-3">
               <button onClick={() => setSelectedTemplate(null)} className={`flex items-center gap-2 text-sm cursor-pointer ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"} transition-colors`}>
                 <i className="ri-arrow-left-line text-base"></i>
-                Shablonlarga qaytish
+                {t("questions.backToTemplates")}
               </button>
             </div>
 
@@ -319,7 +372,7 @@ function HAQuestionsPageContent() {
                 className="h-9 px-4 flex items-center gap-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-add-line text-base"></i>
-                Savol qo'shish
+                {t("questions.addQuestion")}
               </button>
             </div>
 
@@ -331,18 +384,18 @@ function HAQuestionsPageContent() {
                   </div>
                   <p className={`flex-1 text-sm ${darkMode ? "text-gray-200" : "text-gray-700"}`}>{q.text}</p>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <button onClick={() => { setEditingQ(q); setShowQModal(true); }} className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
-                      <i className="ri-edit-line text-sm"></i>
+                    <button aria-label={`Edit question ${i + 1}`} onClick={() => { setEditingQ(q); setShowQModal(true); }} className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+                      <i aria-hidden="true" className="ri-edit-line text-sm"></i>
                     </button>
-                    <button onClick={() => deleteQ(q.id)} className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
-                      <i className="ri-delete-bin-line text-sm"></i>
+                    <button aria-label={`Delete question ${i + 1}`} onClick={() => deleteQ(q.id)} className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
+                      <i aria-hidden="true" className="ri-delete-bin-line text-sm"></i>
                     </button>
                   </div>
                 </div>
               ))}
               {templateQuestions.length === 0 && (
                 <div className={`${cardBase} text-center py-10`}>
-                  <p className={`text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Hali savollar yo'q. Birinchi savolni qo'shing!</p>
+                  <p className={`text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("questions.noQuestions")}</p>
                 </div>
               )}
             </div>

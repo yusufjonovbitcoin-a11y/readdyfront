@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { DocPatient, RiskLevel } from "@/mocks/doc_patients";
 
 type StatusHandler = (id: string, status: DocPatient["status"]) => void;
@@ -22,11 +22,15 @@ export default function PatientTableRow({ patient, darkMode = false, onStatusCha
 
   return (
     <tr
-      className={`cursor-pointer transition-colors ${darkMode ? "hover:bg-[#21262D]" : "hover:bg-gray-50"}`}
-      onClick={() => navigate(`/doctor/patients/${patient.id}`)}
+      className={`transition-colors ${darkMode ? "hover:bg-[#21262D]" : "hover:bg-gray-50"}`}
     >
       <td className={`px-4 py-3 text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
-        <div className="flex items-center gap-2">
+        <Link
+          to={`/doctor/patients/${patient.id}`}
+          className={`inline-flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+            darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
+          }`}
+        >
           {patient.status === "queue" && (
             <span
               className={`w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold ${
@@ -37,14 +41,14 @@ export default function PatientTableRow({ patient, darkMode = false, onStatusCha
             </span>
           )}
           {patient.name}
-        </div>
+        </Link>
       </td>
-      <td className={`px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{patient.phone}</td>
-      <td className={`px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{patient.age} yosh</td>
+      <td className={`hidden sm:table-cell px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{patient.phone}</td>
+      <td className={`hidden md:table-cell px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{patient.age} yosh</td>
       <td className="px-4 py-3">
         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${risk.bg} ${risk.color}`}>{risk.label}</span>
       </td>
-      <td className={`px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+      <td className={`hidden sm:table-cell px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
         {patient.status === "queue"
           ? patient.queueTime
           : patient.status === "in_progress"
@@ -52,7 +56,7 @@ export default function PatientTableRow({ patient, darkMode = false, onStatusCha
             : `${patient.consultationDuration} daq`}
       </td>
       <td className="px-4 py-3">
-        <div className="flex flex-col items-start gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-col items-start gap-1.5">
           {onStatusChange && patient.status === "queue" && (
             <button
               type="button"

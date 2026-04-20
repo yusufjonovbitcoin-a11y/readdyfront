@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import DocLayout from "@/pages/doctor/components/DocLayout";
@@ -8,37 +9,54 @@ import type { DocPatient } from "@/mocks/doc_patients";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useDocPatients } from "@/context/DocPatientsContext";
 import { formatLocalYMD } from "@/utils/date";
+import { layoutSystem } from "@/styles/layoutSystem";
 
 type TabType = "queue" | "in_progress" | "completed";
+const VALID_TABS: readonly TabType[] = ["queue", "in_progress", "completed"];
 
-const tabs: { id: TabType; label: string; icon: string }[] = [
-  { id: "queue", label: "Navbat", icon: "ri-time-line" },
-  { id: "in_progress", label: "Taxlil", icon: "ri-flask-line" },
-  { id: "completed", label: "Tugallandi", icon: "ri-checkbox-circle-line" },
-];
+function resolveTab(tab: string | null): TabType | null {
+  if (tab === "taxlil") return "in_progress";
+  return tab !== null && (VALID_TABS as readonly string[]).includes(tab) ? (tab as TabType) : null;
+}
 
 export default function DocPatientsPage() {
+  const { t } = useTranslation("doctor");
   return (
-    <DocLayout title="Yangi Bemorlar">
+    <DocLayout title={t("titles.newPatients")}>
       <DocPatientsContent />
     </DocLayout>
   );
 }
 
-function DocPatientsContent() {
+export function DocPatientsContent() {
+  const { t } = useTranslation("doctor");
+  const tabs: { id: TabType; label: string; icon: string }[] = [
+    { id: "queue", label: t("patients.tabs.queue"), icon: "ri-time-line" },
+    { id: "in_progress", label: t("patients.tabs.inProgress"), icon: "ri-flask-line" },
+    { id: "completed", label: t("patients.tabs.completed"), icon: "ri-checkbox-circle-line" },
+  ];
+
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<TabType>("queue");
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [search, setSearch] = useState("");
-  const { patients, updatePatient, reorderQueuePatients } = useDocPatients();
+  const { patients, transitionPatientStatus, reorderQueuePatients } = useDocPatients();
   const { darkMode } = useDoctorTheme();
+  const rawTab = searchParams.get("tab");
+  const activeTab: TabType = resolveTab(rawTab) ?? "queue";
 
   useEffect(() => {
-    if (searchParams.get("tab") === "taxlil") {
-      setActiveTab("in_progress");
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
+    const resolved = resolveTab(rawTab);
+    if (rawTab !== null && resolved === rawTab) return;
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", resolved ?? "queue");
+    setSearchParams(next, { replace: true });
+  }, [rawTab, searchParams, setSearchParams]);
+
+  const handleTabChange = (nextTab: TabType) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", nextTab);
+    setSearchParams(next, { replace: true });
+  };
 
   const todayStr = formatLocalYMD();
   const todayPatients = patients.filter((p) => p.date === todayStr);
@@ -63,7 +81,7 @@ function DocPatientsContent() {
   };
 
   const handleStatusChange = (id: string, newStatus: DocPatient["status"]) => {
-    updatePatient(id, { status: newStatus });
+    transitionPatientStatus(id, newStatus);
   };
 
   const titleCls = darkMode ? "text-white" : "text-gray-900";
@@ -84,38 +102,44 @@ function DocPatientsContent() {
   const tbodyDivide = darkMode ? "divide-[#30363D]" : "divide-gray-50";
 
   return (
-      <div className="min-w-0 space-y-5">
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+      <div className={`min-w-0 ${layoutSystem.sectionStack}`}>
+        <div className={`flex min-w-0 flex-wrap items-center justify-between ${layoutSystem.toolbarGap}`}>
           <div>
-            <h2 className={`text-xl font-bold ${titleCls}`}>Bugungi Bemorlar</h2>
+            <h2 className={`text-xl font-bold ${titleCls}`}>{t("patients.todayPatients")}</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
+          <div className="flex min-w-0 w-full sm:w-auto items-center gap-2">
+            <div className="relative min-w-0 flex-1 sm:flex-none">
               <i className={`ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-sm ${searchIconCls}`}></i>
               <input
                 type="text"
-                placeholder="Bemor qidirish..."
+                placeholder={t("patients.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className={inputCls}
+                className={`${inputCls} w-full sm:w-52`}
               />
             </div>
-            <div className={`flex items-center rounded-lg p-1 ${segmentWrap}`}>
+            <div className={`flex shrink-0 items-center rounded-lg p-1 ${segmentWrap}`}>
               <button
+                type="button"
                 onClick={() => setViewMode("card")}
                 className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                   viewMode === "card" ? segmentBtnActive : segmentBtnIdle
                 }`}
+                aria-label="Kartochka ko'rinishiga o'tish"
+                aria-pressed={viewMode === "card"}
               >
-                <i className="ri-layout-grid-line text-sm"></i>
+                <i className="ri-layout-grid-line text-sm" aria-hidden="true"></i>
               </button>
               <button
+                type="button"
                 onClick={() => setViewMode("table")}
                 className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                   viewMode === "table" ? segmentBtnActive : segmentBtnIdle
                 }`}
+                aria-label="Jadval ko'rinishiga o'tish"
+                aria-pressed={viewMode === "table"}
               >
-                <i className="ri-list-check text-sm"></i>
+                <i className="ri-list-check text-sm" aria-hidden="true"></i>
               </button>
             </div>
           </div>
@@ -125,7 +149,7 @@ function DocPatientsContent() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === tab.id ? tabActive : tabIdle
               }`}
@@ -159,7 +183,7 @@ function DocPatientsContent() {
 
         {canReorderQueueCards && viewMode === "card" && filtered.length > 1 && (
           <p className={`text-xs ${mutedCls}`}>
-            Navbat tartibini o&apos;zgartirish: kartani ushlab sudrang.
+            {t("patients.reorderHint")}
           </p>
         )}
 
@@ -172,13 +196,13 @@ function DocPatientsContent() {
             >
               <i className={`ri-user-heart-line text-2xl ${darkMode ? "text-gray-500" : "text-gray-400"}`}></i>
             </div>
-            <p className={`font-medium ${mutedCls}`}>Bemor topilmadi</p>
+            <p className={`font-medium ${mutedCls}`}>{t("patients.empty.title")}</p>
             <p className={`text-sm mt-1 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
               {activeTab === "queue"
-                ? "Navbatda hech kim yo'q"
+                ? t("patients.empty.queue")
                 : activeTab === "in_progress"
-                  ? "Taxlilda bemor yo'q — navbatdan tahlilga yuboring"
-                  : "Tugallangan ko'rik yo'q"}
+                  ? t("patients.empty.inProgress")
+                  : t("patients.empty.completed")}
             </p>
           </div>
         ) : viewMode === "card" ? (
@@ -201,28 +225,30 @@ function DocPatientsContent() {
           )
         ) : (
           <div className={`rounded-xl border overflow-hidden ${tableWrap}`}>
-            <table className="w-full">
-              <thead>
-                <tr className={`border-b ${tableHeadBorder}`}>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Bemor</th>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Telefon</th>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Yosh</th>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Xavf</th>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Vaqt</th>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Amal</th>
-                </tr>
-              </thead>
-              <tbody className={`divide-y ${tbodyDivide}`}>
-                {filtered.map((patient) => (
-                  <PatientTableRow
-                    key={patient.id}
-                    patient={patient}
-                    darkMode={darkMode}
-                    onStatusChange={handleStatusChange}
-                  />
-                ))}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px]">
+                <thead>
+                  <tr className={`border-b ${tableHeadBorder}`}>
+                    <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Bemor</th>
+                    <th className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Telefon</th>
+                    <th className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Yosh</th>
+                    <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Xavf</th>
+                    <th className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Vaqt</th>
+                    <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Amal</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${tbodyDivide}`}>
+                  {filtered.map((patient) => (
+                    <PatientTableRow
+                      key={patient.id}
+                      patient={patient}
+                      darkMode={darkMode}
+                      onStatusChange={handleStatusChange}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

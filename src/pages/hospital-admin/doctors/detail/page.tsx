@@ -1,13 +1,26 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQrPngDataUrl } from "@/components/QrCodeImage";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
-import { haDoctors } from "@/mocks/ha_doctors";
-import { haPatients } from "@/mocks/ha_patients";
-import { haDoctorPerformance, haAnalyticsDailyData } from "@/mocks/ha_analytics";
+import {
+  getDoctorAnalytics,
+  getDoctorById,
+  getDoctorPatients,
+} from "@/api/doctor";
+import type {
+  DoctorAnalyticsDto,
+  DoctorDto,
+  DoctorPatientDto,
+} from "@/api/types/doctor.types";
+import { copyTextWithFallback } from "@/utils/clipboard";
 
 type TabType = 'overview' | 'patients' | 'analytics' | 'qr';
+const VALID_TABS = ["overview", "patients", "analytics", "qr"] as const;
+
+function isValidTab(value: string | null): value is TabType {
+  return value !== null && (VALID_TABS as readonly string[]).includes(value);
+}
 
 function QRCodeDisplay({ doctorId, doctorName, darkMode }: { doctorId: string; doctorName: string; darkMode: boolean }) {
   const qrUrl = useMemo(
@@ -19,6 +32,12 @@ function QRCodeDisplay({ doctorId, doctorName, darkMode }: { doctorId: string; d
   );
   const qrSize = 180;
   const { dataUrl, loading } = useQrPngDataUrl(qrUrl, qrSize);
+  const [copyToast, setCopyToast] = useState<{ message: string; isError: boolean } | null>(null);
+
+  const showCopyToast = (message: string, isError = false) => {
+    setCopyToast({ message, isError });
+    window.setTimeout(() => setCopyToast(null), 2200);
+  };
 
   const handleDownload = () => {
     if (!dataUrl) return;
@@ -28,8 +47,25 @@ function QRCodeDisplay({ doctorId, doctorName, darkMode }: { doctorId: string; d
     a.click();
   };
 
+  const handleCopy = () => {
+    if (!qrUrl) return;
+    void (async () => {
+      const copied = await copyTextWithFallback(qrUrl);
+      showCopyToast(copied ? "Nusxalandi" : "Nusxalab bo'lmadi", !copied);
+    })();
+  };
+
   return (
     <div className="flex flex-col items-center gap-6">
+      {copyToast && (
+        <div
+          className={`fixed top-20 right-6 z-50 px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg ${
+            copyToast.isError ? "bg-red-500 text-white" : "bg-emerald-500 text-white"
+          }`}
+        >
+          {copyToast.message}
+        </div>
+      )}
       <div
         className={`rounded-2xl p-6 ${darkMode ? "bg-white" : "border border-gray-100 bg-white"}`}
       >
@@ -65,7 +101,7 @@ function QRCodeDisplay({ doctorId, doctorName, darkMode }: { doctorId: string; d
             Yuklab olish
           </button>
           <button
-            onClick={() => navigator.clipboard.writeText(qrUrl)}
+            onClick={handleCopy}
             className={`h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
           >
             <i className="ri-links-line text-sm"></i>
@@ -78,25 +114,132 @@ function QRCodeDisplay({ doctorId, doctorName, darkMode }: { doctorId: string; d
 }
 
 export default function HADoctorDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const doctor = haDoctors.find(d => d.id === id);
   return (
-    <HALayout title={doctor?.name ?? "Shifokor topilmadi"}>
+    <HALayout title="Shifokor tafsiloti">
       <HADoctorDetailContent />
     </HALayout>
   );
 }
 
-function HADoctorDetailContent() {
+export function HADoctorDetailContent() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const darkMode = useHospitalAdminDarkMode();
-  const [activeTab, setActiveTab] = useState<TabType>((searchParams.get('tab') as TabType) || 'overview');
+  const rawTab = searchParams.get("tab");
+  const activeTab: TabType = isValidTab(rawTab) ? rawTab : "overview";
+  const [doctor, setDoctor] = useState<DoctorDto | null>(null);
+  const [doctorPatients, setDoctorPatients] = useState<DoctorPatientDto[]>([]);
+  const [dailyData, setDailyData] = useState<DoctorAnalyticsDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const doctor = haDoctors.find(d => d.id === id);
-  const doctorPatients = haPatients.filter(p => p.doctorId === id);
-  const perf = haDoctorPerformance.find(p => p.name === doctor?.name);
+  useEffect(() => {
+    let mounted = true;
+    if (!id) {
+      setDoctor(null);
+      setDoctorPatients([]);
+      setDailyData([]);
+      setLoading(false);
+      setLoadError("Shifokor identifikatori topilmadi.");
+      return () => {
+        mounted = false;
+      };
+    }
+    void (async () => {
+      try {
+        setLoading(true);
+        setLoadError(null);
+        const [doctorResponse, patientsResponse, analyticsResponse] = await Promise.all([
+          getDoctorById(id),
+          getDoctorPatients(),
+          getDoctorAnalytics(),
+        ]);
+        if (!mounted) return;
+        setDoctor(doctorResponse);
+        setDoctorPatients(
+          patientsResponse.filter((patient) => patient.doctorId === id),
+        );
+        setDailyData(analyticsResponse);
+      } catch {
+        if (!mounted) return;
+        setLoadError("Shifokor tafsilotlarini yuklashda xatolik yuz berdi.");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    if (isValidTab(rawTab)) return;
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("tab", "overview");
+    setSearchParams(nextParams, { replace: true });
+  }, [rawTab, searchParams, setSearchParams]);
+
+  const handleTabChange = (nextTab: TabType) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("tab", nextTab);
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const normalizedPatients = useMemo(
+    () =>
+      doctorPatients.map((patient) => ({
+        ...patient,
+        lastVisit: patient.date,
+        visitCount: patient.consultationDuration > 0 ? 1 : 0,
+        statusLabel:
+          patient.status === "queue"
+            ? "Navbatda"
+            : patient.status === "in_progress"
+              ? "Jarayonda"
+              : patient.status === "completed"
+                ? "Yakunlangan"
+                : "Arxiv",
+        statusTone:
+          patient.status === "queue"
+            ? "bg-indigo-50 text-indigo-700"
+            : patient.status === "in_progress"
+              ? "bg-blue-50 text-blue-700"
+              : patient.status === "completed"
+                ? "bg-teal-50 text-teal-700"
+                : "bg-gray-100 text-gray-600",
+      })),
+    [doctorPatients],
+  );
+
+  const max = Math.max(...dailyData.map((d) => d.patients), 1);
+
+  if (loading) {
+    return (
+      <div className="text-center py-20">
+        <i className="ri-loader-4-line animate-spin text-2xl text-teal-500" />
+        <p className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+          Shifokor tafsilotlari yuklanmoqda...
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="text-center py-20">
+        <p className={`text-sm ${darkMode ? "text-red-400" : "text-red-600"}`}>{loadError}</p>
+        <button
+          type="button"
+          onClick={() => navigate("/hospital-admin/doctors")}
+          className="mt-4 text-teal-600 text-sm cursor-pointer"
+        >
+          Orqaga qaytish
+        </button>
+      </div>
+    );
+  }
 
   if (!doctor) {
     return (
@@ -113,8 +256,6 @@ function HADoctorDetailContent() {
     { key: 'analytics', label: 'Tahlil', icon: 'ri-bar-chart-line' },
     { key: 'qr', label: 'QR Kod', icon: 'ri-qr-code-line' },
   ];
-
-  const max = Math.max(...haAnalyticsDailyData.map(d => d.patients));
 
   return (
       <div className="space-y-5">
@@ -180,7 +321,7 @@ function HADoctorDetailContent() {
           {tabs.map(tab => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === tab.key
                   ? darkMode ? "bg-[#141824] text-teal-400" : "bg-white text-teal-600"
@@ -251,7 +392,7 @@ function HADoctorDetailContent() {
                 </tr>
               </thead>
               <tbody>
-                {doctorPatients.map(p => (
+                {normalizedPatients.map(p => (
                   <tr key={p.id} className={`border-t ${darkMode ? "border-[#1E2130]" : "border-gray-50"}`}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
@@ -268,12 +409,8 @@ function HADoctorDetailContent() {
                     <td className={`px-5 py-3 text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{p.lastVisit}</td>
                     <td className={`px-5 py-3 text-xs font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{p.visitCount}</td>
                     <td className="px-5 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        p.status === 'active' ? 'bg-teal-50 text-teal-700' :
-                        p.status === 'scheduled' ? 'bg-indigo-50 text-indigo-700' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {p.status === 'active' ? 'Faol' : p.status === 'scheduled' ? 'Rejalashtirilgan' : 'Chiqarilgan'}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.statusTone}`}>
+                        {p.statusLabel}
                       </span>
                     </td>
                   </tr>
@@ -295,14 +432,14 @@ function HADoctorDetailContent() {
             <div className={`rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
               <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>Haftalik bemor oqimi</h3>
               <div className="flex items-end gap-2 h-32">
-                {haAnalyticsDailyData.map((d, i) => (
+                {dailyData.map((d, i) => (
                   <div key={i} className="flex flex-col items-center gap-1 flex-1">
                     <span className={`text-xs font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{d.patients}</span>
                     <div
                       className="w-full rounded-t-md bg-teal-500"
                       style={{ height: `${(d.patients / max) * 96}px` }}
                     ></div>
-                    <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{d.day}</span>
+                    <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{d.date}</span>
                   </div>
                 ))}
               </div>

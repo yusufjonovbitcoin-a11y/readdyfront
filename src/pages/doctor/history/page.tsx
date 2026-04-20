@@ -1,26 +1,28 @@
+import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useDocPatients } from "@/context/DocPatientsContext";
 import type { RiskLevel } from "@/mocks/doc_patients";
 
-const riskConfig: Record<RiskLevel, { label: string; color: string; bg: string }> = {
-  low: { label: "Past", color: "text-green-600", bg: "bg-green-100" },
-  medium: { label: "O'rta", color: "text-amber-600", bg: "bg-amber-100" },
-  high: { label: "Yuqori", color: "text-orange-600", bg: "bg-orange-100" },
-  critical: { label: "Kritik", color: "text-red-600", bg: "bg-red-100" },
-};
-
 export default function DocHistoryPage() {
+  const { t } = useTranslation("doctor");
   return (
-    <DocLayout title="Tarix">
+    <DocLayout title={t("sidebar.history")}>
       <DocHistoryContent />
     </DocLayout>
   );
 }
 
-function DocHistoryContent() {
+export function DocHistoryContent() {
+  const { t } = useTranslation("doctor");
+  const riskConfig: Record<RiskLevel, { label: string; color: string; bg: string }> = {
+    low: { label: t("history.risk.low"), color: "text-green-600", bg: "bg-green-100" },
+    medium: { label: t("history.risk.medium"), color: "text-amber-600", bg: "bg-amber-100" },
+    high: { label: t("history.risk.high"), color: "text-orange-600", bg: "bg-orange-100" },
+    critical: { label: t("history.risk.critical"), color: "text-red-600", bg: "bg-red-100" },
+  };
   const { darkMode } = useDoctorTheme();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
@@ -47,33 +49,53 @@ function DocHistoryContent() {
   const linkCls = darkMode ? "text-violet-400 hover:text-violet-300" : "text-violet-600 hover:text-violet-700";
 
   const { patients } = useDocPatients();
-  const historyPatients = patients.filter((p) => p.status === "history");
+  const historyPatients = patients.filter((p) => p.status === "history" || p.status === "completed");
+
+  const matchesDateFilter = (date: string) => {
+    if (dateFilter === "all") return true;
+    const [y, m, d] = date.split("-").map(Number);
+    const itemDate = new Date(y, (m ?? 1) - 1, d ?? 1);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (dateFilter === "today") {
+      return itemDate.getTime() === today.getTime();
+    }
+    if (dateFilter === "week") {
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - 6);
+      return itemDate >= weekStart && itemDate <= today;
+    }
+    if (dateFilter === "month") {
+      return itemDate.getFullYear() === today.getFullYear() && itemDate.getMonth() === today.getMonth();
+    }
+    return true;
+  };
 
   const filtered = historyPatients.filter((p) => {
     const matchSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) || p.diagnosis.toLowerCase().includes(search.toLowerCase());
-    return matchSearch;
+    return matchSearch && matchesDateFilter(p.date);
   });
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className={`text-xl font-bold ${pageTitle}`}>Bemorlar Tarixi</h2>
-          <p className={`text-sm mt-0.5 ${pageMuted}`}>Jami {historyPatients.length} ta arxivlangan bemor</p>
+          <h2 className={`text-xl font-bold ${pageTitle}`}>{t("history.title")}</h2>
+          <p className={`text-sm mt-0.5 ${pageMuted}`}>{t("history.subtitle")} {historyPatients.length}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className={inputBase}>
-            <option value="all">Barcha vaqt</option>
-            <option value="today">Bugun</option>
-            <option value="week">Bu hafta</option>
-            <option value="month">Bu oy</option>
+            <option value="all">{t("history.filters.allTime")}</option>
+            <option value="today">{t("history.filters.today")}</option>
+            <option value="week">{t("history.filters.week")}</option>
+            <option value="month">{t("history.filters.month")}</option>
           </select>
           <div className="relative">
             <i className={`ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}></i>
             <input
               type="text"
-              placeholder="Qidirish..."
+              placeholder={t("history.search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className={searchInput}
@@ -130,7 +152,7 @@ function DocHistoryContent() {
           <div className={`w-16 h-16 flex items-center justify-center rounded-full mb-4 ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
             <i className={`ri-history-line text-2xl ${darkMode ? "text-gray-500" : "text-gray-400"}`}></i>
           </div>
-          <p className={`font-medium ${pageMuted}`}>Tarix topilmadi</p>
+          <p className={`font-medium ${pageMuted}`}>{t("history.empty")}</p>
         </div>
       ) : viewMode === "card" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -139,11 +161,16 @@ function DocHistoryContent() {
             return (
               <div
                 key={patient.id}
-                onClick={() => navigate(`/doctor/patients/${patient.id}`)}
-                className={`rounded-xl p-4 cursor-pointer transition-all ${cardBase} ${
+                className={`rounded-xl p-4 transition-all ${cardBase} ${
                   darkMode ? "hover:border-violet-500/40" : "hover:border-violet-200"
                 }`}
               >
+                <Link
+                  to={`/doctor/patients/${patient.id}`}
+                  className={`block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+                    darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
+                  }`}
+                >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div
@@ -167,7 +194,7 @@ function DocHistoryContent() {
 
                 {patient.diagnosis && (
                   <div className={`mb-3 p-2.5 rounded-lg ${diagBox}`}>
-                    <p className={`text-xs mb-0.5 ${pageMuted}`}>Tashxis</p>
+                    <p className={`text-xs mb-0.5 ${pageMuted}`}>{t("history.diagnosis")}</p>
                     <p className={`text-sm font-medium ${darkMode ? "text-gray-200" : "text-gray-800"}`}>{patient.diagnosis}</p>
                   </div>
                 )}
@@ -190,62 +217,69 @@ function DocHistoryContent() {
                     <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{patient.consultationDuration} daq</span>
                   </div>
                 </div>
+                </Link>
               </div>
             );
           })}
         </div>
       ) : (
         <div className={`rounded-xl border overflow-hidden ${tableWrap}`}>
-          <table className="w-full">
-            <thead>
-              <tr className={`border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
-                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Bemor</th>
-                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Tashxis</th>
-                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Xavf</th>
-                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Vaqt</th>
-                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Sana</th>
-                <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Amal</th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${tbodyDivide}`}>
-              {filtered.map((patient) => {
-                const risk = riskConfig[patient.riskLevel];
-                return (
-                  <tr
-                    key={patient.id}
-                    onClick={() => navigate(`/doctor/patients/${patient.id}`)}
-                    className={`cursor-pointer transition-colors ${rowHover}`}
-                  >
-                    <td className="px-4 py-3">
-                      <div>
-                        <p className={`text-sm font-medium ${pageTitle}`}>{patient.name}</p>
-                        <p className={`text-xs ${pageMuted}`}>
-                          {patient.age} yosh • {patient.phone}
-                        </p>
-                      </div>
-                    </td>
-                    <td className={`px-4 py-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{patient.diagnosis || "—"}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${risk.bg} ${risk.color}`}>{risk.label}</span>
-                    </td>
-                    <td className={`px-4 py-3 text-sm ${pageMuted}`}>{patient.consultationDuration} daq</td>
-                    <td className={`px-4 py-3 text-sm ${pageMuted}`}>{patient.date}</td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/doctor/patients/${patient.id}`);
-                        }}
-                        className={`text-xs font-medium cursor-pointer whitespace-nowrap ${linkCls}`}
-                      >
-                        Ko'rish
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px]">
+              <thead>
+                <tr className={`border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
+                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Bemor</th>
+                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Tashxis</th>
+                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Xavf</th>
+                  <th className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Vaqt</th>
+                  <th className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Sana</th>
+                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Amal</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${tbodyDivide}`}>
+                {filtered.map((patient) => {
+                  const risk = riskConfig[patient.riskLevel];
+                  return (
+                    <tr
+                      key={patient.id}
+                      className={`transition-colors ${rowHover}`}
+                    >
+                      <td className="px-4 py-3">
+                        <Link
+                          to={`/doctor/patients/${patient.id}`}
+                          className={`inline-block rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+                            darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
+                          }`}
+                        >
+                          <p className={`text-sm font-medium ${pageTitle}`}>{patient.name}</p>
+                          <p className={`text-xs ${pageMuted}`}>
+                            {patient.age} yosh • {patient.phone}
+                          </p>
+                        </Link>
+                      </td>
+                      <td className={`px-4 py-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{patient.diagnosis || "—"}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${risk.bg} ${risk.color}`}>{risk.label}</span>
+                      </td>
+                      <td className={`hidden sm:table-cell px-4 py-3 text-sm ${pageMuted}`}>{patient.consultationDuration} daq</td>
+                      <td className={`hidden md:table-cell px-4 py-3 text-sm ${pageMuted}`}>{patient.date}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/doctor/patients/${patient.id}`);
+                          }}
+                          className={`text-xs font-medium cursor-pointer whitespace-nowrap ${linkCls}`}
+                        >
+                          {t("common:actions.view")}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { AuditLog } from "@/mocks/audit_logs";
+import { Link, useNavigate } from "react-router-dom";
+import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
 
 interface AuditTableProps {
   logs: AuditLog[];
@@ -61,10 +61,14 @@ function formatTime(ts: string) {
 
 export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableProps) {
   const navigate = useNavigate();
+  const panelClass = darkMode ? "bg-[#1A2235]" : "bg-white";
+  const fallbackStatusCfg = { icon: "ri-alert-line", cls: "text-amber-500" };
+  const fallbackRoleLabel = "Unknown";
+  const fallbackRoleColor = darkMode ? "text-amber-400" : "text-amber-600";
 
   if (logs.length === 0) {
     return (
-      <div className={`rounded-xl p-12 text-center ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+      <div className={`rounded-xl p-12 text-center ${panelClass}`}>
         <div className="w-12 h-12 flex items-center justify-center mx-auto mb-3">
           <i className="ri-file-search-line text-3xl text-gray-400"></i>
         </div>
@@ -74,36 +78,97 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
   }
 
   return (
-    <div className={`rounded-xl overflow-hidden ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
-      <div className="overflow-x-auto">
+    <div className={`rounded-xl overflow-hidden ${panelClass}`}>
+      <div className="space-y-3 p-3 md:hidden">
+        {logs.map((log) => {
+          const statusCfg =
+            STATUS_CONFIG[log.status as keyof typeof STATUS_CONFIG] ??
+            fallbackStatusCfg;
+          const actionColor = darkMode
+            ? (ACTION_COLORS_DARK[log.action as keyof typeof ACTION_COLORS_DARK] ?? "bg-gray-500/15 text-gray-400")
+            : (ACTION_COLORS[log.action as keyof typeof ACTION_COLORS] ?? "bg-gray-100 text-gray-600");
+          const roleLabel = ROLE_LABELS[log.role as keyof typeof ROLE_LABELS] ?? fallbackRoleLabel;
+          return (
+            <article key={log.id} className={`rounded-lg border p-3 ${darkMode ? "border-[#2A3448] bg-[#0F1117]/40" : "border-gray-100 bg-white"}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <Link
+                    to={`/audit-logs/${log.id}`}
+                    className={`text-xs font-mono rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${darkMode ? "text-gray-400 focus-visible:ring-offset-[#0D1117]" : "text-gray-500 focus-visible:ring-offset-white"}`}
+                  >
+                    {formatTime(log.timestamp)}
+                  </Link>
+                  <p className={`mt-1 text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{log.userName}</p>
+                  <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-500"}`}>{roleLabel} {log.hospitalName ? `• ${log.hospitalName}` : ""}</p>
+                </div>
+                <span className={`inline-flex items-center gap-1 text-xs font-medium ${statusCfg.cls}`}>
+                  <i className={`${statusCfg.icon} text-sm`} aria-hidden="true"></i>
+                  <span className="capitalize">{log.status}</span>
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold ${actionColor}`}>{log.action}</span>
+                <span className={`text-xs font-mono ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{log.resource}{log.resourceId ? ` #${log.resourceId}` : ""}</span>
+              </div>
+              <p className={`mt-2 text-xs ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{log.detail}</p>
+              <div className="mt-3 flex items-center justify-between">
+                <span className={`text-xs font-mono ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{log.ip}</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => navigate(`/audit-logs/${log.id}`)}
+                    aria-label={`Open full details for audit log ${log.id}`}
+                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
+                    title="To'liq sahifada ko'rish"
+                  >
+                    <i aria-hidden="true" className="ri-external-link-line text-sm"></i>
+                  </button>
+                  <button
+                    onClick={() => onViewDetail(log)}
+                    aria-label={`Open quick modal details for audit log ${log.id}`}
+                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
+                    title="Modal ko'rish"
+                  >
+                    <i aria-hidden="true" className="ri-eye-line text-sm"></i>
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full">
+          <caption className="sr-only">Audit logs table</caption>
           <thead>
             <tr className={`text-xs font-semibold uppercase tracking-wide ${
               darkMode ? "bg-[#0F1117] text-gray-400" : "bg-gray-50 text-gray-500"
             }`}>
-              <th className="px-4 py-3 text-left">Vaqt</th>
-              <th className="px-4 py-3 text-left">Foydalanuvchi</th>
-              <th className="px-4 py-3 text-left">Rol</th>
-              <th className="px-4 py-3 text-left">Amal</th>
-              <th className="px-4 py-3 text-left">Resurs</th>
-              <th className="px-4 py-3 text-left">Tavsif</th>
-              <th className="px-4 py-3 text-left">IP manzil</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left"></th>
+              <th scope="col" className="px-4 py-3 text-left">Vaqt</th>
+              <th scope="col" className="px-4 py-3 text-left">Foydalanuvchi</th>
+              <th scope="col" className="px-4 py-3 text-left">Rol</th>
+              <th scope="col" className="px-4 py-3 text-left">Amal</th>
+              <th scope="col" className="px-4 py-3 text-left">Resurs</th>
+              <th scope="col" className="px-4 py-3 text-left">Tavsif</th>
+              <th scope="col" className="px-4 py-3 text-left">IP manzil</th>
+              <th scope="col" className="px-4 py-3 text-left">Status</th>
+              <th scope="col" className="px-4 py-3 text-left">Harakatlar</th>
             </tr>
           </thead>
           <tbody>
             {logs.map((log) => {
-              const statusCfg = STATUS_CONFIG[log.status];
+              const statusCfg =
+                STATUS_CONFIG[log.status as keyof typeof STATUS_CONFIG] ??
+                fallbackStatusCfg;
               const actionColor = darkMode
-                ? (ACTION_COLORS_DARK[log.action] || "bg-gray-500/15 text-gray-400")
-                : (ACTION_COLORS[log.action] || "bg-gray-100 text-gray-600");
+                ? (ACTION_COLORS_DARK[log.action as keyof typeof ACTION_COLORS_DARK] ?? "bg-gray-500/15 text-gray-400")
+                : (ACTION_COLORS[log.action as keyof typeof ACTION_COLORS] ?? "bg-gray-100 text-gray-600");
+              const roleColor = ROLE_COLORS[log.role as keyof typeof ROLE_COLORS] ?? fallbackRoleColor;
+              const roleLabel = ROLE_LABELS[log.role as keyof typeof ROLE_LABELS] ?? fallbackRoleLabel;
 
               return (
                 <tr
                   key={log.id}
-                  onClick={() => navigate(`/audit-logs/${log.id}`)}
-                  className={`transition-colors cursor-pointer border-t ${
+                  className={`transition-colors border-t ${
                     darkMode
                       ? "border-[#2A3448] hover:bg-[#0F1117]/60"
                       : "border-gray-100 hover:bg-gray-50"
@@ -111,9 +176,14 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                 >
                   {/* Time */}
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`text-xs font-mono ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    <Link
+                      to={`/audit-logs/${log.id}`}
+                      className={`text-xs font-mono rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+                        darkMode ? "text-gray-400 focus-visible:ring-offset-[#0D1117]" : "text-gray-500 focus-visible:ring-offset-white"
+                      }`}
+                    >
                       {formatTime(log.timestamp)}
-                    </span>
+                    </Link>
                   </td>
 
                   {/* User */}
@@ -140,8 +210,8 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
 
                   {/* Role */}
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`text-xs font-semibold ${ROLE_COLORS[log.role]}`}>
-                      {ROLE_LABELS[log.role]}
+                    <span className={`text-xs font-semibold ${roleColor}`}>
+                      {roleLabel}
                     </span>
                   </td>
 
@@ -189,21 +259,23 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => navigate(`/audit-logs/${log.id}`)}
-                        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+                        aria-label={`Open full details for audit log ${log.id}`}
+                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                           darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"
                         }`}
                         title="To'liq sahifada ko'rish"
                       >
-                        <i className="ri-external-link-line text-sm"></i>
+                        <i aria-hidden="true" className="ri-external-link-line text-sm"></i>
                       </button>
                       <button
                         onClick={() => onViewDetail(log)}
-                        className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+                        aria-label={`Open quick modal details for audit log ${log.id}`}
+                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                           darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"
                         }`}
                         title="Modal ko'rish"
                       >
-                        <i className="ri-eye-line text-sm"></i>
+                        <i aria-hidden="true" className="ri-eye-line text-sm"></i>
                       </button>
                     </div>
                   </td>

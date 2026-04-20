@@ -1,115 +1,43 @@
-import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useCallback, useMemo, useState } from "react";
 import DocLayout from "@/pages/doctor/components/DocLayout";
-import { docAnalytics } from "@/mocks/doc_patients";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
+import { getDoctorAnalytics, getDoctorAnalyticsPresets } from "@/api/doctor";
+import type {
+  DoctorAnalyticsDto,
+  DoctorAnalyticsPeriod,
+  DoctorAnalyticsPresetsDto,
+} from "@/api/types/doctor.types";
+import { usePageState } from "@/hooks/usePageState";
+import PageStateBoundary from "@/components/ui/PageStateBoundary";
 
-type Period = "daily" | "weekly" | "monthly";
+type Period = DoctorAnalyticsPeriod;
 
-const weeklyData = [
-  { label: "Du", patients: 14, diagnoses: 12, avgDuration: 18 },
-  { label: "Se", patients: 11, diagnoses: 9, avgDuration: 20 },
-  { label: "Ch", patients: 16, diagnoses: 14, avgDuration: 17 },
-  { label: "Pa", patients: 9, diagnoses: 8, avgDuration: 22 },
-  { label: "Ju", patients: 13, diagnoses: 11, avgDuration: 19 },
-  { label: "Sh", patients: 15, diagnoses: 13, avgDuration: 16 },
-  { label: "Ya", patients: 7, diagnoses: 4, avgDuration: 21 },
-];
-
-const monthlyData = [
-  { label: "1-hafta", patients: 68, diagnoses: 58, avgDuration: 19 },
-  { label: "2-hafta", patients: 74, diagnoses: 63, avgDuration: 18 },
-  { label: "3-hafta", patients: 61, diagnoses: 52, avgDuration: 20 },
-  { label: "4-hafta", patients: 85, diagnoses: 71, avgDuration: 17 },
-];
-
-/** Tashxis ulushi (%) — jami tashxis soniga qarab count hisoblanadi */
-const diagnosisShares: Record<
-  Period,
-  { name: string; share: number; color: string }[]
-> = {
-  daily: [
-    { name: "Arterial gipertenziya", share: 32, color: "bg-violet-500" },
-    { name: "Stenokardiya", share: 22, color: "bg-blue-500" },
-    { name: "Yurak yetishmovchiligi", share: 18, color: "bg-red-500" },
-    { name: "Aritmiya", share: 14, color: "bg-amber-500" },
-    { name: "Boshqa", share: 14, color: "bg-gray-400" },
-  ],
-  weekly: [
-    { name: "Arterial gipertenziya", share: 30, color: "bg-violet-500" },
-    { name: "Stenokardiya", share: 21, color: "bg-blue-500" },
-    { name: "Yurak yetishmovchiligi", share: 16, color: "bg-red-500" },
-    { name: "Aritmiya", share: 12, color: "bg-amber-500" },
-    { name: "Boshqa", share: 21, color: "bg-gray-400" },
-  ],
-  monthly: [
-    { name: "Arterial gipertenziya", share: 28, color: "bg-violet-500" },
-    { name: "Stenokardiya", share: 20, color: "bg-blue-500" },
-    { name: "Yurak yetishmovchiligi", share: 18, color: "bg-red-500" },
-    { name: "Aritmiya", share: 15, color: "bg-amber-500" },
-    { name: "Boshqa", share: 19, color: "bg-gray-400" },
-  ],
-};
-
-const peakHoursByPeriod: Record<Period, { hour: string; count: number }[]> = {
-  daily: [
-    { hour: "08:00", count: 2 },
-    { hour: "09:00", count: 6 },
-    { hour: "10:00", count: 10 },
-    { hour: "11:00", count: 8 },
-    { hour: "12:00", count: 4 },
-    { hour: "13:00", count: 2 },
-    { hour: "14:00", count: 7 },
-    { hour: "15:00", count: 9 },
-    { hour: "16:00", count: 6 },
-    { hour: "17:00", count: 3 },
-  ],
-  weekly: [
-    { hour: "08:00", count: 3 },
-    { hour: "09:00", count: 8 },
-    { hour: "10:00", count: 12 },
-    { hour: "11:00", count: 10 },
-    { hour: "12:00", count: 5 },
-    { hour: "13:00", count: 2 },
-    { hour: "14:00", count: 9 },
-    { hour: "15:00", count: 11 },
-    { hour: "16:00", count: 7 },
-    { hour: "17:00", count: 4 },
-  ],
-  monthly: [
-    { hour: "08:00", count: 5 },
-    { hour: "09:00", count: 12 },
-    { hour: "10:00", count: 18 },
-    { hour: "11:00", count: 15 },
-    { hour: "12:00", count: 9 },
-    { hour: "13:00", count: 4 },
-    { hour: "14:00", count: 14 },
-    { hour: "15:00", count: 16 },
-    { hour: "16:00", count: 11 },
-    { hour: "17:00", count: 7 },
-  ],
-};
-
-/** Oldingi davr bilan taqqoslash (mock) — tugmalar o‘zgarganda yangilanadi */
-const trendByPeriod: Record<
-  Period,
-  { patients: string; diagnoses: string; avgTime: string; efficiency: string }
-> = {
-  daily: { patients: "+4%", diagnoses: "+2%", avgTime: "-1 daq", efficiency: "+1%" },
-  weekly: { patients: "+12%", diagnoses: "+8%", avgTime: "-2 daq", efficiency: "+3%" },
-  monthly: { patients: "+18%", diagnoses: "+14%", avgTime: "-3 daq", efficiency: "+5%" },
-};
+interface DoctorAnalyticsPageData {
+  analytics: DoctorAnalyticsDto[];
+  presets: DoctorAnalyticsPresetsDto;
+}
 
 export default function DocAnalyticsPage() {
+  const { t } = useTranslation("doctor");
   return (
-    <DocLayout title="Tahlil">
+    <DocLayout title={t("sidebar.analytics")}>
       <DocAnalyticsContent />
     </DocLayout>
   );
 }
 
-function DocAnalyticsContent() {
+export function DocAnalyticsContent() {
+  const { t } = useTranslation("doctor");
   const [period, setPeriod] = useState<Period>("weekly");
   const { darkMode } = useDoctorTheme();
+  const fetchAnalyticsPageData = useCallback(async (): Promise<DoctorAnalyticsPageData> => {
+    const [analytics, presets] = await Promise.all([getDoctorAnalytics(), getDoctorAnalyticsPresets()]);
+    return { analytics, presets };
+  }, []);
+  const pageState = usePageState<DoctorAnalyticsPageData>(fetchAnalyticsPageData);
+  const docAnalytics = pageState.data?.analytics ?? [];
+  const presets = pageState.data?.presets;
 
   const analytics = useMemo(() => {
     let chartData: { label: string; patients: number; diagnoses: number; avgDuration?: number }[];
@@ -122,9 +50,9 @@ function DocAnalyticsContent() {
         avgDuration: d.avgDuration,
       }));
     } else if (period === "weekly") {
-      chartData = weeklyData;
+      chartData = presets?.weekly ?? [];
     } else {
-      chartData = monthlyData;
+      chartData = presets?.monthly ?? [];
     }
 
     const totalPatients = chartData.reduce((s, d) => s + d.patients, 0);
@@ -150,12 +78,14 @@ function DocAnalyticsContent() {
 
     const maxVal = Math.max(...chartData.map((d) => d.patients), 1);
 
-    const peakHours = peakHoursByPeriod[period];
+    const peakHours = presets?.peakHours[period] ?? [];
     const maxPeak = Math.max(...peakHours.map((h) => h.count), 1);
-    const peakIdx = peakHours.reduce((best, h, i, arr) => (h.count > arr[best].count ? i : best), 0);
-    const peakSlot = peakHours[peakIdx];
+    const peakSlot =
+      peakHours.length > 0
+        ? peakHours.reduce((best, current) => (current.count > best.count ? current : best), peakHours[0])
+        : { hour: "--:--", count: 0 };
 
-    const shares = diagnosisShares[period];
+    const shares = presets?.diagnosisShares[period] ?? [];
     const diagnosisList = shares.map((row) => ({
       name: row.name,
       color: row.color,
@@ -163,7 +93,8 @@ function DocAnalyticsContent() {
     }));
     const totalDiagListed = diagnosisList.reduce((s, d) => s + d.count, 0);
 
-    const trends = trendByPeriod[period];
+    const trends =
+      presets?.trends[period] ?? { patients: "0%", diagnoses: "0%", avgTime: "0 daq", efficiency: "0%" };
 
     return {
       chartData,
@@ -179,7 +110,7 @@ function DocAnalyticsContent() {
       totalDiagListed,
       trends,
     };
-  }, [period]);
+  }, [period, docAnalytics, presets]);
 
   const {
     chartData,
@@ -214,10 +145,12 @@ function DocAnalyticsContent() {
   };
 
   return (
-    <div className="min-w-0 space-y-5">
+    <PageStateBoundary state={pageState}>
+      {() => (
+        <div className="min-w-0 space-y-5">
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className={`text-xl font-bold ${titleText}`}>Mening Tahlilim</h2>
+          <h2 className={`text-xl font-bold ${titleText}`}>{t("analytics.title")}</h2>
           <p className={`text-sm mt-0.5 ${mutedText}`}>Dr. Alisher Karimov — Kardiologiya</p>
         </div>
         <div className={`flex items-center rounded-xl p-1 ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
@@ -236,7 +169,7 @@ function DocAnalyticsContent() {
                     : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {p === "daily" ? "Kunlik" : p === "weekly" ? "Haftalik" : "Oylik"}
+              {p === "daily" ? t("analytics.period.daily") : p === "weekly" ? t("analytics.period.weekly") : t("analytics.period.monthly")}
             </button>
           ))}
         </div>
@@ -263,15 +196,15 @@ function DocAnalyticsContent() {
           className={`rounded-xl border p-5 lg:col-span-2 ${cardBase}`}
         >
           <div className="mb-5 flex items-center justify-between">
-            <h3 className={`text-base font-semibold ${titleText}`}>Bemor Oqimi</h3>
+            <h3 className={`text-base font-semibold ${titleText}`}>{t("analytics.flow")}</h3>
             <div className={`flex items-center gap-3 text-xs ${mutedText}`}>
               <span className="flex items-center gap-1">
                 <span className="inline-block h-3 w-3 rounded-full bg-violet-500"></span>
-                Bemorlar
+                {t("analytics.patients")}
               </span>
               <span className="flex items-center gap-1">
                 <span className="inline-block h-3 w-3 rounded-full bg-green-400"></span>
-                Tashxislar
+                {t("analytics.diagnoses")}
               </span>
             </div>
           </div>
@@ -295,7 +228,7 @@ function DocAnalyticsContent() {
         </div>
 
         <div className={`rounded-xl border p-5 ${cardBase}`}>
-          <h3 className={`mb-4 text-base font-semibold ${titleText}`}>Tashxislar</h3>
+          <h3 className={`mb-4 text-base font-semibold ${titleText}`}>{t("analytics.diagnoses")}</h3>
           <div className="space-y-3">
             {diagnosisList.map((d, i) => (
               <div key={i}>
@@ -314,7 +247,7 @@ function DocAnalyticsContent() {
           </div>
           <div className={`mt-4 border-t pt-4 ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
             <p className={`text-xs ${mutedText}`}>
-              Jami tashxislar:{" "}
+              {t("analytics.totalDiagnoses")}{" "}
               <span className={`font-semibold ${darkMode ? "text-gray-200" : "text-gray-800"}`}>{totalDiagnoses}</span>
             </p>
           </div>
@@ -322,7 +255,7 @@ function DocAnalyticsContent() {
       </div>
 
       <div className={`rounded-xl border p-5 ${cardBase}`}>
-        <h3 className={`mb-4 text-base font-semibold ${titleText}`}>Eng Yuqori Soatlar</h3>
+        <h3 className={`mb-4 text-base font-semibold ${titleText}`}>{t("analytics.peakHours")}</h3>
         <div className="flex h-32 items-end gap-2">
           {peakHours.map((h, i) => (
             <div key={i} className="flex flex-1 flex-col items-center gap-1">
@@ -342,12 +275,14 @@ function DocAnalyticsContent() {
           ))}
         </div>
         <p className={`mt-3 text-xs ${mutedText}`}>
-          Eng band vaqt:{" "}
+          {t("analytics.peakTime")}{" "}
           <span className="font-semibold text-violet-600">
             {peakSlot.hour} ({peakSlot.count} bemor)
           </span>
         </p>
       </div>
-    </div>
+        </div>
+      )}
+    </PageStateBoundary>
   );
 }

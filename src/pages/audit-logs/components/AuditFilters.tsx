@@ -1,4 +1,4 @@
-import { AuditAction, AuditResource } from "@/mocks/audit_logs";
+import type { AuditAction, AuditResource } from "@/api/types/audit.types";
 
 interface AuditFiltersProps {
   search: string;

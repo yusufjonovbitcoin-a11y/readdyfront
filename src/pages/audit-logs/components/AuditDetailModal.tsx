@@ -1,4 +1,5 @@
-import { AuditLog } from "@/mocks/audit_logs";
+import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
+import { useModalA11y } from "@/hooks/useModalA11y";
 
 interface AuditDetailModalProps {
   log: AuditLog | null;
@@ -26,16 +27,22 @@ function formatTime(ts: string) {
 }
 
 export default function AuditDetailModal({ log, onClose, darkMode }: AuditDetailModalProps) {
+  const modalRef = useModalA11y({ isOpen: Boolean(log), onClose });
   if (!log) return null;
 
-  const statusCfg = STATUS_CONFIG[log.status];
+  const statusCfg =
+    STATUS_CONFIG[log.status as keyof typeof STATUS_CONFIG] ??
+    { icon: "ri-alert-line", cls: "text-amber-500", label: "Unknown" };
+  const roleLabel =
+    ROLE_LABELS[log.role as keyof typeof ROLE_LABELS] ??
+    "Unknown";
 
   const rows: { label: string; value: string; mono?: boolean }[] = [
     { label: "Log ID", value: log.id, mono: true },
     { label: "Vaqt", value: formatTime(log.timestamp) },
     { label: "Foydalanuvchi", value: log.userName },
     { label: "Foydalanuvchi ID", value: log.userId, mono: true },
-    { label: "Rol", value: ROLE_LABELS[log.role] },
+    { label: "Rol", value: roleLabel },
     ...(log.hospitalName ? [{ label: "Kasalxona", value: log.hospitalName }] : []),
     { label: "Amal", value: log.action },
     { label: "Resurs", value: log.resource },
@@ -48,7 +55,14 @@ export default function AuditDetailModal({ log, onClose, darkMode }: AuditDetail
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
-      <div className={`relative w-full max-w-lg rounded-2xl overflow-hidden ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Audit log detail modal"
+        tabIndex={-1}
+        className={`relative w-full max-w-lg rounded-2xl overflow-hidden ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}
+      >
         {/* Header */}
         <div className={`flex items-center justify-between px-6 py-4 border-b ${darkMode ? "border-[#2A3448]" : "border-gray-100"}`}>
           <div className="flex items-center gap-3">
@@ -65,8 +79,9 @@ export default function AuditDetailModal({ log, onClose, darkMode }: AuditDetail
             className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${
               darkMode ? "hover:bg-[#2A3448] text-gray-400" : "hover:bg-gray-100 text-gray-500"
             }`}
+            aria-label="Audit tafsilot oynasini yopish"
           >
-            <i className="ri-close-line text-lg"></i>
+            <i className="ri-close-line text-lg" aria-hidden="true"></i>
           </button>
         </div>
 

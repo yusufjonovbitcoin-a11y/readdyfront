@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { mockTopHospitals } from "@/mocks/analytics";
 import { mockHospitals } from "@/mocks/hospitals";
+import { useModalA11y } from "@/hooks/useModalA11y";
 
 interface TopHospitalsProps {
   darkMode: boolean;
@@ -20,6 +21,7 @@ function countByViloyat() {
 export default function TopHospitals({ darkMode }: TopHospitalsProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [selectedViloyat, setSelectedViloyat] = useState<string | null>(null);
+  const openPanelButtonRef = useRef<HTMLButtonElement>(null);
   const byViloyat = useMemo(countByViloyat, []);
   const totalHospitals = mockHospitals.length;
 
@@ -37,6 +39,12 @@ export default function TopHospitals({ darkMode }: TopHospitalsProps) {
     setPanelOpen(false);
     setSelectedViloyat(null);
   }
+  const panelRef = useModalA11y({
+    isOpen: panelOpen,
+    onClose: closePanel,
+    returnFocusRef: openPanelButtonRef,
+    inertSelectors: ["header", "main", "aside"],
+  });
 
   return (
     <>
@@ -44,6 +52,7 @@ export default function TopHospitals({ darkMode }: TopHospitalsProps) {
         <div className="flex items-center justify-between mb-4">
           <h3 className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>Top Kasalxonalar</h3>
           <button
+            ref={openPanelButtonRef}
             type="button"
             onClick={openPanel}
             className={`text-sm ${darkMode ? "text-emerald-400" : "text-emerald-600"} cursor-pointer hover:underline`}
@@ -80,12 +89,14 @@ export default function TopHospitals({ darkMode }: TopHospitalsProps) {
             onClick={closePanel}
           />
           <div
+            ref={panelRef}
             className={`fixed right-0 top-0 z-[70] h-full w-full max-w-md shadow-2xl flex flex-col ${
               darkMode ? "bg-[#141824] border-l border-[#1E2130]" : "bg-white border-l border-gray-100"
             }`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="viloyat-panel-title"
+            tabIndex={-1}
           >
             <div className={`flex items-center gap-2 px-5 py-4 border-b shrink-0 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
               {selectedViloyat ? (

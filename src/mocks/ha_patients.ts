@@ -1,5 +1,6 @@
 /** Savol-javob qatori (bemor yo‘nalishi / skrining) */
 export interface HAVisitQA {
+  id: string;
   question: string;
   answer: string;
 }
@@ -51,10 +52,10 @@ export const haPatients: HAPatient[] = [
       doctorNotes:
         'Bemor 3 haftalik terapiya bilan yaxshilandi. Sumatriptan PRN qoldirildi. Qayta qabul 3 oyda — faqat qayta paydo bo‘lsa. Ishga chiqishga ruxsat.',
       qa: [
-        { question: 'Bosh og‘rig‘i qanday xarakterda?', answer: 'Pulsatsiyali, ko‘p hollarda chap tomonda' },
-        { question: 'Yorug‘lik yoki ovozga sezgirlik bormi?', answer: 'Ha, yorug‘likdan xunuklashadi' },
-        { question: 'Oxirgi 24 soatda og‘riq shiddati (0–10)?', answer: '2–3' },
-        { question: 'Dori-darmonlarga allergiya?', answer: 'Yo‘q' },
+        { id: 'pat-002-q1', question: 'Bosh og‘rig‘i qanday xarakterda?', answer: 'Pulsatsiyali, ko‘p hollarda chap tomonda' },
+        { id: 'pat-002-q2', question: 'Yorug‘lik yoki ovozga sezgirlik bormi?', answer: 'Ha, yorug‘likdan xunuklashadi' },
+        { id: 'pat-002-q3', question: 'Oxirgi 24 soatda og‘riq shiddati (0–10)?', answer: '2–3' },
+        { id: 'pat-002-q4', question: 'Dori-darmonlarga allergiya?', answer: 'Yo‘q' },
       ],
     },
   },
@@ -83,10 +84,10 @@ export const haPatients: HAPatient[] = [
       doctorNotes:
         'Kalsiy + D3 kursi 6 oy. Yurish chanasini tavsiya qilindi. Yiliga bir marta DXA nazorati. Og‘ir yuk ko‘tarmaslik.',
       qa: [
-        { question: 'So‘nggi yilda sind yoki yiqilish bo‘ldimi?', answer: 'Yo‘q, lekin bel og‘rig‘i bor' },
-        { question: 'Kunlik kalsiy iste’moli (taxminan)?', answer: 'Sut mahsulotlari kam' },
-        { question: 'Harakatchanlik darajasi?', answer: 'Ofis ishi, kam harakat' },
-        { question: 'Oila tarixida osteoporoz?', answer: 'Ona tomonda' },
+        { id: 'pat-008-q1', question: 'So‘nggi yilda sind yoki yiqilish bo‘ldimi?', answer: 'Yo‘q, lekin bel og‘rig‘i bor' },
+        { id: 'pat-008-q2', question: 'Kunlik kalsiy iste’moli (taxminan)?', answer: 'Sut mahsulotlari kam' },
+        { id: 'pat-008-q3', question: 'Harakatchanlik darajasi?', answer: 'Ofis ishi, kam harakat' },
+        { id: 'pat-008-q4', question: 'Oila tarixida osteoporoz?', answer: 'Ona tomonda' },
       ],
     },
   },
@@ -111,10 +112,10 @@ export const haPatients: HAPatient[] = [
       doctorNotes:
         'Egzema bilan adashtirish istisno qilindi. 8 haftalik kurs yakunlandi. Dermatologga 6 oyda bir marta. Stress va alkogolni cheklash tavsiyasi.',
       qa: [
-        { question: 'Tanalov qayerda lokalizatsiya?', answer: 'Tirsak va tizzada plakalar' },
-        { question: 'Qo‘shimcha bo‘g‘im og‘rig‘i bormi (psoriatik artrit)?', answer: 'Yo‘q' },
-        { question: 'Ichki organ tekshiruvlari (LFT) oxirgi natija?', answer: 'Normada' },
-        { question: 'Uy sharoitida qanday dorilar ishlatildi?', answer: 'Krem GKS + namlovchi' },
+        { id: 'pat-010-q1', question: 'Tanalov qayerda lokalizatsiya?', answer: 'Tirsak va tizzada plakalar' },
+        { id: 'pat-010-q2', question: 'Qo‘shimcha bo‘g‘im og‘rig‘i bormi (psoriatik artrit)?', answer: 'Yo‘q' },
+        { id: 'pat-010-q3', question: 'Ichki organ tekshiruvlari (LFT) oxirgi natija?', answer: 'Normada' },
+        { id: 'pat-010-q4', question: 'Uy sharoitida qanday dorilar ishlatildi?', answer: 'Krem GKS + namlovchi' },
       ],
     },
   },

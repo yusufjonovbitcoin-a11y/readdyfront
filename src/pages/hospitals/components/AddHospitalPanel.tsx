@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, type RefObject } from "react";
+import { useModalA11y } from "@/hooks/useModalA11y";
 
 interface AddHospitalPanelProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (data: Record<string, string>) => void;
+  onAdd: (data: Record<string, string>) => Promise<void> | void;
   darkMode: boolean;
+  triggerRef?: RefObject<HTMLElement | null>;
+  submitting?: boolean;
 }
 
-export default function AddHospitalPanel({ open, onClose, onAdd, darkMode }: AddHospitalPanelProps) {
+export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, triggerRef, submitting = false }: AddHospitalPanelProps) {
   const [form, setForm] = useState({
     name: "",
     address: "",
@@ -18,6 +21,12 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode }: Add
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const modalRef = useModalA11y({
+    isOpen: open,
+    onClose,
+    triggerRef,
+    inertSelectors: ["header", "main", "aside"],
+  });
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -30,17 +39,19 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode }: Add
     return e;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (loading || submitting) return;
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     setLoading(true);
-    setTimeout(() => {
-      onAdd(form);
+    try {
+      await Promise.resolve(onAdd(form));
       setForm({ name: "", address: "", phone: "", adminName: "", adminPhone: "", adminPassword: "" });
       setErrors({});
-      setLoading(false);
       onClose();
-    }, 800);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputClass = (field: string) =>
@@ -59,15 +70,26 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode }: Add
       {/* Overlay */}
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose}></div>
       {/* Panel */}
-      <div className={`fixed right-0 top-0 h-full w-full max-w-md z-50 flex flex-col shadow-2xl transition-transform duration-300 ${darkMode ? "bg-[#141824]" : "bg-white"}`}>
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-hospital-panel-title"
+        tabIndex={-1}
+        className={`fixed right-0 top-0 h-full w-full max-w-md z-50 flex flex-col shadow-2xl transition-transform duration-300 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+      >
         {/* Header */}
         <div className={`flex items-center justify-between px-6 py-4 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
           <div>
-            <h2 className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>Kasalxona Qo'shish</h2>
+            <h2 id="add-hospital-panel-title" className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>Kasalxona Qo'shish</h2>
             <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Yangi kasalxona va admin yaratish</p>
           </div>
-          <button onClick={onClose} className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
-            <i className="ri-close-line text-lg"></i>
+          <button
+            onClick={onClose}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+            aria-label="Kasalxona qo'shish panelini yopish"
+          >
+            <i className="ri-close-line text-lg" aria-hidden="true"></i>
           </button>
         </div>
 
@@ -83,18 +105,18 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode }: Add
             </div>
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>Kasalxona Nomi *</label>
-                <input className={inputClass("name")} placeholder="Masalan: Toshkent Klinik Kasalxonasi" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <label htmlFor="add-hospital-name" className={labelClass}>Kasalxona Nomi *</label>
+                <input id="add-hospital-name" className={inputClass("name")} placeholder="Masalan: Toshkent Klinik Kasalxonasi" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
               </div>
               <div>
-                <label className={labelClass}>Manzil *</label>
-                <input className={inputClass("address")} placeholder="Shahar, tuman, ko'cha" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+                <label htmlFor="add-hospital-address" className={labelClass}>Manzil *</label>
+                <input id="add-hospital-address" className={inputClass("address")} placeholder="Shahar, tuman, ko'cha" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
                 {errors.address && <p className="text-red-400 text-xs mt-1">{errors.address}</p>}
               </div>
               <div>
-                <label className={labelClass}>Telefon Raqami *</label>
-                <input className={inputClass("phone")} placeholder="+998 XX XXX XX XX" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                <label htmlFor="add-hospital-phone" className={labelClass}>Telefon Raqami *</label>
+                <input id="add-hospital-phone" className={inputClass("phone")} placeholder="+998 XX XXX XX XX" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
                 {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone}</p>}
               </div>
             </div>
@@ -110,18 +132,18 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode }: Add
             </div>
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>Admin Ismi *</label>
-                <input className={inputClass("adminName")} placeholder="To'liq ism" value={form.adminName} onChange={(e) => setForm({ ...form, adminName: e.target.value })} />
+                <label htmlFor="add-hospital-admin-name" className={labelClass}>Admin Ismi *</label>
+                <input id="add-hospital-admin-name" className={inputClass("adminName")} placeholder="To'liq ism" value={form.adminName} onChange={(e) => setForm({ ...form, adminName: e.target.value })} />
                 {errors.adminName && <p className="text-red-400 text-xs mt-1">{errors.adminName}</p>}
               </div>
               <div>
-                <label className={labelClass}>Admin Telefoni *</label>
-                <input className={inputClass("adminPhone")} placeholder="+998 XX XXX XX XX" value={form.adminPhone} onChange={(e) => setForm({ ...form, adminPhone: e.target.value })} />
+                <label htmlFor="add-hospital-admin-phone" className={labelClass}>Admin Telefoni *</label>
+                <input id="add-hospital-admin-phone" className={inputClass("adminPhone")} placeholder="+998 XX XXX XX XX" value={form.adminPhone} onChange={(e) => setForm({ ...form, adminPhone: e.target.value })} />
                 {errors.adminPhone && <p className="text-red-400 text-xs mt-1">{errors.adminPhone}</p>}
               </div>
               <div>
-                <label className={labelClass}>Parol *</label>
-                <input type="password" className={inputClass("adminPassword")} placeholder="Kamida 6 ta belgi" value={form.adminPassword} onChange={(e) => setForm({ ...form, adminPassword: e.target.value })} />
+                <label htmlFor="add-hospital-admin-password" className={labelClass}>Parol *</label>
+                <input id="add-hospital-admin-password" type="password" className={inputClass("adminPassword")} placeholder="Kamida 6 ta belgi" value={form.adminPassword} onChange={(e) => setForm({ ...form, adminPassword: e.target.value })} />
                 {errors.adminPassword && <p className="text-red-400 text-xs mt-1">{errors.adminPassword}</p>}
               </div>
             </div>
@@ -130,11 +152,19 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode }: Add
 
         {/* Footer */}
         <div className={`px-6 py-4 border-t flex gap-3 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
-          <button onClick={onClose} className={`flex-1 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${darkMode ? "bg-[#1E2A3A] text-gray-300 hover:bg-[#243040]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+          <button
+            onClick={onClose}
+            disabled={loading || submitting}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${loading || submitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1E2A3A] text-gray-300 hover:bg-[#243040]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+          >
             Bekor qilish
           </button>
-          <button onClick={handleSubmit} disabled={loading} className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 cursor-pointer transition-colors whitespace-nowrap disabled:opacity-60">
-            {loading ? "Saqlanmoqda..." : "Saqlash"}
+          <button
+            onClick={() => { void handleSubmit(); }}
+            disabled={loading || submitting}
+            className="flex-1 py-2.5 rounded-lg text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 cursor-pointer transition-colors whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {loading || submitting ? "Saqlanmoqda..." : "Saqlash"}
           </button>
         </div>
       </div>

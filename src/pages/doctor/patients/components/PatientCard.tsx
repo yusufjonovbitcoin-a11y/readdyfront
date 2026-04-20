@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import type { DocPatient, RiskLevel } from "@/mocks/doc_patients";
 
 const riskConfig: Record<RiskLevel, { label: string; color: string; bg: string }> = {
@@ -21,16 +21,17 @@ interface PatientCardProps {
 }
 
 export default function PatientCard({ patient, darkMode = false }: PatientCardProps) {
-  const navigate = useNavigate();
   const risk = riskConfig[patient.riskLevel];
   const status = statusConfig[patient.status];
 
   return (
-    <div
+    <Link
+      to={`/doctor/patients/${patient.id}`}
       className={`rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md ${
         darkMode ? "bg-[#161B22] border-[#30363D] hover:border-violet-600/50" : "bg-white border-gray-100 hover:border-violet-200"
-      } ${patient.riskLevel === "critical" ? (darkMode ? "border-red-800/40" : "border-red-200") : ""}`}
-      onClick={() => navigate(`/doctor/patients/${patient.id}`)}
+      } ${patient.riskLevel === "critical" ? (darkMode ? "border-red-800/40" : "border-red-200") : ""} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+        darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
+      }`}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
@@ -67,10 +68,20 @@ export default function PatientCard({ patient, darkMode = false }: PatientCardPr
           {risk.label} xavf
         </span>
         <span
-          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+          className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${
             patient.status === "in_progress" && darkMode ? "bg-sky-900/40 text-sky-300" : `${status.bg} ${status.color}`
           }`}
         >
+          <i
+            className={
+              patient.status === "queue"
+                ? "ri-time-line text-[11px]"
+                : patient.status === "in_progress"
+                  ? "ri-flask-line text-[11px]"
+                  : "ri-checkbox-circle-line text-[11px]"
+            }
+            aria-hidden="true"
+          />
           {status.label}
         </span>
       </div>
@@ -113,18 +124,14 @@ export default function PatientCard({ patient, darkMode = false }: PatientCardPr
                 : `${patient.consultationDuration} daqiqa`}
           </span>
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/doctor/patients/${patient.id}`);
-          }}
-          className={`text-xs font-medium cursor-pointer whitespace-nowrap ${
+        <span
+          className={`text-xs font-medium whitespace-nowrap ${
             darkMode ? "text-violet-400 hover:text-violet-300" : "text-violet-600 hover:text-violet-700"
           }`}
         >
           Ko'rish →
-        </button>
+        </span>
       </div>
-    </div>
+    </Link>
   );
 }
