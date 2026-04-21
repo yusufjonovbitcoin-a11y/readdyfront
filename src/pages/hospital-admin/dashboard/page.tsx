@@ -2,14 +2,11 @@ import { useTranslation } from "react-i18next";
 import { useId, useMemo, useState } from "react";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
-import { haDoctors } from "@/mocks/ha_doctors";
-import { haPatients } from "@/mocks/ha_patients";
 import {
-  haAnalyticsDailyData,
-  haAnalyticsMonthlyData,
-  haAnalyticsWeeklyData,
-  haDoctorPerformance,
-} from "@/mocks/ha_analytics";
+  getHaAnalyticsBundle,
+} from "@/api/services/haAnalytics.service";
+import { getHADoctors, getHAPatients } from "@/api/services/hospitalAdminData.service";
+import { usePageState } from "@/hooks/usePageState";
 import { layoutSystem } from "@/styles/layoutSystem";
 
 type FlowPeriod = "daily" | "weekly" | "monthly";
@@ -66,6 +63,12 @@ function FlowBarChart({ data, darkMode }: { data: { label: string; patients: num
             <button
               type="button"
               onClick={() => setSelected(isSel ? null : i)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelected((s) => (s === i ? null : i));
+                }
+              }}
               className="flex flex-col items-center w-full max-w-[40px] mx-auto group cursor-pointer p-0 border-0 bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/60 rounded-sm"
               aria-label={`${d.label}: ${d.patients} bemor`}
               aria-pressed={isSel}
@@ -146,6 +149,18 @@ function MonthlyChart({ data, darkMode }: { data: { month: string; patients: num
             onMouseEnter={() => setHovered(i)}
             onMouseLeave={() => setHovered(null)}
             onClick={() => setSelected((s) => (s === i ? null : i))}
+            onFocus={() => setHovered(i)}
+            onBlur={() => setHovered((current) => (current === i ? null : current))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setSelected((s) => (s === i ? null : i));
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label={`${p.month}: ${p.patients.toLocaleString("uz-UZ")} bemor`}
+            aria-pressed={selected === i}
           >
             <title>{`${p.month}: ${p.patients.toLocaleString("uz-UZ")} bemor`}</title>
             {showValue && (
@@ -207,6 +222,15 @@ export default function HADashboardPage() {
 export function HADashboardContent() {
   const { t } = useTranslation("hospital");
   const darkMode = useHospitalAdminDarkMode();
+  const doctorsState = usePageState(getHADoctors);
+  const patientsState = usePageState(getHAPatients);
+  const analyticsState = usePageState(getHaAnalyticsBundle);
+  const haDoctors = doctorsState.data ?? [];
+  const haPatients = patientsState.data ?? [];
+  const haAnalyticsDailyData = analyticsState.data?.daily ?? [];
+  const haAnalyticsWeeklyData = analyticsState.data?.weekly ?? [];
+  const haAnalyticsMonthlyData = analyticsState.data?.monthly ?? [];
+  const haDoctorPerformance = analyticsState.data?.doctorPerformance ?? [];
   const [flowPeriod, setFlowPeriod] = useState<FlowPeriod>("daily");
 
   const flowChartData = useMemo(() => {
@@ -217,7 +241,7 @@ export function HADashboardContent() {
       return haAnalyticsWeeklyData.map((d) => ({ label: d.week, patients: d.patients }));
     }
     return haAnalyticsMonthlyData.map((d) => ({ label: d.month, patients: d.patients }));
-  }, [flowPeriod]);
+  }, [flowPeriod, haAnalyticsDailyData, haAnalyticsMonthlyData, haAnalyticsWeeklyData]);
 
   const flowSubtitle =
     flowPeriod === "daily"
@@ -230,18 +254,57 @@ export function HADashboardContent() {
     const activeDoctors = haDoctors.filter((doctor) => doctor.status === "active").length;
     const todayTotal = haDoctors.reduce((sum, doctor) => sum + doctor.todayPatients, 0);
     const weeklyTotal = haAnalyticsDailyData.reduce((sum, row) => sum + row.patients, 0);
-    const monthlyTotal = haAnalyticsMonthlyData[3].patients;
+    const monthlyTotal = haAnalyticsMonthlyData[3]?.patients ?? 0;
     return { activeDoctors, todayTotal, weeklyTotal, monthlyTotal };
-  }, []);
+  }, [haAnalyticsDailyData, haAnalyticsMonthlyData, haDoctors]);
 
-  const topDoctors = useMemo(() => haDoctorPerformance.slice(0, 4), []);
-  const recentPatients = useMemo(() => haPatients.slice(0, 5), []);
+  const topDoctors = useMemo(() => haDoctorPerformance.slice(0, 4), [haDoctorPerformance]);
+  const recentPatients = useMemo(() => haPatients.slice(0, 5), [haPatients]);
 
   const periodTabs: { key: FlowPeriod; label: string }[] = [
     { key: "daily", label: t("dashboard.flow.period.daily") },
     { key: "weekly", label: t("dashboard.flow.period.weekly") },
     { key: "monthly", label: t("dashboard.flow.period.monthly") },
   ];
+
+  if (
+    doctorsState.status === "loading" ||
+    patientsState.status === "loading" ||
+    analyticsState.status === "loading"
+  ) {
+    return (
+      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-400" : "bg-white border border-gray-100 text-gray-500"}`}>
+        Yuklanmoqda...
+      </div>
+    );
+  }
+
+  if (
+    doctorsState.status === "error" ||
+    patientsState.status === "error" ||
+    analyticsState.status === "error"
+  ) {
+    return (
+      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-300" : "bg-white border border-gray-100 text-gray-700"}`}>
+        <p className="mb-4">
+          {doctorsState.error ??
+            patientsState.error ??
+            analyticsState.error}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            void doctorsState.reload();
+            void patientsState.reload();
+            void analyticsState.reload();
+          }}
+          className="min-h-[44px] px-4 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium"
+        >
+          Qayta yuklash
+        </button>
+      </div>
+    );
+  }
 
   return (
       <div className={layoutSystem.pageStack}>
@@ -417,13 +480,14 @@ export function HADashboardContent() {
           </div>
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full">
+              <caption className="sr-only">So'nggi bemorlar ro'yxati</caption>
               <thead>
                 <tr className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.patient")}</th>
-                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.doctor")}</th>
-                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.diagnosis")}</th>
-                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.lastVisit")}</th>
-                  <th className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.status")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.patient")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.doctor")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.diagnosis")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.lastVisit")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("dashboard.recentPatients.table.status")}</th>
                 </tr>
               </thead>
               <tbody className="space-y-2">

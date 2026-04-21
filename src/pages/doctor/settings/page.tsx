@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
-import { currentDoctorSession } from "@/mocks/current_doctor";
+import { getCurrentDoctorSession } from "@/api/services/doctorSession.service";
 
 type SettingsTab = 'profile' | 'security' | 'language' | 'notifications';
 
@@ -17,7 +17,6 @@ export default function DocSettingsPage() {
 
 export function DocSettingsContent() {
   const { t, i18n } = useTranslation("doctor");
-  const isMockMode = import.meta.env.VITE_USE_MOCK === "true";
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [language, setLanguage] = useState<'uz' | 'ru'>(i18n.language === "ru" ? "ru" : "uz");
   const [saved, setSaved] = useState(false);
@@ -34,6 +33,7 @@ export function DocSettingsContent() {
     };
   }, [localAvatarUrl]);
   const { darkMode, setDarkMode, patientDetailLayout, setPatientDetailLayout } = useDoctorTheme();
+  const currentDoctorSession = getCurrentDoctorSession();
 
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
@@ -116,11 +116,9 @@ export function DocSettingsContent() {
         <div>
           <h2 className={`text-xl font-bold ${pageTitle}`}>{t("settings.title")}</h2>
           <p className={`text-sm mt-0.5 ${pageMuted}`}>{t("settings.subtitle")}</p>
-          {!isMockMode && (
-            <p className={`text-xs mt-2 ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
-              Eslatma: profile/password sozlamalari uchun backend endpointlar hali ulanmagan.
-            </p>
-          )}
+          <p className={`text-xs mt-2 ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
+            Eslatma: profile/password sozlamalari uchun backend endpointlar hali ulanmagan.
+          </p>
         </div>
 
         <div className="flex min-w-0 gap-5">
@@ -161,7 +159,7 @@ export function DocSettingsContent() {
                   <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 flex items-center gap-2">
                     <i className="ri-checkbox-circle-line text-green-600"></i>
                     <span className="text-sm text-green-700 font-medium">
-                      {isMockMode ? "Demo: lokal ko'rinishda saqlandi" : "Endpoint ulanmagani sababli serverga yuborilmadi"}
+                      Endpoint ulanmagani sababli serverga yuborilmadi
                     </span>
                   </div>
                 )}
@@ -279,7 +277,7 @@ export function DocSettingsContent() {
                   <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 flex items-center gap-2">
                     <i className="ri-checkbox-circle-line text-green-600"></i>
                     <span className="text-sm text-green-700 font-medium">
-                      {isMockMode ? "Demo: parol o'zgarishi lokal ko'rinishda" : "Endpoint ulanmagani sababli parol serverda o'zgarmadi"}
+                      Endpoint ulanmagani sababli parol serverda o'zgarmadi
                     </span>
                   </div>
                 )}

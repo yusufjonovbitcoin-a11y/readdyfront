@@ -11,8 +11,6 @@ import { getCurrentUser } from "@/api/auth";
 
 describe("bootstrapAuth", () => {
   beforeEach(() => {
-    localStorage.clear();
-    sessionStorage.clear();
     vi.clearAllMocks();
   });
 

@@ -1,6 +1,14 @@
-import type { CheckinQuestion } from "@/mocks/checkin_questions";
-
-export type CheckinQuestionDto = CheckinQuestion;
+export interface CheckinQuestionDto {
+  id: string;
+  text: string;
+  type: "single" | "multi" | "text" | "bodymap";
+  options?: string[];
+  required?: boolean;
+  conditionalOn?: {
+    questionId: string;
+    answer: string;
+  };
+}
 
 export interface CheckinDraft {
   phone: string;

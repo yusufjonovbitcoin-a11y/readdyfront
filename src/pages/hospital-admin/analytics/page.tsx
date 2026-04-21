@@ -1,16 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
-import { haDoctors } from "@/mocks/ha_doctors";
 import {
-  haAnalyticsDailyData,
-  haAnalyticsWeeklyData,
-  haAnalyticsMonthlyData,
-  haPeakHoursData,
-  haDoctorPerformance,
-} from "@/mocks/ha_analytics";
+  getHaAnalyticsBundle,
+} from "@/api/services/haAnalytics.service";
+import { usePageState } from "@/hooks/usePageState";
 
 type Period = 'daily' | 'weekly' | 'monthly';
 
@@ -18,6 +14,7 @@ function BarChart({ data, valueKey, labelKey, color, darkMode, height = 140 }: {
   data: Array<Record<string, number | string> & { id?: string }>; valueKey: string; labelKey: string; color: string; darkMode: boolean; height?: number;
 }) {
   const [hovered, setHovered] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
   const values = data.map((d) => Number(d[valueKey]));
   const max = Math.max(...values, 1);
   const topReserve = 22;
@@ -27,17 +24,31 @@ function BarChart({ data, valueKey, labelKey, color, darkMode, height = 140 }: {
   return (
     <div className="flex items-end gap-1.5 sm:gap-2" style={{ height }}>
       {data.map((d, i) => {
+        const isSelected = selected === i;
         const isHover = hovered === i;
+        const showValue = isHover || isSelected;
         const barH = (values[i] / max) * barMax;
         return (
-          <div
+          <button
+            type="button"
             key={d.id ?? `${String(d[labelKey])}`}
-            className="flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1"
+            className="flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1 rounded-sm border-0 bg-transparent p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
             onMouseEnter={() => setHovered(i)}
             onMouseLeave={() => setHovered(null)}
+            onFocus={() => setHovered(i)}
+            onBlur={() => setHovered((current) => (current === i ? null : current))}
+            onClick={() => setSelected((s) => (s === i ? null : i))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setSelected((s) => (s === i ? null : i));
+              }
+            }}
+            aria-label={`${String(d[labelKey])}: ${values[i].toLocaleString("uz-UZ")} bemor`}
+            aria-pressed={isSelected}
           >
             <div className="flex h-[22px] w-full items-end justify-center">
-              {isHover && (
+              {showValue && (
                 <span
                   className={`text-[11px] font-semibold tabular-nums leading-none ${
                     darkMode ? "text-teal-300" : "text-teal-600"
@@ -48,15 +59,15 @@ function BarChart({ data, valueKey, labelKey, color, darkMode, height = 140 }: {
               )}
             </div>
             <div
-              className={`w-full max-w-[48px] rounded-t-md transition-all ${color} ${isHover ? "ring-2 ring-teal-400/45" : ""}`}
+              className={`w-full max-w-[48px] rounded-t-md transition-all ${color} ${showValue ? "ring-2 ring-teal-400/45" : ""}`}
               style={{ height: `${barH}px`, minHeight: barH > 0 ? 3 : 0 }}
             />
             <span
-              className={`text-[9px] whitespace-nowrap ${isHover ? (darkMode ? "text-gray-300" : "text-gray-600") : darkMode ? "text-gray-500" : "text-gray-400"}`}
+              className={`text-[9px] whitespace-nowrap ${showValue ? (darkMode ? "text-gray-300" : "text-gray-600") : darkMode ? "text-gray-500" : "text-gray-400"}`}
             >
               {String(d[labelKey])}
             </span>
-          </div>
+          </button>
         );
       })}
     </div>
@@ -117,6 +128,18 @@ function LineChart({ data, darkMode }: { data: { id?: string; month: string; pat
             onMouseEnter={() => setHovered(i)}
             onMouseLeave={() => setHovered(null)}
             onClick={() => setSelected((s) => (s === i ? null : i))}
+            onFocus={() => setHovered(i)}
+            onBlur={() => setHovered((current) => (current === i ? null : current))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setSelected((s) => (s === i ? null : i));
+              }
+            }}
+            tabIndex={0}
+            role="button"
+            aria-label={`${p.month}: ${p.patients.toLocaleString("uz-UZ")} bemor`}
+            aria-pressed={selected === i}
           >
             <title>{`${p.month}: ${p.patients.toLocaleString("uz-UZ")} bemor`}</title>
             {showValue && (
@@ -174,16 +197,79 @@ export function HAAnalyticsPageContent() {
   const darkMode = useHospitalAdminDarkMode();
   const navigate = useNavigate();
   const [period, setPeriod] = useState<Period>('daily');
+  const analyticsState = usePageState(getHaAnalyticsBundle);
+  const haDoctors = analyticsState.data?.doctors ?? [];
+  const haAnalyticsDailyData = analyticsState.data?.daily ?? [];
+  const haAnalyticsWeeklyData = analyticsState.data?.weekly ?? [];
+  const haAnalyticsMonthlyData = analyticsState.data?.monthly ?? [];
+  const haPeakHoursData = analyticsState.data?.peakHours ?? [];
+  const haDoctorPerformance = analyticsState.data?.doctorPerformance ?? [];
+  const haDoctorPerformanceWithIds = useMemo(
+    () =>
+      haDoctorPerformance.map((item) => ({
+        ...item,
+        doctorId: haDoctors.find((doctor) => doctor.name === item.name)?.id ?? null,
+      })),
+    [haDoctorPerformance, haDoctors],
+  );
+  const maxPatients = useMemo(
+    () => Math.max(1, ...haDoctorPerformanceWithIds.map((d) => d.patients)),
+    [haDoctorPerformanceWithIds],
+  );
 
-  const periodData = period === 'daily' ? haAnalyticsDailyData : period === 'weekly' ? haAnalyticsWeeklyData : haAnalyticsMonthlyData;
+  const periodData = useMemo(
+    () => (period === "daily" ? haAnalyticsDailyData : period === "weekly" ? haAnalyticsWeeklyData : haAnalyticsMonthlyData),
+    [period, haAnalyticsDailyData, haAnalyticsWeeklyData, haAnalyticsMonthlyData],
+  );
   const valueKey = 'patients';
   const labelKey = period === 'daily' ? 'day' : period === 'weekly' ? 'week' : 'month';
 
-  const totalPatients = haAnalyticsDailyData.reduce((s, d) => s + d.patients, 0);
-  const avgPerDay = Math.round(totalPatients / 7);
-  const peakHour = haPeakHoursData.reduce((a, b) => a.count > b.count ? a : b);
+  const totalPatients = useMemo(
+    () => haAnalyticsDailyData.reduce((sum, day) => sum + day.patients, 0),
+    [haAnalyticsDailyData],
+  );
+  const avgPerDay = useMemo(() => Math.round(totalPatients / 7), [totalPatients]);
+  const peakHour = useMemo(
+    () =>
+      haPeakHoursData.reduce(
+        (maxHour, currentHour) => (maxHour.count > currentHour.count ? maxHour : currentHour),
+        { hour: "-", count: 0 },
+      ),
+    [haPeakHoursData],
+  );
 
   const cardBase = `rounded-xl border p-5 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`;
+
+  if (
+    analyticsState.status === "loading"
+  ) {
+    return (
+      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-400" : "bg-white border border-gray-100 text-gray-500"}`}>
+        Yuklanmoqda...
+      </div>
+    );
+  }
+
+  if (
+    analyticsState.status === "error"
+  ) {
+    return (
+      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-300" : "bg-white border border-gray-100 text-gray-700"}`}>
+        <p className="mb-4">
+          {analyticsState.error}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            void analyticsState.reload();
+          }}
+          className="min-h-[44px] px-4 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium"
+        >
+          Qayta yuklash
+        </button>
+      </div>
+    );
+  }
 
   return (
       <div className="space-y-6">
@@ -252,20 +338,20 @@ export function HAAnalyticsPageContent() {
           <p className={`text-xs mb-4 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("analytics.rowHint")}</p>
           <div className="overflow-x-auto">
             <table className="w-full">
+              <caption className="sr-only">Shifokorlar samaradorligi jadvali</caption>
               <thead>
                 <tr className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                  <th className="text-left pb-3 font-medium">#</th>
-                  <th className="text-left pb-3 font-medium">{t("analytics.table.doctor")}</th>
-                  <th className="text-left pb-3 font-medium">{t("analytics.table.specialty")}</th>
-                  <th className="text-left pb-3 font-medium">{t("analytics.table.todayPatients")}</th>
-                  <th className="text-left pb-3 font-medium">{t("analytics.table.rating")}</th>
-                  <th className="text-left pb-3 font-medium">{t("analytics.table.activity")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">#</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("analytics.table.doctor")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("analytics.table.specialty")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("analytics.table.todayPatients")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("analytics.table.rating")}</th>
+                  <th scope="col" className="text-left pb-3 font-medium">{t("analytics.table.activity")}</th>
                 </tr>
               </thead>
               <tbody>
-                {haDoctorPerformance.map((doc, i) => {
-                  const maxP = Math.max(...haDoctorPerformance.map((d) => d.patients));
-                  const doctorId = haDoctors.find((d) => d.name === doc.name)?.id;
+                {haDoctorPerformanceWithIds.map((doc, i) => {
+                  const doctorId = doc.doctorId;
                   const openProfile = () => {
                     if (doctorId) navigate(`/hospital-admin/doctors/${doctorId}`);
                   };
@@ -309,7 +395,7 @@ export function HAAnalyticsPageContent() {
                       </td>
                       <td className="py-3 w-32">
                         <div className={`h-1.5 rounded-full ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
-                          <div className="h-full rounded-full bg-teal-500 transition-all group-hover:bg-teal-400" style={{ width: `${(doc.patients / maxP) * 100}%` }}></div>
+                          <div className="h-full rounded-full bg-teal-500 transition-all group-hover:bg-teal-400" style={{ width: `${(doc.patients / maxPatients) * 100}%` }}></div>
                         </div>
                       </td>
                     </tr>

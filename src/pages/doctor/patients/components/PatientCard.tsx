@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { DocPatient, RiskLevel } from "@/mocks/doc_patients";
+import type { DoctorPatientDto as DocPatient, DoctorPatientRiskLevel as RiskLevel } from "@/api/types/doctor.types";
 
 const riskConfig: Record<RiskLevel, { label: string; color: string; bg: string }> = {
   low: { label: "Past", color: "text-green-600", bg: "bg-green-100" },

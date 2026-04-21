@@ -5,7 +5,7 @@ import DocLayout from "@/pages/doctor/components/DocLayout";
 import PatientCard from "./components/PatientCard";
 import PatientTableRow from "./components/PatientTableRow";
 import QueueDraggableGrid from "./components/QueueDraggableGrid";
-import type { DocPatient } from "@/mocks/doc_patients";
+import type { DoctorPatientDto as DocPatient } from "@/api/types/doctor.types";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useDocPatients } from "@/context/DocPatientsContext";
 import { formatLocalYMD } from "@/utils/date";
@@ -122,7 +122,7 @@ export function DocPatientsContent() {
               <button
                 type="button"
                 onClick={() => setViewMode("card")}
-                className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
+                className={`w-11 h-11 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                   viewMode === "card" ? segmentBtnActive : segmentBtnIdle
                 }`}
                 aria-label="Kartochka ko'rinishiga o'tish"
@@ -133,7 +133,7 @@ export function DocPatientsContent() {
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
-                className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
+                className={`w-11 h-11 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                   viewMode === "table" ? segmentBtnActive : segmentBtnIdle
                 }`}
                 aria-label="Jadval ko'rinishiga o'tish"
@@ -227,14 +227,15 @@ export function DocPatientsContent() {
           <div className={`rounded-xl border overflow-hidden ${tableWrap}`}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px]">
+                <caption className="sr-only">Bemorlar ro'yxati</caption>
                 <thead>
                   <tr className={`border-b ${tableHeadBorder}`}>
-                    <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Bemor</th>
-                    <th className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Telefon</th>
-                    <th className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Yosh</th>
-                    <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Xavf</th>
-                    <th className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Vaqt</th>
-                    <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Amal</th>
+                    <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Bemor</th>
+                    <th scope="col" className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Telefon</th>
+                    <th scope="col" className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Yosh</th>
+                    <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Xavf</th>
+                    <th scope="col" className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Vaqt</th>
+                    <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Amal</th>
                   </tr>
                 </thead>
                 <tbody className={`divide-y ${tbodyDivide}`}>

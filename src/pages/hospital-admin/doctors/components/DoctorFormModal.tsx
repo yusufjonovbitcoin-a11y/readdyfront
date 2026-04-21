@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type { DoctorDto as HADoctor } from "@/api/types/doctor.types";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { isBlank, isValidEmail, isValidUzPhone, normalizeWhitespace } from "@/utils/fieldValidation";
@@ -8,11 +9,13 @@ interface DoctorFormModalProps {
   darkMode: boolean;
   onClose: () => void;
   onSave: (data: Partial<HADoctor>) => void;
+  isSaving?: boolean;
 }
 
 const specialties = ['Kardiologiya', 'Nevrologiya', 'Ortopediya', 'Pediatriya', 'Xirurgiya', 'Dermatologiya', 'Terapiya', 'Oftalmologiya', 'Stomatologiya', 'Endokrinologiya'];
 
-export default function DoctorFormModal({ doctor, darkMode, onClose, onSave }: DoctorFormModalProps) {
+export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isSaving = false }: DoctorFormModalProps) {
+  const { t } = useTranslation("hospital");
   const modalRef = useModalA11y({ isOpen: true, onClose });
   const fieldId = {
     name: "ha-doctor-form-name",
@@ -38,6 +41,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave }: D
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
 
     const nextErrors: Partial<Record<keyof typeof fieldId, string>> = {};
     const normalizedName = normalizeWhitespace(form.name);
@@ -89,15 +93,25 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave }: D
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Doctor form modal"
+        aria-labelledby="ha-doctor-form-title"
         tabIndex={-1}
-        className={`w-full max-w-md rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+        className={`w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className={`text-base font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+          <h2 id="ha-doctor-form-title" className={`text-base font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
             {doctor ? "Shifokorni tahrirlash" : "Yangi shifokor qo'shish"}
           </h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100">
+          <button
+            type="button"
+            onClick={() => {
+              if (isSaving) return;
+              onClose();
+            }}
+            disabled={isSaving}
+            className="w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label={t("doctors.form.closeModal", { defaultValue: "Modalni yopish" })}
+            title={t("doctors.form.closeModal", { defaultValue: "Modalni yopish" })}
+          >
             <i className={`ri-close-line text-lg ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i>
           </button>
         </div>
@@ -181,16 +195,21 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave }: D
           <div className="flex gap-3 pt-2">
             <button
               type="button"
-              onClick={onClose}
-              className={`flex-1 h-10 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+              onClick={() => {
+                if (isSaving) return;
+                onClose();
+              }}
+              disabled={isSaving}
+              className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60 ${darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
             >
               Bekor qilish
             </button>
             <button
               type="submit"
-              className="flex-1 h-10 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+              disabled={isSaving}
+              className="flex-1 min-h-[44px] rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {doctor ? "Saqlash" : "Qo'shish"}
+              {isSaving ? "Saqlanmoqda..." : doctor ? "Saqlash" : "Qo'shish"}
             </button>
           </div>
         </form>

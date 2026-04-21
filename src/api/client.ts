@@ -1,4 +1,3 @@
-import { getStoredUser } from "@/hooks/useAuth";
 import { emitSessionFailure } from "@/auth/sessionSignals";
 
 export interface ApiError<T = unknown> {
@@ -11,37 +10,73 @@ export interface RequestOptions extends Omit<globalThis.RequestInit, "headers"> 
   headers?: Record<string, string>;
 }
 
+export class AuthError extends Error {
+  constructor() {
+    super("UNAUTHORIZED");
+    this.name = "AuthError";
+  }
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const REQUEST_TIMEOUT_MS = 12000;
 const MAX_RETRY_ATTEMPTS = 2;
 const RETRY_BASE_DELAY_MS = 350;
 const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
+let refreshInFlight: Promise<boolean> | null = null;
+let refreshFailureNotified = false;
 
 function normalizeError<T = unknown>(status: number, message: string, data: T | null = null): ApiError<T> {
   return { status, message, data };
 }
 
+function notifySessionFailureOnce() {
+  if (refreshFailureNotified) return;
+  refreshFailureNotified = true;
+  emitSessionFailure({ reason: "unauthorized", status: 401, at: Date.now() });
+}
+
+async function refreshSessionToken(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (refreshResponse.ok) {
+          refreshFailureNotified = false;
+          return true;
+        }
+        notifySessionFailureOnce();
+        return false;
+      } catch {
+        notifySessionFailureOnce();
+        return false;
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+  }
+  return refreshInFlight;
+}
+
 /**
  * Base HTTP client for API requests.
- * Injects bearer auth header and normalizes errors.
+ * Uses cookie-based auth (credentials: include) and normalizes errors.
  * Auth-side effects are emitted as session signals and handled in React auth/router layer.
  */
 export async function apiRequest<TResponse>(
   path: string,
   options: RequestOptions = {},
+  skipRefresh = false,
 ): Promise<TResponse> {
-  const authUser = getStoredUser();
   const method = (options.method ?? "GET").toUpperCase();
   const canRetry = IDEMPOTENT_METHODS.has(method);
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...options.headers,
   };
-
-  if (authUser?.token) {
-    headers.Authorization = `Bearer ${authUser.token}`;
-  }
 
   for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
     const controller = new AbortController();
@@ -96,6 +131,14 @@ export async function apiRequest<TResponse>(
     }
 
     if (!response.ok) {
+      if (response.status === 401 && !skipRefresh) {
+        const refreshed = await refreshSessionToken();
+        if (refreshed) {
+          return apiRequest<TResponse>(path, options, true);
+        }
+        throw new AuthError();
+      }
+
       const shouldRetryStatus =
         canRetry && RETRYABLE_STATUS_CODES.has(response.status) && attempt < MAX_RETRY_ATTEMPTS;
       if (shouldRetryStatus) {
@@ -115,7 +158,8 @@ export async function apiRequest<TResponse>(
       const error = normalizeError(response.status, message, responseData);
 
       if (response.status === 401) {
-        emitSessionFailure({ reason: "unauthorized", status: 401, at: Date.now() });
+        notifySessionFailureOnce();
+        throw new AuthError();
       }
 
       throw error;

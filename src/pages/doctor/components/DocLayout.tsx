@@ -3,6 +3,7 @@ import DocSidebar from "./DocSidebar";
 import DocHeader from "./DocHeader";
 import { usePersistedDoctorTheme } from "@/hooks/usePersistedDoctorTheme";
 import { usePersistedPatientDetailLayout } from "@/hooks/usePersistedPatientDetailLayout";
+import { useMobileDrawerA11y } from "@/hooks/useMobileDrawerA11y";
 import { DoctorThemeProvider } from "@/context/DoctorThemeContext";
 import { layoutSystem } from "@/styles/layoutSystem";
 
@@ -16,6 +17,7 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode, setDarkMode] = usePersistedDoctorTheme();
   const [patientDetailLayout, setPatientDetailLayout] = usePersistedPatientDetailLayout();
+  const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
 
   return (
     <DoctorThemeProvider
@@ -33,11 +35,18 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
           onToggle={() => setCollapsed(!collapsed)}
           mobileOpen={mobileSidebarOpen}
           onCloseMobile={() => setMobileSidebarOpen(false)}
+          drawerRef={drawerRef}
         />
         <DocHeader
           title={title}
           sidebarCollapsed={collapsed}
-          onToggleMobile={() => setMobileSidebarOpen((v) => !v)}
+          onToggleMobile={() =>
+            setMobileSidebarOpen((v) => {
+              const next = !v;
+              if (next) captureTrigger();
+              return next;
+            })
+          }
         />
         {mobileSidebarOpen && (
           <button
@@ -48,6 +57,8 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
           />
         )}
         <main
+          id="main-content"
+          tabIndex={-1}
           className={`min-w-0 transition-[margin-left] duration-300 ease-out pt-16 min-h-screen ${
             collapsed ? "md:ml-16" : "md:ml-64"
           }`}

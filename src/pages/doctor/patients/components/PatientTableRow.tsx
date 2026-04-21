@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import type { DocPatient, RiskLevel } from "@/mocks/doc_patients";
+import type { DoctorPatientDto as DocPatient, DoctorPatientRiskLevel as RiskLevel } from "@/api/types/doctor.types";
 
 type StatusHandler = (id: string, status: DocPatient["status"]) => void;
 

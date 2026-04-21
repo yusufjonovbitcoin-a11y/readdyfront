@@ -1,4 +1,4 @@
-import type { DocPatient, RiskLevel } from "@/mocks/doc_patients";
+import type { DoctorPatientDto as DocPatient, DoctorPatientRiskLevel as RiskLevel } from "@/api/types/doctor.types";
 
 export type BlockStyles = {
   cardBase: string;
@@ -163,10 +163,11 @@ export function JavoblarTahliliCard(p: PatientDetailBlocksProps) {
       </div>
       <div className="overflow-x-auto flex-1">
         <table className="w-full text-base border-collapse min-w-[240px] leading-snug">
+          <caption className="sr-only">{title}</caption>
           <thead>
             <tr className={`border-b ${tableBorder} ${darkMode ? "bg-[#21262D]/80" : "bg-white/90"}`}>
-              <th className={`text-left py-2.5 px-2.5 text-sm font-semibold uppercase tracking-wide ${pageMuted}`}>Savol</th>
-              <th className={`text-right py-2.5 px-2.5 text-sm font-semibold uppercase tracking-wide w-20 ${pageMuted}`}>Javob</th>
+              <th scope="col" className={`text-left py-2.5 px-2.5 text-sm font-semibold uppercase tracking-wide ${pageMuted}`}>Savol</th>
+              <th scope="col" className={`text-right py-2.5 px-2.5 text-sm font-semibold uppercase tracking-wide w-20 ${pageMuted}`}>Javob</th>
             </tr>
           </thead>
           <tbody>
@@ -313,7 +314,9 @@ export function ShifokorIzohlariCard(p: PatientDetailBlocksProps) {
         <span className={`text-xs ${pageMuted}`}>{notes.length}/500 belgi</span>
         <button
           type="button"
-          className={`text-xs font-medium cursor-pointer whitespace-nowrap ${darkMode ? "text-violet-400 hover:text-violet-300" : "text-violet-600 hover:text-violet-700"}`}
+          disabled
+          title="Tez orada"
+          className={`text-xs font-medium whitespace-nowrap opacity-60 cursor-not-allowed ${darkMode ? "text-violet-400" : "text-violet-600"}`}
         >
           Saqlash
         </button>
@@ -391,6 +394,7 @@ export function BemorVaAmallarGrid(p: PatientDetailBlocksProps) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function patientDetailBlockProps(
   patient: DocPatient,
   styles: BlockStyles,

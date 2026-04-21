@@ -255,7 +255,7 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
           type="button"
           onClick={() => navigate(`/doctor/patients?tab=${canonicalListTab}`)}
           aria-label="Bemorlar ro'yxatiga qaytish"
-          className={`w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${backBtn}`}
+          className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${backBtn}`}
         >
           <i className="ri-arrow-left-line text-base" aria-hidden="true"></i>
         </button>

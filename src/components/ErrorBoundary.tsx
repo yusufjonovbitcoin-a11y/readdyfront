@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import * as Sentry from "@sentry/react";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -18,7 +19,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // TODO: Send errors to centralized monitoring (Sentry/Datadog/etc).
+    Sentry.captureException(error, { extra: { errorInfo } });
     console.error("Unhandled app error:", error, errorInfo);
   }
 

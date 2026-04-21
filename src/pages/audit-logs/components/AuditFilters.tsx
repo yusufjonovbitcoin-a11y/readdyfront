@@ -54,6 +54,8 @@ export default function AuditFilters({
             <i className="ri-search-line text-gray-400 text-sm"></i>
           </div>
           <input
+            id="audit-filter-search"
+            aria-label="Qidiruv"
             type="text"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -64,6 +66,8 @@ export default function AuditFilters({
 
         {/* Date From */}
         <input
+          id="audit-filter-date-from"
+          aria-label="Sana dan"
           type="date"
           value={dateFrom}
           onChange={(e) => onDateFromChange(e.target.value)}
@@ -72,6 +76,8 @@ export default function AuditFilters({
 
         {/* Date To */}
         <input
+          id="audit-filter-date-to"
+          aria-label="Sana gacha"
           type="date"
           value={dateTo}
           onChange={(e) => onDateToChange(e.target.value)}
@@ -81,7 +87,7 @@ export default function AuditFilters({
 
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         {/* Role */}
-        <select value={roleFilter} onChange={(e) => onRoleChange(e.target.value)} className={selectCls}>
+        <select id="audit-filter-role" aria-label="Rol" value={roleFilter} onChange={(e) => onRoleChange(e.target.value)} className={selectCls}>
           <option value="">Barcha rollar</option>
           <option value="SUPER_ADMIN">Super Admin</option>
           <option value="HOSPITAL_ADMIN">Hospital Admin</option>
@@ -89,7 +95,7 @@ export default function AuditFilters({
         </select>
 
         {/* Action */}
-        <select value={actionFilter} onChange={(e) => onActionChange(e.target.value)} className={selectCls}>
+        <select id="audit-filter-action" aria-label="Amal" value={actionFilter} onChange={(e) => onActionChange(e.target.value)} className={selectCls}>
           <option value="">Barcha amallar</option>
           {ACTIONS.map((a) => (
             <option key={a} value={a}>{a}</option>
@@ -97,7 +103,7 @@ export default function AuditFilters({
         </select>
 
         {/* Resource */}
-        <select value={resourceFilter} onChange={(e) => onResourceChange(e.target.value)} className={selectCls}>
+        <select id="audit-filter-resource" aria-label="Resurs" value={resourceFilter} onChange={(e) => onResourceChange(e.target.value)} className={selectCls}>
           <option value="">Barcha resurslar</option>
           {RESOURCES.map((r) => (
             <option key={r} value={r}>{r}</option>
@@ -105,7 +111,7 @@ export default function AuditFilters({
         </select>
 
         {/* Status */}
-        <select value={statusFilter} onChange={(e) => onStatusChange(e.target.value)} className={selectCls}>
+        <select id="audit-filter-status" aria-label="Status" value={statusFilter} onChange={(e) => onStatusChange(e.target.value)} className={selectCls}>
           <option value="">Barcha statuslar</option>
           <option value="success">Muvaffaqiyatli</option>
           <option value="failed">Muvaffaqiyatsiz</option>

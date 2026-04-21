@@ -99,7 +99,7 @@ export default function ResultStep({ phone, doctorName, doctorSpecialty, answers
             {!hasOperationalQueueData && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 mb-4">
                 <p className="text-xs font-medium text-amber-700">
-                  {tr("checkin:result.demoQueueNotice", "Demo rejim: navbat raqami va ETA backend navbat xizmati ulangandan keyin chiqadi.")}
+                  {tr("checkin:result.queueNotice", "Navbat raqami va ETA backend navbat xizmati ulangandan keyin chiqadi.")}
                 </p>
               </div>
             )}

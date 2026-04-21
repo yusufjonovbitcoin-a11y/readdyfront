@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import type { RefObject } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,9 +16,10 @@ interface DocSidebarProps {
   onToggle: () => void;
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  drawerRef?: RefObject<HTMLElement | null>;
 }
 
-export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: DocSidebarProps) {
+export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMobile, drawerRef }: DocSidebarProps) {
   const { t } = useTranslation("doctor");
   const location = useLocation();
   const navigate = useNavigate();
@@ -25,14 +27,7 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
   const { darkMode } = useDoctorTheme();
   const showExpanded = mobileOpen || !collapsed;
   const handleLogout = async () => {
-    await Promise.resolve(logout());
-    localStorage.removeItem("medcore_auth");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("role");
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("user");
-    sessionStorage.removeItem("role");
+    await logout();
     onCloseMobile();
     navigate("/login", { replace: true });
   };
@@ -46,6 +41,11 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
 
   return (
     <aside
+      ref={drawerRef}
+      role={mobileOpen ? "dialog" : undefined}
+      aria-modal={mobileOpen ? "true" : undefined}
+      aria-label={mobileOpen ? "Navigation menu" : undefined}
+      tabIndex={mobileOpen ? -1 : undefined}
       className={`fixed left-0 top-0 h-full z-40 flex flex-col transition-[width,transform] duration-300 ease-out isolate ${
         collapsed ? "w-64 md:w-16" : "w-64"
       } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} ${
@@ -68,7 +68,10 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
           </div>
         )}
         <button
+          type="button"
           onClick={onToggle}
+          aria-label={collapsed ? t("sidebar.expand") : t("sidebar.collapse")}
+          title={collapsed ? t("sidebar.expand") : t("sidebar.collapse")}
           className={`ml-auto w-6 h-6 flex items-center justify-center rounded-md transition-colors cursor-pointer flex-shrink-0 ${
             darkMode ? "text-gray-400 hover:text-white hover:bg-[#21262D]" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
           }`}
@@ -103,6 +106,8 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
                 onClick={onCloseMobile}
                 className={itemClass}
                 aria-current={isActive ? "page" : undefined}
+                aria-label={item.label}
+                title={item.label}
               >
                 <div className="w-5 h-5 flex items-center justify-center flex-shrink-0" aria-hidden="true">
                   <i className={`${item.icon} text-base`}></i>

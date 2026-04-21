@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth, type UserRole } from "@/hooks/useAuth";
 
 type ProtectedRouteProps = {
@@ -8,11 +9,12 @@ type ProtectedRouteProps = {
 };
 
 function AuthBootstrapFallback() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
         <i className="ri-loader-4-line animate-spin text-base text-emerald-600" aria-hidden="true" />
-        <span>Autentifikatsiya tekshirilmoqda...</span>
+        <span>{t("auth.redirecting")}</span>
       </div>
     </div>
   );
@@ -26,6 +28,7 @@ function getHomePathByRole(role: UserRole): string {
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const location = useLocation();
+  const { t } = useTranslation();
   const { user, isBootstrapping } = useAuth();
 
   /**
@@ -47,7 +50,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
    * Redirect to the role's own section home instead of showing forbidden content.
    */
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to={getHomePathByRole(user.role)} replace />;
+    return <Navigate to={getHomePathByRole(user.role)} replace state={{ deniedReason: t("common.forbidden") }} />;
   }
 
   return <>{children}</>;

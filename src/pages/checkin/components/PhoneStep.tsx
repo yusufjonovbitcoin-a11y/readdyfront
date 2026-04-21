@@ -1,14 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from 'react';
 import { useModalA11y } from "@/hooks/useModalA11y";
-import { parseJsonSafe } from "@/utils/storage";
-
-interface DraftInfo {
-  phone: string;
-  currentStep: number;
-  answersCount: number;
-  updatedAt: string;
-}
+import { clearCheckinDraft } from "@/api/checkin";
+import { resolveCheckinDraft } from "@/api/services/checkinDraftPolicy";
+import type { CheckinDraft } from "@/api/types/checkin.types";
 
 interface PhoneStepProps {
   onContinue: (phone: string, resumeDraft: boolean) => void;
@@ -23,7 +18,7 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [draft, setDraft] = useState<DraftInfo | null>(null);
+  const [draft, setDraft] = useState<CheckinDraft | null>(null);
   const [showDraftModal, setShowDraftModal] = useState(false);
   const continueButtonRef = useRef<HTMLButtonElement>(null);
   const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,26 +57,6 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
     return digits.length === 9;
   };
 
-  const checkDraft = (fullPhone: string) => {
-    try {
-      const key = `draft_${fullPhone}`;
-      const saved = localStorage.getItem(key);
-      if (!saved) return null;
-      const parsed = parseJsonSafe<DraftInfo | null>(saved, null);
-      if (!parsed) return null;
-      const updatedAt = new Date(parsed.updatedAt);
-      const now = new Date();
-      const hoursDiff = (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60);
-      if (hoursDiff > 24) {
-        localStorage.removeItem(key);
-        return null;
-      }
-      return parsed as DraftInfo;
-    } catch {
-      return null;
-    }
-  };
-
   const handleSubmit = () => {
     if (!validatePhone(phone)) {
       setError(t("phoneStep.phoneError"));
@@ -91,14 +66,21 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
     const fullPhone = `+998 ${phone}`;
     submitTimerRef.current = setTimeout(() => {
       submitTimerRef.current = null;
-      setLoading(false);
-      const existingDraft = checkDraft(fullPhone);
-      if (existingDraft && existingDraft.currentStep > 0) {
-        setDraft(existingDraft);
-        setShowDraftModal(true);
-      } else {
-        onContinue(fullPhone, false);
-      }
+      void (async () => {
+        try {
+          const existingDraft = await resolveCheckinDraft(fullPhone);
+          setLoading(false);
+          if (existingDraft && existingDraft.currentStep > 0) {
+            setDraft(existingDraft);
+            setShowDraftModal(true);
+          } else {
+            onContinue(fullPhone, false);
+          }
+        } catch {
+          setLoading(false);
+          onContinue(fullPhone, false);
+        }
+      })();
     }, 600);
   };
 
@@ -139,9 +121,11 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
               </button>
               <button
                 onClick={() => {
-                  localStorage.removeItem(`draft_+998 ${phone}`);
-                  setShowDraftModal(false);
-                  onContinue(`+998 ${phone}`, false);
+                  void (async () => {
+                    await clearCheckinDraft(`+998 ${phone}`);
+                    setShowDraftModal(false);
+                    onContinue(`+998 ${phone}`, false);
+                  })();
                 }}
                 className="w-full h-12 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
               >

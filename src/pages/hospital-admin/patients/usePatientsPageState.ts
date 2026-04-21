@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { haPatients as initialPatients, HAPatient } from "@/mocks/ha_patients";
-import { haDoctors } from "@/mocks/ha_doctors";
+import type { DoctorDto } from "@/api/types/doctor.types";
+import type { HAPatient } from "@/api/services/hospitalAdminData.service";
 
 export interface PatientFormData {
   name: string;
@@ -13,7 +13,8 @@ export interface PatientFormData {
   status: "active" | "discharged" | "scheduled";
 }
 
-export function usePatientsPageState() {
+export function usePatientsPageState(initialDoctors: DoctorDto[], initialPatients: HAPatient[]) {
+  const haDoctors = useMemo(() => initialDoctors, [initialDoctors]);
   const [searchParams, setSearchParams] = useSearchParams();
   const qParam = searchParams.get("q") ?? "";
   const [patients, setPatients] = useState<HAPatient[]>(initialPatients);
@@ -31,6 +32,10 @@ export function usePatientsPageState() {
   useEffect(() => {
     setSearch(qParam);
   }, [qParam]);
+
+  useEffect(() => {
+    setPatients(initialPatients);
+  }, [initialPatients]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -53,7 +58,7 @@ export function usePatientsPageState() {
       map.set(doctor.id, doctor.name);
     });
     return map;
-  }, []);
+  }, [haDoctors]);
 
   const searchLower = useMemo(() => search.toLowerCase(), [search]);
 

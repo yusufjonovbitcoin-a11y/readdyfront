@@ -1,6 +1,6 @@
 export const HA_ADMIN_AVATAR_KEY = "ha-admin-profile-avatar";
 
-/** Demo: profil surati brauzer localStorage da */
+/** Profil surati brauzer localStorage da saqlanadi */
 export function getHaAdminStoredAvatar(): string | null {
   try {
     return localStorage.getItem(HA_ADMIN_AVATAR_KEY);

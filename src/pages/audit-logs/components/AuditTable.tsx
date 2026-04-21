@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
 
 interface AuditTableProps {
@@ -51,9 +52,9 @@ const STATUS_CONFIG: Record<string, { icon: string; cls: string }> = {
   warning: { icon: "ri-alert-line", cls: "text-amber-500" },
 };
 
-function formatTime(ts: string) {
+function formatTime(ts: string, locale: string) {
   const d = new Date(ts);
-  return d.toLocaleString("uz-UZ", {
+  return d.toLocaleString(locale, {
     year: "numeric", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", second: "2-digit",
   });
@@ -61,6 +62,8 @@ function formatTime(ts: string) {
 
 export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableProps) {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const locale = i18n.language === "ru" ? "ru-RU" : "uz-UZ";
   const panelClass = darkMode ? "bg-[#1A2235]" : "bg-white";
   const fallbackStatusCfg = { icon: "ri-alert-line", cls: "text-amber-500" };
   const fallbackRoleLabel = "Unknown";
@@ -96,7 +99,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                     to={`/audit-logs/${log.id}`}
                     className={`text-xs font-mono rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${darkMode ? "text-gray-400 focus-visible:ring-offset-[#0D1117]" : "text-gray-500 focus-visible:ring-offset-white"}`}
                   >
-                    {formatTime(log.timestamp)}
+                    {formatTime(log.timestamp, locale)}
                   </Link>
                   <p className={`mt-1 text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{log.userName}</p>
                   <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-500"}`}>{roleLabel} {log.hospitalName ? `• ${log.hospitalName}` : ""}</p>
@@ -117,7 +120,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                   <button
                     onClick={() => navigate(`/audit-logs/${log.id}`)}
                     aria-label={`Open full details for audit log ${log.id}`}
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
+                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
                     title="To'liq sahifada ko'rish"
                   >
                     <i aria-hidden="true" className="ri-external-link-line text-sm"></i>
@@ -125,7 +128,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                   <button
                     onClick={() => onViewDetail(log)}
                     aria-label={`Open quick modal details for audit log ${log.id}`}
-                    className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
+                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
                     title="Modal ko'rish"
                   >
                     <i aria-hidden="true" className="ri-eye-line text-sm"></i>
@@ -182,7 +185,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                         darkMode ? "text-gray-400 focus-visible:ring-offset-[#0D1117]" : "text-gray-500 focus-visible:ring-offset-white"
                       }`}
                     >
-                      {formatTime(log.timestamp)}
+                      {formatTime(log.timestamp, locale)}
                     </Link>
                   </td>
 
@@ -260,7 +263,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                       <button
                         onClick={() => navigate(`/audit-logs/${log.id}`)}
                         aria-label={`Open full details for audit log ${log.id}`}
-                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+                        className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                           darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"
                         }`}
                         title="To'liq sahifada ko'rish"
@@ -270,7 +273,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                       <button
                         onClick={() => onViewDetail(log)}
                         aria-label={`Open quick modal details for audit log ${log.id}`}
-                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+                        className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
                           darkMode ? "hover:bg-[#2A3448] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"
                         }`}
                         title="Modal ko'rish"

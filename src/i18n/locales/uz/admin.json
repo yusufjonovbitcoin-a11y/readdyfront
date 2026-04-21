@@ -15,7 +15,9 @@
     "auditLogs": "Audit Logs",
     "settings": "Sozlamalar",
     "logout": "Chiqish",
-    "superAdmin": "Super Admin"
+    "superAdmin": "Super Admin",
+    "expand": "Yon panelni kengaytirish",
+    "collapse": "Yon panelni yig'ish"
   },
   "header": {
     "pages": {
@@ -191,6 +193,99 @@
       "resource": "Resurs",
       "description": "Tavsif",
       "status": "Status"
+    }
+  },
+  "auditDetail": {
+    "pageTitle": "Audit Log Tafsiloti",
+    "loading": "Audit log tafsilotlari yuklanmoqda...",
+    "retry": "Qayta yuklash",
+    "copy": "Nusxalash",
+    "copySuccess": "Nusxalandi",
+    "copyFailed": "Nusxalab bo'lmadi",
+    "copyAll": "Ma'lumotlarni nusxalash",
+    "backToList": "Audit Logs ga qaytish",
+    "notFoundTitle": "Log topilmadi",
+    "idPrefix": "ID",
+    "breadcrumbDetail": "Tafsilot",
+    "actionDescription": "Amal tavsifi",
+    "fullInfoTitle": "To'liq Ma'lumotlar",
+    "securityTitle": "Xavfsizlik Ma'lumotlari",
+    "quick": {
+      "resource": "Resurs",
+      "resourceId": "Resurs ID",
+      "ip": "IP Manzil",
+      "time": "Vaqt"
+    },
+    "fields": {
+      "logId": "Log ID",
+      "user": "Foydalanuvchi",
+      "userId": "Foydalanuvchi ID",
+      "role": "Rol",
+      "hospital": "Kasalxona",
+      "hospitalId": "Kasalxona ID",
+      "browserDevice": "Brauzer / Qurilma",
+      "dateTime": "Sana va Vaqt"
+    },
+    "roles": {
+      "SUPER_ADMIN": "Super Admin",
+      "HOSPITAL_ADMIN": "Hospital Admin",
+      "DOCTOR": "Shifokor",
+      "unknown": "Unknown"
+    },
+    "status": {
+      "success": "Muvaffaqiyatli",
+      "failed": "Muvaffaqiyatsiz",
+      "warning": "Ogohlantirish",
+      "unknown": "Unknown"
+    },
+    "security": {
+      "authTitle": "Autentifikatsiya",
+      "authDirect": "To'g'ridan-to'g'ri auth amali",
+      "authSession": "Autentifikatsiyadan o'tgan sessiya",
+      "locationTitle": "Joylashuv",
+      "locationDesc": "IP: {{ip}} — Ichki tarmoq",
+      "deviceTitle": "Qurilma"
+    },
+    "export": {
+      "auditLog": "Audit Log"
+    }
+  },
+  "hospitalDetail": {
+    "pageTitle": "Kasalxona tafsiloti",
+    "loading": "Kasalxona tafsilotlari yuklanmoqda...",
+    "retry": "Qayta yuklash",
+    "backToHospitals": "Kasalxonalar ro'yxatiga qaytish",
+    "addDoctor": "Shifokor qo'shish",
+    "addAdmin": "Admin qo'shish",
+    "newDoctor": "Yangi Shifokor",
+    "searchPatients": "Bemor qidirish...",
+    "adminsTitle": "Administratorlar",
+    "settingsTitle": "Kasalxona Sozlamalari",
+    "hospitalStatus": "Kasalxona holati",
+    "toggleStatus": "Faol/Nofaol qilish",
+    "toggleStatusAria": "Kasalxona holatini almashtirish",
+    "notFoundTitle": "Kasalxona topilmadi",
+    "idPrefix": "ID",
+    "sections": {
+      "overview": "Umumiy Ma'lumot",
+      "todayStats": "Bugungi Statistika"
+    },
+    "availabilityNotice": {
+      "section": "Bu bo'limdagi o'zgarishlar endpointlar tayyor bo'lguncha serverga saqlanmaydi.",
+      "settings": "Bu bo'limdagi saqlash amallari endpointlar tayyor bo'lguncha serverga yuborilmaydi."
+    },
+    "validation": {
+      "fullNameRequired": "To'liq ism majburiy.",
+      "specialtyRequired": "Mutaxassislik majburiy.",
+      "phoneFormat": "Telefon +998 XX XXX XX XX formatida bo'lishi kerak.",
+      "hospitalNameRequired": "Kasalxona nomi majburiy.",
+      "addressRequired": "Manzil majburiy."
+    },
+    "toast": {
+      "doctorSavedLocal": "Shifokor ma'lumoti hozircha faqat interfeysda saqlandi.",
+      "settingsNotSent": "Sozlamalar endpoint tayyor bo'lguncha serverga yuborilmadi.",
+      "adminAddNotConnected": "Admin qo'shish endpointi hali ulanmagan.",
+      "statusLocal": "Holat o'zgarishi hozircha faqat interfeysda aks etdi."
     }
   },
   "settings": {

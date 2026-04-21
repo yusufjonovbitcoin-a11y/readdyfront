@@ -7,6 +7,7 @@ type UseModalA11yParams = {
   returnFocusRef?: RefObject<HTMLElement | null>;
   initialFocusRef?: RefObject<HTMLElement | null>;
   inertSelectors?: string[];
+  isolateBackground?: boolean;
   trapFocus?: boolean;
   lockScroll?: boolean;
 };
@@ -65,6 +66,7 @@ export function useModalA11y({
   returnFocusRef,
   initialFocusRef,
   inertSelectors = [],
+  isolateBackground = true,
   trapFocus = true,
   lockScroll = true,
 }: UseModalA11yParams) {
@@ -81,12 +83,12 @@ export function useModalA11y({
 
     let inerted: InertedElement[] = [];
     /**
-     * We intentionally ignore broad selector-based hiding here to avoid
-     * accidentally hiding ancestors that contain the dialog itself.
-     * If callers passed inertSelectors in old code, we treat it as "enable
-     * background isolation" and apply a structural sibling-based strategy.
+     * Default behavior: isolate modal content from the rest of the page,
+     * even when callers do not pass explicit inert selectors.
+     * For lightweight popovers that should not lock background interaction,
+     * callers can set `isolateBackground: false`.
      */
-    if (inertSelectors.length > 0 && containerRef.current) {
+    if (isolateBackground && containerRef.current) {
       inerted = inertOutsideModal(containerRef.current);
     }
 
@@ -142,7 +144,7 @@ export function useModalA11y({
         previousActive.focus();
       }
     };
-  }, [isOpen, onClose, triggerRef, returnFocusRef, initialFocusRef, inertSelectors, trapFocus, lockScroll]);
+  }, [isOpen, onClose, triggerRef, returnFocusRef, initialFocusRef, inertSelectors, isolateBackground, trapFocus, lockScroll]);
 
   return containerRef;
 }

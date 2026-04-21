@@ -9,6 +9,10 @@
     "back": "Orqaga",
     "skip": "O'tkazib yuborish",
     "finish": "Tugatish",
+    "save": "Saqlash",
+    "saving": "Saqlanmoqda...",
+    "add": "Qo'shish",
+    "close": "Yopish",
     "cancel": "Bekor qilish",
     "delete": "O'chirish"
   },
@@ -30,6 +34,8 @@
     "previous": "Oldingi sahifa",
     "next": "Keyingi sahifa"
   },
+  "loading": "Yuklanmoqda...",
+  "forbidden": "Ruxsat yo'q",
   "notFound": {
     "title": "Bu sahifa hali yaratilmagan",
     "description": "Sahifa haqida ko'proq ma'lumot bering, shunda uni yarataman"
@@ -37,7 +43,7 @@
   "login": {
     "title": "Tizimga kirish",
     "subtitle": "Hisobingizga kiring va boshqaruvni boshlang",
-    "demoAccounts": "Demo hisoblar",
+    "demoAccounts": "Sinov hisoblar",
     "phoneLabel": "Telefon raqami",
     "phonePlaceholder": "90 123 45 67",
     "phoneAria": "Telefon raqami, +998 dan keyin",
@@ -54,7 +60,7 @@
     "errors": {
       "phoneRequired": "To'liq telefon raqamini kiriting (+998 dan keyin 9 raqam)",
       "passwordRequired": "Parolni kiriting",
-      "invalidCredentials": "Telefon yoki parol noto'g'ri. Demo tugmalaridan foydalaning."
+      "invalidCredentials": "Telefon yoki parol noto'g'ri."
     }
   }
 }

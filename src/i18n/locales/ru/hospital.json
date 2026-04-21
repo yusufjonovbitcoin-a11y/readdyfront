@@ -11,7 +11,9 @@
     "settings": "Настройки",
     "hospitalName": "Ташкентская клиника",
     "hospitalAdmin": "Админ клиники",
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "expand": "Развернуть боковую панель",
+    "collapse": "Свернуть боковую панель"
   },
   "header": {
     "searchPlaceholder": "Поиск...",
@@ -76,6 +78,51 @@
     "status": {
       "scheduled": "Запланирован",
       "discharged": "Выписан"
+    },
+    "modal": {
+      "editTitle": "Редактировать пациента",
+      "createTitle": "Добавить нового пациента",
+      "closeAria": "Закрыть окно",
+      "fields": {
+        "fullName": "Полное имя",
+        "phone": "Телефон",
+        "age": "Возраст",
+        "gender": "Пол",
+        "status": "Статус",
+        "doctor": "Врач",
+        "diagnosis": "Диагноз"
+      },
+      "placeholders": {
+        "fullName": "Имя Фамилия",
+        "age": "25",
+        "selectDoctor": "Выберите...",
+        "diagnosis": "Диагноз..."
+      },
+      "help": {
+        "ageRange": "От 0 до 120"
+      },
+      "options": {
+        "genderMale": "Мужчина",
+        "genderFemale": "Женщина",
+        "statusActive": "Активный",
+        "statusScheduled": "Запланирован",
+        "statusDischarged": "Выписан"
+      },
+      "errors": {
+        "nameRequired": "Полное имя обязательно.",
+        "nameMin": "Имя должно быть не менее 3 символов.",
+        "phoneFormat": "Телефон должен быть в формате +998 XX XXX XX XX.",
+        "ageRange": "Возраст должен быть целым числом от 0 до 120.",
+        "diagnosisRequired": "Для активного или запланированного статуса диагноз обязателен."
+      }
+    },
+    "dischargeArchive": {
+      "title": "Выписанный пациент — полная информация",
+      "closeAria": "Закрыть окно архива",
+      "empty": "Для этого пациента еще не заполнены AI-анализ и вопросы-ответы.",
+      "aiSection": "AI-анализ и рекомендации",
+      "doctorNotesSection": "Заключения врача",
+      "qaSection": "Вопросы и ответы пациента"
     }
   },
   "analytics": {
@@ -112,7 +159,48 @@
     "templateNotFound": "Шаблон не найден",
     "backToTemplates": "Вернуться к шаблонам",
     "addQuestion": "Добавить вопрос",
-    "noQuestions": "Пока нет вопросов. Добавьте первый вопрос!"
+    "noQuestions": "Пока нет вопросов. Добавьте первый вопрос!",
+    "categoryTemplateCount": "{{count}} шаблонов",
+    "templateQuestionCount": "{{count}} вопросов",
+    "createdAt": "Создано: {{date}}",
+    "confirmDelete": "Подтвердите удаление",
+    "confirmDeleteDesc": "Вы хотите удалить этот элемент? Это действие нельзя отменить.",
+    "confirmDeleteAction": "Удалить",
+    "cancel": "Отмена",
+    "actions": {
+      "editCategoryAria": "Редактировать категорию: {{name}}",
+      "deleteCategoryAria": "Удалить категорию: {{name}}",
+      "editTemplateAria": "Редактировать шаблон: {{title}}",
+      "deleteTemplateAria": "Удалить шаблон: {{title}}",
+      "editQuestionAria": "Редактировать вопрос {{index}}",
+      "deleteQuestionAria": "Удалить вопрос {{index}}"
+    },
+    "modal": {
+      "closeCategoryAria": "Закрыть окно категории",
+      "closeTemplateAria": "Закрыть окно шаблона",
+      "closeQuestionAria": "Закрыть окно вопроса",
+      "category": {
+        "editTitle": "Редактировать категорию",
+        "createTitle": "Новая категория",
+        "nameLabel": "Название категории *",
+        "namePlaceholder": "Название категории..."
+      },
+      "template": {
+        "editTitle": "Редактировать шаблон",
+        "createTitle": "Новый шаблон",
+        "nameLabel": "Название шаблона *",
+        "namePlaceholder": "Название шаблона...",
+        "categoryLabel": "Категория *",
+        "selectPlaceholder": "Выберите..."
+      },
+      "question": {
+        "editTitle": "Редактировать вопрос",
+        "createTitle": "Новый вопрос",
+        "textLabel": "Текст вопроса *",
+        "textPlaceholder": "Текст вопроса...",
+        "help": "Текст вопроса может содержать до 500 символов."
+      }
+    }
   },
   "settings": {
     "tabs": {
@@ -121,7 +209,64 @@
       "language": "Язык и внешний вид",
       "notifications": "Уведомления"
     },
-    "languageAppearance": "Язык и внешний вид"
+    "languageAppearance": "Язык и внешний вид",
+    "notice": {
+      "backendNotConnected": "Примечание: backend endpoint'ы для сохранения в разделе настроек пока не подключены."
+    },
+    "saved": {
+      "localDemo": "Сохранено локально",
+      "notSent": "На сервер не отправлено"
+    },
+    "profile": {
+      "title": "Данные профиля",
+      "avatarInputAria": "Фото профиля",
+      "uploadPhoto": "Загрузить фото",
+      "removePhoto": "Удалить фото",
+      "roleLabel": "HOSPITAL_ADMIN",
+      "avatarHint": "Фото необязательно. Сохраняется в браузере.",
+      "fullName": "Полное имя",
+      "hospital": "Клиника",
+      "email": "Email",
+      "phone": "Телефон"
+    },
+    "security": {
+      "title": "Сменить пароль",
+      "currentPassword": "Текущий пароль",
+      "newPassword": "Новый пароль",
+      "confirmPassword": "Подтвердите новый пароль",
+      "passwordMismatch": "Пароли не совпадают",
+      "updatePassword": "Обновить пароль",
+      "infoTitle": "Информация о безопасности",
+      "info": {
+        "lastLogin": "Последний вход",
+        "ipAddress": "IP адрес",
+        "device": "Устройство"
+      }
+    },
+    "language": {
+      "interfaceLanguage": "Язык интерфейса"
+    },
+    "notifications": {
+      "title": "Настройки уведомлений",
+      "items": {
+        "newPatient": {
+          "label": "Новый пациент",
+          "desc": "Получать уведомление при добавлении нового пациента"
+        },
+        "doctorUpdate": {
+          "label": "Обновления врача",
+          "desc": "Когда меняются данные врача"
+        },
+        "systemAlert": {
+          "label": "Системные оповещения",
+          "desc": "Важные системные сообщения"
+        },
+        "weeklyReport": {
+          "label": "Недельный отчет",
+          "desc": "Еженедельная статистика по понедельникам"
+        }
+      }
+    }
   },
   "dashboard": {
     "title": "Панель администратора клиники",

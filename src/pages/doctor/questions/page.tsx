@@ -35,7 +35,7 @@ function getDefaultQuestionFormData(categories: DoctorQuestionCategoryDto[]): Qu
     categories[0];
   return {
     text: "",
-    category: defaultCategory?.name ?? "Umumiy",
+    category: defaultCategory?.name ?? "General",
     categoryId: defaultCategory?.id ?? "cat-001",
   };
 }
@@ -52,7 +52,7 @@ export default function DocQuestionsPage() {
 export function DocQuestionsContent() {
   const { t } = useTranslation("doctor");
   const { darkMode } = useDoctorTheme();
-  const canMutateQuestions = import.meta.env.VITE_USE_MOCK === "true";
+  const canMutateQuestions = false;
   const [questions, setQuestions] = useState<DocQuestion[]>([]);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -61,7 +61,7 @@ export function DocQuestionsContent() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [categories, setCategories] = useState<DoctorQuestionCategoryDto[]>([]);
   const [templates, setTemplates] = useState<DoctorQuestionTemplateDto[]>([]);
-  const [formData, setFormData] = useState<QuestionFormData>({ text: "", category: "Umumiy", categoryId: "cat-001" });
+  const [formData, setFormData] = useState<QuestionFormData>({ text: "", category: t("questions.defaultCategory"), categoryId: "cat-001" });
   const fetchPageData = useCallback(async (): Promise<DoctorQuestionsPageData> => {
     const [questionsData, categoriesData, templatesData] = await Promise.all([
       getDoctorQuestions(),
@@ -260,7 +260,7 @@ export function DocQuestionsContent() {
       </div>
       {!canMutateQuestions && (
         <p className={`text-xs ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
-          Backend mutation endpointlari tayyor bo'lmagani uchun savollarni o'zgartirish vaqtincha o'chirilgan.
+          {t("questions.mutationsDisabled")}
         </p>
       )}
 
@@ -279,13 +279,13 @@ export function DocQuestionsContent() {
       {/* Stats row */}
       <div className="flex items-center gap-4">
         <span className={`text-sm ${pageMuted}`}>
-          <span className={`font-semibold ${statGreen}`}>{questions.filter((q) => q.status === "active").length}</span> faol
+          <span className={`font-semibold ${statGreen}`}>{questions.filter((q) => q.status === "active").length}</span> {t("questions.stats.active")}
         </span>
         <span className={`text-sm ${pageMuted}`}>
-          <span className={`font-semibold ${statGray}`}>{questions.filter((q) => q.status === "inactive").length}</span> nofaol
+          <span className={`font-semibold ${statGray}`}>{questions.filter((q) => q.status === "inactive").length}</span> {t("questions.stats.inactive")}
         </span>
         <span className={`text-sm ${pageMuted}`}>
-          <span className={`font-semibold ${statViolet}`}>{questions.filter((q) => q.isCustom).length}</span> shaxsiy
+          <span className={`font-semibold ${statViolet}`}>{questions.filter((q) => q.isCustom).length}</span> {t("questions.stats.custom")}
         </span>
       </div>
 
@@ -312,19 +312,19 @@ export function DocQuestionsContent() {
                     className={`flex h-7 min-w-[1.75rem] shrink-0 items-center justify-center rounded-lg px-1.5 text-xs font-bold tabular-nums ${
                       darkMode ? "bg-violet-900/45 text-violet-200" : "bg-violet-100 text-violet-700"
                     }`}
-                    title={`Tartib: ${i + 1}`}
+                    title={t("questions.orderTitle", { order: i + 1 })}
                   >
                     {i + 1}
                   </span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCat}`}>{q.category}</span>
-                  {q.isCustom && <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCustom}`}>Shaxsiy</span>}
+                  {q.isCustom && <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCustom}`}>{t("questions.stats.custom")}</span>}
                 </div>
                 <button
                   type="button"
                   disabled={!canMutateQuestions}
                   role="switch"
                   aria-checked={q.status === "active"}
-                  aria-label={q.status === "active" ? "Savolni nofaol qilish" : "Savolni faollashtirish"}
+                  aria-label={q.status === "active" ? t("questions.aria.deactivate") : t("questions.aria.activate")}
                   onClick={() => handleToggleStatus(q.id)}
                   className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                     darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
@@ -353,8 +353,8 @@ export function DocQuestionsContent() {
                     type="button"
                     disabled={!canMutateQuestions}
                     onClick={() => openEdit(q)}
-                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${iconBtn}`}
-                    aria-label={`Savolni tahrirlash: ${q.text}`}
+                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${iconBtn}`}
+                    aria-label={t("questions.aria.edit", { text: q.text })}
                   >
                     <i className="ri-edit-2-line text-sm" aria-hidden="true"></i>
                   </button>
@@ -362,8 +362,8 @@ export function DocQuestionsContent() {
                     type="button"
                     disabled={!canMutateQuestions}
                     onClick={() => setDeleteConfirm(q.id)}
-                    className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${iconBtnDel}`}
-                    aria-label={`Savolni o'chirish: ${q.text}`}
+                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${iconBtnDel}`}
+                    aria-label={t("questions.aria.delete", { text: q.text })}
                   >
                     <i className="ri-delete-bin-line text-sm" aria-hidden="true"></i>
                   </button>
@@ -391,8 +391,8 @@ export function DocQuestionsContent() {
               </h3>
               <button
                 onClick={closeAddEditModal}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer ${closeBtn}`}
-                aria-label="Savol oynasini yopish"
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg cursor-pointer ${closeBtn}`}
+                aria-label={t("questions.aria.closeQuestionModal")}
               >
                 <i className="ri-close-line text-base" aria-hidden="true"></i>
               </button>
@@ -420,7 +420,7 @@ export function DocQuestionsContent() {
                   value={formData.categoryId}
                   onChange={(e) => {
                     const cat = categories.find((c) => c.id === e.target.value);
-                    setFormData({ ...formData, categoryId: e.target.value, category: cat?.name || "Umumiy" });
+                    setFormData({ ...formData, categoryId: e.target.value, category: cat?.name || t("questions.defaultCategory") });
                   }}
                   aria-describedby={questionCategoryHelpId}
                   className={`${fieldBase} cursor-pointer`}
@@ -473,8 +473,8 @@ export function DocQuestionsContent() {
               <h3 id="doctor-question-clone-title" className={`text-base font-semibold ${modalTitle}`}>{t("questions.globalTemplates")}</h3>
               <button
                 onClick={() => setShowCloneModal(false)}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer ${closeBtn}`}
-                aria-label="Template oynasini yopish"
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg cursor-pointer ${closeBtn}`}
+                aria-label={t("questions.aria.closeTemplateModal")}
               >
                 <i className="ri-close-line text-base" aria-hidden="true"></i>
               </button>

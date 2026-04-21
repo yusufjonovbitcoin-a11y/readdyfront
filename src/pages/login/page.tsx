@@ -8,7 +8,6 @@ import medcoreLogoImage from "@/assets/medcore-logo.png";
 
 /** +998 dan keyingi 9 raqam (masalan 901111111) */
 const UZ_PHONE_PREFIX = "+998";
-const IS_MOCK_MODE = import.meta.env.VITE_USE_MOCK === "true";
 
 const ROLE_REDIRECT: Record<UserRole, string> = {
   SUPER_ADMIN: "/dashboard",
@@ -16,22 +15,11 @@ const ROLE_REDIRECT: Record<UserRole, string> = {
   DOCTOR: "/doctor/patients",
 };
 
-const DEMO_ACCOUNTS = [
-  { roleKey: "superAdmin", phoneRest: "901111111", color: "emerald", icon: "ri-shield-star-line" },
-  { roleKey: "hospitalAdmin", phoneRest: "902222222", color: "teal", icon: "ri-hospital-line" },
-  { roleKey: "doctor", phoneRest: "901234567", color: "violet", icon: "ri-stethoscope-line" },
-];
-
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { authenticate } = useAuth();
   const { t } = useTranslation(["auth", "common"]);
-  const roleLabels: Record<(typeof DEMO_ACCOUNTS)[number]["roleKey"], string> = {
-    superAdmin: t("auth:login.roles.superAdmin"),
-    hospitalAdmin: t("auth:login.roles.hospitalAdmin"),
-    doctor: t("auth:login.roles.doctor"),
-  };
 
   /** +998 dan keyin 9 ta raqam */
   const [phoneRest, setPhoneRest] = useState("");
@@ -81,12 +69,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const fillDemo = (acc: typeof DEMO_ACCOUNTS[0]) => {
-    setPhoneRest(acc.phoneRest);
-    setPassword("");
-    setError("");
   };
 
   return (
@@ -165,45 +147,6 @@ export default function LoginPage() {
             <p className="text-gray-500 text-sm">{t("auth:login.subtitle")}</p>
           </div>
 
-          {IS_MOCK_MODE && (
-            <div className="mb-6">
-              <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">{t("auth:login.demoAccounts")}</p>
-              <div className="grid grid-cols-3 gap-2">
-                {DEMO_ACCOUNTS.map((acc) => (
-                  <button
-                    key={acc.roleKey}
-                    type="button"
-                    onClick={() => fillDemo(acc)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all cursor-pointer ${
-                      phoneRest === acc.phoneRest
-                        ? acc.color === "emerald"
-                          ? "border-emerald-500 bg-emerald-50"
-                          : acc.color === "teal"
-                            ? "border-teal-500 bg-teal-50"
-                            : "border-violet-500 bg-violet-50"
-                        : "border-gray-200 bg-white hover:border-gray-300"
-                    }`}
-                  >
-                    <div
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg ${
-                        acc.color === "emerald" ? "bg-emerald-100" :
-                        acc.color === "teal" ? "bg-teal-100" : "bg-violet-100"
-                      }`}
-                    >
-                      <i
-                        className={`${acc.icon} text-sm ${
-                          acc.color === "emerald" ? "text-emerald-600" :
-                          acc.color === "teal" ? "text-teal-600" : "text-violet-600"
-                        }`}
-                      />
-                    </div>
-                    <span className="text-xs font-medium text-gray-700 text-center leading-tight">{roleLabels[acc.roleKey]}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Telefon */}
@@ -251,15 +194,15 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                  placeholder="••••••••"
+                  placeholder={t("auth:login.passwordPlaceholder")}
                   className="w-full pl-10 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-gray-900 placeholder-gray-400"
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center cursor-pointer"
-                  aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
+                  aria-label={showPassword ? t("auth:login.hidePassword") : t("auth:login.showPassword")}
                 >
                   <i className={`${showPassword ? "ri-eye-off-line" : "ri-eye-line"} text-gray-400 text-sm`} aria-hidden="true"></i>
                 </button>

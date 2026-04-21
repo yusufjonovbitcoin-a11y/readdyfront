@@ -57,6 +57,7 @@ export function HADoctorsPageContent() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [showModal, setShowModal] = useState(false);
   const [editingDoctor, setEditingDoctor] = useState<HADoctor | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const { toast, showToast } = useAppToast();
   const navigate = useNavigate();
@@ -69,6 +70,8 @@ export function HADoctorsPageContent() {
   });
 
   const handleSave = (data: Partial<HADoctor>) => {
+    if (isSaving) return;
+    setIsSaving(true);
     void (async () => {
       try {
         if (editingDoctor) {
@@ -106,11 +109,11 @@ export function HADoctorsPageContent() {
           );
 
           if (statusChanged && localProfileChanged) {
-            showToast("Holat server orqali yangilandi. Qolgan tahrirlar demo rejimda lokal saqlandi.", "info");
+            showToast("Holat yangilandi. Qolgan tahrirlar hozircha faqat interfeysda aks etdi.", "info");
           } else if (statusChanged) {
             showToast("Shifokor holati server orqali muvaffaqiyatli yangilandi.", "success");
           } else {
-            showToast("Demo rejim: shifokor tahriri lokal ko'rinishda saqlandi.", "info");
+            showToast("Shifokor tahriri hozircha faqat interfeysda aks etdi.", "info");
           }
         } else {
           const newDoc: HADoctor = {
@@ -129,12 +132,14 @@ export function HADoctorsPageContent() {
             qrCode: `doc-${Date.now()}`,
           };
           setDoctors((prev) => [...prev, newDoc]);
-          showToast("Demo rejim: yangi shifokor lokal ro'yxatga qo'shildi.", "info");
+          showToast("Yangi shifokor hozircha faqat interfeys ro'yxatiga qo'shildi.", "info");
         }
         setShowModal(false);
         setEditingDoctor(null);
       } catch {
         showToast("Amalni bajarishda xatolik yuz berdi.", "error");
+      } finally {
+        setIsSaving(false);
       }
     })();
   };
@@ -143,7 +148,7 @@ export function HADoctorsPageContent() {
     try {
       setDoctors(prev => prev.filter(d => d.id !== id));
       setDeleteConfirm(null);
-      showToast("Demo rejim: shifokor lokal ro'yxatdan o'chirildi.", "info");
+      showToast("Shifokor hozircha faqat interfeys ro'yxatidan o'chirildi.", "info");
     } catch {
       showToast("O'chirishda xatolik yuz berdi.", "error");
     }
@@ -231,14 +236,14 @@ export function HADoctorsPageContent() {
               <button
                 onClick={() => setView('card')}
                 aria-label="Card view"
-                className={`w-10 h-10 flex items-center justify-center rounded-md transition-colors cursor-pointer ${view === 'card' ? 'bg-white text-teal-600' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md transition-colors cursor-pointer ${view === 'card' ? 'bg-white text-teal-600' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}
               >
                 <i className="ri-layout-grid-line text-sm"></i>
               </button>
               <button
                 onClick={() => setView('table')}
                 aria-label="Table view"
-                className={`w-10 h-10 flex items-center justify-center rounded-md transition-colors cursor-pointer ${view === 'table' ? 'bg-white text-teal-600' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md transition-colors cursor-pointer ${view === 'table' ? 'bg-white text-teal-600' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}
               >
                 <i className="ri-list-check text-sm"></i>
               </button>
@@ -264,7 +269,7 @@ export function HADoctorsPageContent() {
           </span>
         </div>
         <p className={`text-xs ${darkMode ? "text-amber-400" : "text-amber-600"}`}>
-          Demo rejim: create/delete va profil tahrirlari lokal. Faqat status o'zgarishi serverga yuboriladi.
+          Create/delete va profil tahrirlari endpoint tayyor bo'lguncha faqat interfeysda qo'llanadi. Status o'zgarishi serverga yuboriladi.
         </p>
 
         {/* Card View */}
@@ -345,13 +350,13 @@ export function HADoctorsPageContent() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-1">
-                          <button aria-label={`View doctor ${doc.name}`} onClick={() => navigate(`/hospital-admin/doctors/${doc.id}`)} className="w-10 h-10 flex items-center justify-center rounded-md cursor-pointer hover:bg-teal-50 text-teal-600 transition-colors">
+                          <button aria-label={`View doctor ${doc.name}`} onClick={() => navigate(`/hospital-admin/doctors/${doc.id}`)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-teal-50 text-teal-600 transition-colors">
                             <i className="ri-eye-line text-sm"></i>
                           </button>
-                          <button aria-label={`Edit doctor ${doc.name}`} onClick={() => { setEditingDoctor(doc); setShowModal(true); }} className={`w-10 h-10 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+                          <button aria-label={`Edit doctor ${doc.name}`} onClick={() => { setEditingDoctor(doc); setShowModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                             <i className="ri-edit-line text-sm"></i>
                           </button>
-                          <button aria-label={`Delete doctor ${doc.name}`} onClick={() => setDeleteConfirm(doc.id)} className="w-10 h-10 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
+                          <button aria-label={`Delete doctor ${doc.name}`} onClick={() => setDeleteConfirm(doc.id)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
                             <i className="ri-delete-bin-line text-sm"></i>
                           </button>
                         </div>
@@ -371,7 +376,12 @@ export function HADoctorsPageContent() {
         <DoctorFormModal
           doctor={editingDoctor}
           darkMode={darkMode}
-          onClose={() => { setShowModal(false); setEditingDoctor(null); }}
+          isSaving={isSaving}
+          onClose={() => {
+            if (isSaving) return;
+            setShowModal(false);
+            setEditingDoctor(null);
+          }}
           onSave={handleSave}
         />
       )}

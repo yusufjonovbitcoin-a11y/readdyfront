@@ -12,7 +12,9 @@
     "specialty": "Kardiologiya",
     "today": "Bugun",
     "queue": "Navbat",
-    "completed": "Tugallandi"
+    "completed": "Tugallandi",
+    "expand": "Yon panelni kengaytirish",
+    "collapse": "Yon panelni yig'ish"
   },
   "header": {
     "actions": {
@@ -85,7 +87,23 @@
     "chooseTemplate": "Klonlash uchun shablonni tanlang",
     "clone": "Klonlash",
     "confirmDelete": "O'chirishni tasdiqlang",
-    "deleteWarning": "Bu amalni qaytarib bo'lmaydi"
+    "deleteWarning": "Bu amalni qaytarib bo'lmaydi",
+    "defaultCategory": "Umumiy",
+    "mutationsDisabled": "Backend mutation endpointlari tayyor bo'lmagani uchun savollarni o'zgartirish vaqtincha o'chirilgan.",
+    "orderTitle": "Tartib: {{order}}",
+    "stats": {
+      "active": "faol",
+      "inactive": "nofaol",
+      "custom": "shaxsiy"
+    },
+    "aria": {
+      "activate": "Savolni faollashtirish",
+      "deactivate": "Savolni nofaol qilish",
+      "edit": "Savolni tahrirlash: {{text}}",
+      "delete": "Savolni o'chirish: {{text}}",
+      "closeQuestionModal": "Savol oynasini yopish",
+      "closeTemplateModal": "Template oynasini yopish"
+    }
   },
   "analytics": {
     "title": "Mening Tahlilim",

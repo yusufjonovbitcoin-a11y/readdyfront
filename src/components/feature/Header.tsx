@@ -36,6 +36,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
   const notificationsTriggerRef = useRef<HTMLButtonElement>(null);
+  const previousNotificationsOpenRef = useRef(false);
 
   const modShortcut = useMemo(() => {
     if (typeof navigator === "undefined") return "Ctrl+K";
@@ -111,6 +112,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
     isOpen: showNotifications,
     onClose: () => setShowNotifications(false),
     returnFocusRef: notificationsTriggerRef,
+    isolateBackground: false,
     trapFocus: false,
     lockScroll: false,
   });
@@ -159,6 +161,24 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [showNotifications, notificationsPanelRef]);
 
+  useEffect(() => {
+    const handleEsc = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape" && showNotifications) {
+        setShowNotifications(false);
+        notificationsTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [showNotifications]);
+
+  useEffect(() => {
+    if (previousNotificationsOpenRef.current && !showNotifications) {
+      notificationsTriggerRef.current?.focus();
+    }
+    previousNotificationsOpenRef.current = showNotifications;
+  }, [showNotifications]);
+
   const onSearchKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -189,7 +209,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
       <button
         type="button"
         onClick={onToggleMobile}
-        className={`mr-2 md:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+        className={`mr-2 md:hidden w-11 h-11 flex items-center justify-center rounded-lg transition-colors ${
           darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
         }`}
         aria-label={t("admin:header.actions.openSidebar")}
@@ -235,7 +255,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
             setSearchQuery("");
             setSearchOpen(true);
           }}
-          className={`hidden md:flex lg:hidden w-9 h-9 items-center justify-center rounded-lg transition-colors ${
+          className={`hidden md:flex lg:hidden w-11 h-11 items-center justify-center rounded-lg transition-colors ${
             darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
           }`}
           aria-label={t("admin:header.search.global")}
@@ -250,7 +270,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
         <button
           onClick={onToggleDark}
           aria-label={darkMode ? t("admin:header.actions.switchToLight") : t("admin:header.actions.switchToDark")}
-          className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+          className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
             darkMode ? "bg-[#1A2235] text-yellow-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
           }`}
         >
@@ -265,7 +285,10 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
             ref={notificationsTriggerRef}
             onClick={() => setShowNotifications(!showNotifications)}
             aria-label={showNotifications ? t("admin:header.actions.hideNotifications") : t("admin:header.actions.showNotifications")}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer relative ${
+            aria-expanded={showNotifications}
+            aria-controls="admin-notification-popover"
+            aria-haspopup="true"
+            className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors cursor-pointer relative ${
               darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
             }`}
           >
@@ -278,9 +301,9 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
           {showNotifications && (
             <div
               ref={notificationsPanelRef}
-              role="dialog"
-              aria-modal="false"
-              aria-labelledby="header-notifications-title"
+              id="admin-notification-popover"
+              role="region"
+              aria-label="Bildirishnomalar"
               tabIndex={-1}
               className={`absolute right-0 top-11 w-80 rounded-xl shadow-lg border z-50 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}
             >
@@ -302,6 +325,9 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
                       <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.type === "warning" ? "bg-yellow-400" : n.type === "success" ? "bg-emerald-400" : "bg-blue-400"}`}></div>
                       <div>
                         <p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{n.text}</p>
+                        <span className="sr-only">
+                          {n.type === "warning" ? "Ogohlantirish" : n.type === "success" ? "Muvaffaqiyat" : "Ma'lumot"}
+                        </span>
                         <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{n.time}</p>
                       </div>
                     </div>

@@ -26,6 +26,12 @@
     "restart": "Qaytadan boshlash"
   },
   "questions": {
+    "loading": "Savollar yuklanmoqda...",
+    "loadErrorTitle": "Savollarni yuklashda xatolik yuz berdi.",
+    "loadErrorDesc": "Iltimos, internet ulanishini tekshirib qayta urinib ko'ring.",
+    "retry": "Qayta urinish",
+    "empty": "Savollar hozircha mavjud emas",
+    "emptyVisible": "Ko'rinadigan savollar mavjud emas",
     "optional": "Ixtiyoriy savol",
     "yes": "Ha",
     "no": "Yo'q",

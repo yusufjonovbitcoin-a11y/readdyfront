@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
 
 interface AuditCardProps {
@@ -37,15 +38,17 @@ const STATUS_CONFIG: Record<string, { icon: string; cls: string; label: string; 
   warning: { icon: "ri-alert-fill", cls: "text-amber-400", label: "Ogohlantirish", bg: "bg-amber-500/10" },
 };
 
-function formatTime(ts: string) {
+function formatTime(ts: string, locale: string) {
   const d = new Date(ts);
   return {
-    date: d.toLocaleDateString("uz-UZ", { year: "numeric", month: "short", day: "numeric" }),
-    time: d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    date: d.toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" }),
+    time: d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
   };
 }
 
 export default function AuditCard({ log, darkMode }: AuditCardProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === "ru" ? "ru-RU" : "uz-UZ";
   const actionCfg = ACTION_COLORS[log.action] || { bg: "bg-gray-500/15", text: "text-gray-400", icon: "ri-question-line" };
   const statusCfg = STATUS_CONFIG[log.status] || {
     icon: "ri-alert-fill",
@@ -53,7 +56,7 @@ export default function AuditCard({ log, darkMode }: AuditCardProps) {
     label: "Unknown",
     bg: darkMode ? "bg-amber-500/10" : "bg-amber-100",
   };
-  const { date, time } = formatTime(log.timestamp);
+  const { date, time } = formatTime(log.timestamp, locale);
 
   const avatarColor =
     log.role === "SUPER_ADMIN" ? "bg-emerald-500" :

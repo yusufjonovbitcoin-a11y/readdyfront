@@ -59,7 +59,7 @@ export default function AuditDetailModal({ log, onClose, darkMode }: AuditDetail
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Audit log detail modal"
+        aria-labelledby="audit-detail-modal-title"
         tabIndex={-1}
         className={`relative w-full max-w-lg rounded-2xl overflow-hidden ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}
       >
@@ -70,13 +70,13 @@ export default function AuditDetailModal({ log, onClose, darkMode }: AuditDetail
               <i className="ri-file-list-3-line text-emerald-500 text-lg"></i>
             </div>
             <div>
-              <h3 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Audit Log Tafsiloti</h3>
+              <h3 id="audit-detail-modal-title" className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Audit Log Tafsiloti</h3>
               <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{log.id}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg cursor-pointer transition-colors ${
               darkMode ? "hover:bg-[#2A3448] text-gray-400" : "hover:bg-gray-100 text-gray-500"
             }`}
             aria-label="Audit tafsilot oynasini yopish"

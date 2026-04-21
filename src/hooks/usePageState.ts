@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import * as Sentry from "@sentry/react";
 import type { AsyncStatus } from "@/hooks/useAsync";
+import { toHospitalAdminUserMessage } from "@/api/services/hospitalAdminErrorPolicy";
 
 export type PageState<T> = {
   status: AsyncStatus;
@@ -9,6 +11,9 @@ export type PageState<T> = {
 };
 
 function toPageErrorMessage(error: unknown): string {
+  const hospitalAdminMessage = toHospitalAdminUserMessage(error);
+  if (hospitalAdminMessage) return hospitalAdminMessage;
+
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
   }
@@ -42,6 +47,9 @@ export function usePageState<T>(fetchFn: () => Promise<T>): PageState<T> {
         return;
       }
 
+      Sentry.captureException(err, {
+        tags: { area: "page-state", op: "load" },
+      });
       setStatus("error");
       setError(toPageErrorMessage(err));
     }

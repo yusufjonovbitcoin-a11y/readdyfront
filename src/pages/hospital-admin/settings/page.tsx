@@ -22,7 +22,6 @@ export default function HASettingsPage() {
 
 export function HASettingsPageContent() {
   const { t, i18n } = useTranslation("hospital");
-  const isMockMode = import.meta.env.VITE_USE_MOCK === "true";
   const darkMode = useHospitalAdminDarkMode();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(getHaAdminStoredAvatar);
@@ -86,11 +85,9 @@ export function HASettingsPageContent() {
 
   return (
       <div className="max-w-3xl space-y-5">
-        {!isMockMode && (
-          <p className={`text-xs ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
-            Eslatma: settings bo'limidagi saqlash amallari uchun backend endpointlar hali ulanmagan.
-          </p>
-        )}
+        <p className={`text-xs ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
+          {t("settings.notice.backendNotConnected")}
+        </p>
         {/* Tabs */}
         <div className={`flex gap-1 p-1 rounded-xl flex-wrap ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
           {tabs.map(tab => (
@@ -112,7 +109,7 @@ export function HASettingsPageContent() {
         {/* Profile */}
         {activeTab === 'profile' && (
           <div className={cardBase}>
-            <h3 className={`text-sm font-bold mb-5 ${darkMode ? "text-white" : "text-gray-900"}`}>Profil ma'lumotlari</h3>
+            <h3 className={`text-sm font-bold mb-5 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("settings.profile.title")}</h3>
             <div className="flex items-start gap-4 mb-6">
               <div className="flex-shrink-0">
                 <input
@@ -120,7 +117,7 @@ export function HASettingsPageContent() {
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   className="sr-only"
-                  aria-label="Profil surati"
+                  aria-label={t("settings.profile.avatarInputAria")}
                   onChange={onAvatarFile}
                 />
                 <div
@@ -142,7 +139,7 @@ export function HASettingsPageContent() {
                       darkMode ? "text-teal-400 hover:text-teal-300" : "text-teal-600 hover:text-teal-700"
                     }`}
                   >
-                    Surat qo‘yish
+                    {t("settings.profile.uploadPhoto")}
                   </button>
                   {avatarUrl && (
                     <button
@@ -152,41 +149,41 @@ export function HASettingsPageContent() {
                         darkMode ? "text-gray-500 hover:text-gray-300" : "text-gray-500 hover:text-gray-700"
                       }`}
                     >
-                      Suratni olib tashlash
+                      {t("settings.profile.removePhoto")}
                     </button>
                   )}
                 </div>
               </div>
               <div className="min-w-0 pt-0.5">
                 <p className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{profile.name}</p>
-                <p className="text-xs text-teal-600 font-medium">HOSPITAL_ADMIN</p>
+                <p className="text-xs text-teal-600 font-medium">{t("settings.profile.roleLabel")}</p>
                 <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{profile.hospital}</p>
                 <p className={`text-[11px] mt-2 leading-snug ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                  Surat ixtiyoriy. Brauzerda saqlanadi (demo).
+                  {t("settings.profile.avatarHint")}
                 </p>
               </div>
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="ha-settings-name" className={labelClass}>To'liq ism</label>
+                  <label htmlFor="ha-settings-name" className={labelClass}>{t("settings.profile.fullName")}</label>
                   <input id="ha-settings-name" type="text" className={inputClass} value={profile.name} onChange={e => setProfile({...profile, name: e.target.value})} />
                 </div>
                 <div>
-                  <label htmlFor="ha-settings-hospital" className={labelClass}>Kasalxona</label>
+                  <label htmlFor="ha-settings-hospital" className={labelClass}>{t("settings.profile.hospital")}</label>
                   <input id="ha-settings-hospital" type="text" className={inputClass} value={profile.hospital} disabled />
                 </div>
               </div>
               <div>
-                <label htmlFor="ha-settings-email" className={labelClass}>Email</label>
+                <label htmlFor="ha-settings-email" className={labelClass}>{t("settings.profile.email")}</label>
                 <input id="ha-settings-email" type="email" className={inputClass} value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} />
               </div>
               <div>
-                <label htmlFor="ha-settings-phone" className={labelClass}>Telefon</label>
+                <label htmlFor="ha-settings-phone" className={labelClass}>{t("settings.profile.phone")}</label>
                 <input id="ha-settings-phone" type="tel" className={inputClass} value={profile.phone} onChange={e => setProfile({...profile, phone: e.target.value})} />
               </div>
-              <button onClick={showSaved} className="h-10 px-6 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap">
-                {saved ? (isMockMode ? "Demo: lokal saqlandi" : "Serverga yuborilmadi") : "Saqlash"}
+              <button onClick={showSaved} className="min-h-[44px] px-6 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap">
+                {saved ? t("settings.saved.notSent") : t("common:buttons.save")}
               </button>
             </div>
           </div>
@@ -195,39 +192,39 @@ export function HASettingsPageContent() {
         {/* Security */}
         {activeTab === 'security' && (
           <div className={cardBase}>
-            <h3 className={`text-sm font-bold mb-5 ${darkMode ? "text-white" : "text-gray-900"}`}>Parolni o'zgartirish</h3>
+            <h3 className={`text-sm font-bold mb-5 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("settings.security.title")}</h3>
             <div className="space-y-4">
               <div>
-                <label htmlFor="ha-settings-current-password" className={labelClass}>Joriy parol</label>
+                <label htmlFor="ha-settings-current-password" className={labelClass}>{t("settings.security.currentPassword")}</label>
                 <input id="ha-settings-current-password" type="password" className={inputClass} placeholder="••••••••" value={passwords.current} onChange={e => setPasswords({...passwords, current: e.target.value})} />
               </div>
               <div>
-                <label htmlFor="ha-settings-new-password" className={labelClass}>Yangi parol</label>
+                <label htmlFor="ha-settings-new-password" className={labelClass}>{t("settings.security.newPassword")}</label>
                 <input id="ha-settings-new-password" type="password" className={inputClass} placeholder="••••••••" value={passwords.newPass} onChange={e => setPasswords({...passwords, newPass: e.target.value})} />
               </div>
               <div>
-                <label htmlFor="ha-settings-confirm-password" className={labelClass}>Yangi parolni tasdiqlang</label>
+                <label htmlFor="ha-settings-confirm-password" className={labelClass}>{t("settings.security.confirmPassword")}</label>
                 <input id="ha-settings-confirm-password" type="password" className={inputClass} placeholder="••••••••" value={passwords.confirm} onChange={e => setPasswords({...passwords, confirm: e.target.value})} />
               </div>
               {passwords.newPass && passwords.confirm && passwords.newPass !== passwords.confirm && (
-                <p className="text-xs text-red-500">Parollar mos kelmaydi</p>
+                <p className="text-xs text-red-500">{t("settings.security.passwordMismatch")}</p>
               )}
               <button
                 onClick={showSaved}
                 disabled={!passwords.current || !passwords.newPass || passwords.newPass !== passwords.confirm}
-                className="h-10 px-6 rounded-lg bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+                className="min-h-[44px] px-6 rounded-lg bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
               >
-                {saved ? (isMockMode ? "Demo: lokal saqlandi" : "Serverga yuborilmadi") : "Parolni yangilash"}
+                {saved ? t("settings.saved.notSent") : t("settings.security.updatePassword")}
               </button>
             </div>
 
             <div className={`mt-6 pt-6 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
-              <h4 className={`text-sm font-semibold mb-3 ${darkMode ? "text-white" : "text-gray-900"}`}>Xavfsizlik ma'lumotlari</h4>
+              <h4 className={`text-sm font-semibold mb-3 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("settings.security.infoTitle")}</h4>
               <div className="space-y-2">
                 {[
-                  { label: 'So\'nggi kirish', value: '2026-04-18, 09:32' },
-                  { label: 'IP manzil', value: '192.168.1.105' },
-                  { label: 'Qurilma', value: 'Chrome / Windows 11' },
+                  { label: t("settings.security.info.lastLogin"), value: '2026-04-18, 09:32' },
+                  { label: t("settings.security.info.ipAddress"), value: '192.168.1.105' },
+                  { label: t("settings.security.info.device"), value: 'Chrome / Windows 11' },
                 ].map(item => (
                   <div key={item.label} className={`flex items-center justify-between py-2 border-b last:border-0 ${darkMode ? "border-[#1E2130]" : "border-gray-50"}`}>
                     <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{item.label}</span>
@@ -245,7 +242,7 @@ export function HASettingsPageContent() {
             <h3 className={`text-sm font-bold mb-5 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("settings.languageAppearance")}</h3>
             <div className="space-y-5">
               <div>
-                <label className={`${labelClass} mb-3`}>Interfeys tili</label>
+                <label className={`${labelClass} mb-3`}>{t("settings.language.interfaceLanguage")}</label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { code: 'uz', label: "O'zbek tili", flag: '🇺🇿' },
@@ -267,8 +264,8 @@ export function HASettingsPageContent() {
                   ))}
                 </div>
               </div>
-              <button onClick={showSaved} className="h-10 px-6 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap">
-                {saved ? (isMockMode ? "Demo: lokal saqlandi" : "Serverga yuborilmadi") : "Saqlash"}
+              <button onClick={showSaved} className="min-h-[44px] px-6 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap">
+                {saved ? t("settings.saved.notSent") : t("common:buttons.save")}
               </button>
             </div>
           </div>
@@ -277,13 +274,13 @@ export function HASettingsPageContent() {
         {/* Notifications */}
         {activeTab === 'notifications' && (
           <div className={cardBase}>
-            <h3 className={`text-sm font-bold mb-5 ${darkMode ? "text-white" : "text-gray-900"}`}>Xabarnoma sozlamalari</h3>
+            <h3 className={`text-sm font-bold mb-5 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("settings.notifications.title")}</h3>
             <div className="space-y-4">
               {[
-                { key: 'newPatient', label: 'Yangi bemor', desc: 'Yangi bemor qo\'shilganda xabar olish' },
-                { key: 'doctorUpdate', label: 'Shifokor yangilanishi', desc: 'Shifokor ma\'lumotlari o\'zgarganda' },
-                { key: 'systemAlert', label: 'Tizim ogohlantirishlari', desc: 'Muhim tizim xabarlari' },
-                { key: 'weeklyReport', label: 'Haftalik hisobot', desc: 'Har dushanba haftalik statistika' },
+                { key: 'newPatient', label: t("settings.notifications.items.newPatient.label"), desc: t("settings.notifications.items.newPatient.desc") },
+                { key: 'doctorUpdate', label: t("settings.notifications.items.doctorUpdate.label"), desc: t("settings.notifications.items.doctorUpdate.desc") },
+                { key: 'systemAlert', label: t("settings.notifications.items.systemAlert.label"), desc: t("settings.notifications.items.systemAlert.desc") },
+                { key: 'weeklyReport', label: t("settings.notifications.items.weeklyReport.label"), desc: t("settings.notifications.items.weeklyReport.desc") },
               ].map(item => (
                 <div key={item.key} className={`flex items-center justify-between p-4 rounded-xl ${darkMode ? "bg-[#1A2235]" : "bg-gray-50"}`}>
                   <div>
@@ -298,8 +295,8 @@ export function HASettingsPageContent() {
                   </button>
                 </div>
               ))}
-              <button onClick={showSaved} className="h-10 px-6 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap">
-                {saved ? (isMockMode ? "Demo: lokal saqlandi" : "Serverga yuborilmadi") : "Saqlash"}
+              <button onClick={showSaved} className="min-h-[44px] px-6 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap">
+                {saved ? t("settings.saved.notSent") : t("common:buttons.save")}
               </button>
             </div>
           </div>

@@ -9,7 +9,6 @@ type SettingsTab = "profile" | "security" | "language" | "appearance" | "notific
 
 export function SettingsPageContent() {
   const { t, i18n } = useTranslation("admin");
-  const isMockMode = import.meta.env.VITE_USE_MOCK === "true";
   const { darkMode: dm, setDarkMode } = useMainLayoutTheme();
   const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const [lang, setLang] = useState<"uz" | "ru">(i18n.language === "ru" ? "ru" : "uz");
@@ -81,7 +80,12 @@ export function SettingsPageContent() {
                 <div>
                   <p className={`text-sm font-medium ${dm ? "text-white" : "text-gray-900"}`}>{profile.name}</p>
                   <p className="text-xs text-emerald-400 mt-0.5">{profile.role}</p>
-                  <button className={`text-xs mt-1.5 cursor-pointer ${dm ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}>
+                  <button
+                    type="button"
+                    disabled
+                    title="Tez orada"
+                    className={`text-xs mt-1.5 whitespace-nowrap opacity-60 cursor-not-allowed ${dm ? "text-gray-400" : "text-gray-500"}`}
+                  >
                     {t("settings.profile.changePhoto")}
                   </button>
                 </div>
@@ -125,10 +129,8 @@ export function SettingsPageContent() {
                 type="button"
                 onClick={() =>
                   showToast(
-                    isMockMode
-                      ? "Demo rejim: profil o'zgarishlari lokal saqlandi."
-                      : "Backend profile update endpointi ulanmaguncha bu amal vaqtincha o'chirilgan.",
-                    isMockMode ? "success" : "info",
+                    "Backend profile update endpointi ulanmaguncha bu amal vaqtincha o'chirilgan.",
+                    "info",
                   )
                 }
                 className="mt-5 px-5 py-2.5 bg-emerald-500 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-emerald-600 whitespace-nowrap"
@@ -181,9 +183,7 @@ export function SettingsPageContent() {
                   onClick={() => {
                     setPasswords({ current: "", newPass: "", confirm: "" });
                     showToast(
-                      isMockMode
-                        ? "Demo rejim: parol o'zgarishi serverga yuborilmadi."
-                        : "Backend password endpointi ulanmaguncha bu amal vaqtincha o'chirilgan.",
+                      "Backend password endpointi ulanmaguncha bu amal vaqtincha o'chirilgan.",
                       "info",
                     );
                   }}
@@ -324,9 +324,7 @@ export function SettingsPageContent() {
                 type="button"
                 onClick={() =>
                   showToast(
-                    isMockMode
-                      ? "Demo rejim: bildirishnoma sozlamalari lokal saqlandi."
-                      : "Notification settings endpointi ulanmaguncha bu amal vaqtincha o'chirilgan.",
+                    "Notification settings endpointi ulanmaguncha bu amal vaqtincha o'chirilgan.",
                     "info",
                   )
                 }

@@ -8,8 +8,6 @@ export interface AuthUserDto {
   hospitalId?: string;
   hospitalName?: string;
   avatar: string;
-  token?: string;
-  expiresAt?: string;
 }
 
 export interface LoginInput {

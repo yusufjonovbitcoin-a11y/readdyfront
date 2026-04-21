@@ -19,11 +19,13 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
   const [searchParams] = useSearchParams();
   const [showNotifications, setShowNotifications] = useState(false);
   const notifTriggerRef = useRef<HTMLButtonElement>(null);
+  const previousNotificationsOpenRef = useRef(false);
   const [headerQuery, setHeaderQuery] = useState(() => searchParams.get("q") ?? "");
   const notifPopoverRef = useModalA11y({
     isOpen: showNotifications,
     onClose: () => setShowNotifications(false),
     triggerRef: notifTriggerRef,
+    isolateBackground: false,
     trapFocus: false,
     lockScroll: false,
   });
@@ -51,6 +53,24 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
     navigateWithHeaderQuery();
   };
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showNotifications) {
+        setShowNotifications(false);
+        notifTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [showNotifications]);
+
+  useEffect(() => {
+    if (previousNotificationsOpenRef.current && !showNotifications) {
+      notifTriggerRef.current?.focus();
+    }
+    previousNotificationsOpenRef.current = showNotifications;
+  }, [showNotifications]);
+
   return (
     <header
       className={`fixed top-0 right-0 h-16 z-20 flex items-center px-4 md:px-6 transition-[left] duration-300 ease-out ${
@@ -60,7 +80,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
       <button
         type="button"
         onClick={onToggleMobile}
-        className={`mr-2 md:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+        className={`mr-2 md:hidden w-11 h-11 flex items-center justify-center rounded-lg transition-colors ${
           darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
         }`}
         aria-label={t("header.actions.openSidebar")}
@@ -99,7 +119,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
         <button
           type="button"
           onClick={navigateWithHeaderQuery}
-          className={`hidden md:flex lg:hidden w-9 h-9 items-center justify-center rounded-lg transition-colors ${
+          className={`hidden md:flex lg:hidden w-11 h-11 items-center justify-center rounded-lg transition-colors ${
             darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
           }`}
           aria-label={t("header.globalSearch")}
@@ -111,7 +131,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
         <button
           onClick={onToggleDark}
           aria-label={darkMode ? t("header.actions.switchToLight") : t("header.actions.switchToDark")}
-          className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+          className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
             darkMode ? "bg-[#1A2235] text-yellow-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
           }`}
         >
@@ -126,7 +146,10 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
             ref={notifTriggerRef}
             onClick={() => setShowNotifications(!showNotifications)}
             aria-label={showNotifications ? t("header.actions.hideNotifications") : t("header.actions.showNotifications")}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer relative ${
+            aria-expanded={showNotifications}
+            aria-controls="ha-notification-popover"
+            aria-haspopup="true"
+            className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors cursor-pointer relative ${
               darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
             }`}
           >
@@ -140,16 +163,16 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
           {showNotifications && (
             <div
               ref={notifPopoverRef}
-              role="dialog"
-              aria-modal={false}
-              aria-labelledby="ha-notifications-title"
+              id="ha-notification-popover"
+              role="region"
+              aria-label="Bildirishnomalar"
               tabIndex={-1}
               className={`absolute right-0 top-11 w-80 rounded-xl border z-50 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}
               style={{boxShadow: '0 4px 24px rgba(0,0,0,0.18)'}}
             >
               <div className={`px-4 py-3 border-b flex items-center justify-between ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
                 <p id="ha-notifications-title" className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{t("header.notifications.title")}</p>
-                <button aria-label={t("header.actions.closeNotifications")} onClick={() => setShowNotifications(false)} className="w-10 h-10 -mr-1 flex items-center justify-center rounded-md cursor-pointer">
+                <button aria-label={t("header.actions.closeNotifications")} onClick={() => setShowNotifications(false)} className="min-w-[44px] min-h-[44px] -mr-1 flex items-center justify-center rounded-md cursor-pointer">
                   <i className={`ri-close-line text-sm ${darkMode ? "text-gray-400" : "text-gray-400"}`} aria-hidden="true"></i>
                 </button>
               </div>
@@ -168,6 +191,9 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
                       <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.type === "warning" ? "bg-yellow-400" : n.type === "success" ? "bg-teal-400" : "bg-blue-400"}`}></div>
                       <div>
                         <p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{n.text}</p>
+                        <span className="sr-only">
+                          {n.type === "warning" ? "Ogohlantirish" : n.type === "success" ? "Muvaffaqiyat" : "Ma'lumot"}
+                        </span>
                         <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{n.time}</p>
                       </div>
                     </div>

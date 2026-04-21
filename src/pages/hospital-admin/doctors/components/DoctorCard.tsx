@@ -89,13 +89,13 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
           </button>
           <button
             onClick={() => onEdit(doctor)}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-gray-100 text-gray-500 hover:text-gray-700"}`}
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-gray-100 text-gray-500 hover:text-gray-700"}`}
           >
             <i className="ri-edit-line text-xs"></i>
           </button>
           <button
             onClick={() => onDelete(doctor.id)}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "bg-[#1A2235] text-gray-400 hover:text-red-400" : "bg-gray-100 text-gray-500 hover:text-red-500"}`}
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "bg-[#1A2235] text-gray-400 hover:text-red-400" : "bg-gray-100 text-gray-500 hover:text-red-500"}`}
           >
             <i className="ri-delete-bin-line text-xs"></i>
           </button>

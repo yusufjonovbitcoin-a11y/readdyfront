@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useDocPatients } from "@/context/DocPatientsContext";
-import type { RiskLevel } from "@/mocks/doc_patients";
+import type { DoctorPatientRiskLevel as RiskLevel } from "@/api/types/doctor.types";
 
 export default function DocHistoryPage() {
   const { t } = useTranslation("doctor");
@@ -104,17 +104,25 @@ export function DocHistoryContent() {
           <div className={`flex items-center rounded-lg p-1 ${segmentWrap}`}>
             <button
               onClick={() => setViewMode("card")}
-              className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
+              className={`w-11 h-11 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                 viewMode === "card" ? segmentActive : segmentIdle
               }`}
+              type="button"
+              aria-label={t("history.aria.cardView", { defaultValue: "Karta ko'rinish" })}
+              title={t("history.aria.cardView", { defaultValue: "Karta ko'rinish" })}
+              aria-pressed={viewMode === "card"}
             >
               <i className="ri-layout-grid-line text-sm"></i>
             </button>
             <button
               onClick={() => setViewMode("table")}
-              className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
+              className={`w-11 h-11 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                 viewMode === "table" ? segmentActive : segmentIdle
               }`}
+              type="button"
+              aria-label={t("history.aria.tableView", { defaultValue: "Jadval ko'rinish" })}
+              title={t("history.aria.tableView", { defaultValue: "Jadval ko'rinish" })}
+              aria-pressed={viewMode === "table"}
             >
               <i className="ri-list-check text-sm"></i>
             </button>
@@ -226,14 +234,15 @@ export function DocHistoryContent() {
         <div className={`rounded-xl border overflow-hidden ${tableWrap}`}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px]">
+              <caption className="sr-only">Bemorlar ro'yxati</caption>
               <thead>
                 <tr className={`border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Bemor</th>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Tashxis</th>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Xavf</th>
-                  <th className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Vaqt</th>
-                  <th className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Sana</th>
-                  <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Amal</th>
+                  <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Bemor</th>
+                  <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Tashxis</th>
+                  <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Xavf</th>
+                  <th scope="col" className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Vaqt</th>
+                  <th scope="col" className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Sana</th>
+                  <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${thCls}`}>Amal</th>
                 </tr>
               </thead>
               <tbody className={`divide-y ${tbodyDivide}`}>

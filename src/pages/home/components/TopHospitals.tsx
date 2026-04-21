@@ -1,15 +1,18 @@
 import { useMemo, useRef, useState } from "react";
-import { mockTopHospitals } from "@/mocks/analytics";
-import { mockHospitals } from "@/mocks/hospitals";
+import { useTranslation } from "react-i18next";
 import { useModalA11y } from "@/hooks/useModalA11y";
+import type { TopHospitalPointDto } from "@/api/types/analytics.types";
+import type { Hospital } from "@/types/hospital";
 
 interface TopHospitalsProps {
   darkMode: boolean;
+  topHospitals: TopHospitalPointDto[];
+  hospitals: Hospital[];
 }
 
-function countByViloyat() {
+function countByViloyat(hospitals: Hospital[]) {
   const map = new Map<string, number>();
-  for (const h of mockHospitals) {
+  for (const h of hospitals) {
     const v = h.viloyat;
     map.set(v, (map.get(v) ?? 0) + 1);
   }
@@ -18,17 +21,18 @@ function countByViloyat() {
     .sort((a, b) => a.viloyat.localeCompare(b.viloyat, "uz"));
 }
 
-export default function TopHospitals({ darkMode }: TopHospitalsProps) {
+export default function TopHospitals({ darkMode, topHospitals, hospitals }: TopHospitalsProps) {
+  const { t } = useTranslation("admin");
   const [panelOpen, setPanelOpen] = useState(false);
   const [selectedViloyat, setSelectedViloyat] = useState<string | null>(null);
   const openPanelButtonRef = useRef<HTMLButtonElement>(null);
-  const byViloyat = useMemo(countByViloyat, []);
-  const totalHospitals = mockHospitals.length;
+  const byViloyat = useMemo(() => countByViloyat(hospitals), [hospitals]);
+  const totalHospitals = hospitals.length;
 
   const hospitalsInViloyat = useMemo(() => {
     if (!selectedViloyat) return [];
-    return mockHospitals.filter((h) => h.viloyat === selectedViloyat);
-  }, [selectedViloyat]);
+    return hospitals.filter((h) => h.viloyat === selectedViloyat);
+  }, [selectedViloyat, hospitals]);
 
   function openPanel() {
     setSelectedViloyat(null);
@@ -61,7 +65,7 @@ export default function TopHospitals({ darkMode }: TopHospitalsProps) {
           </button>
         </div>
         <div className="space-y-4">
-          {mockTopHospitals.map((h, i) => (
+          {topHospitals.map((h, i) => (
             <div key={i}>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
@@ -107,6 +111,7 @@ export default function TopHospitals({ darkMode }: TopHospitalsProps) {
                     darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"
                   }`}
                   aria-label="Viloyatlar ro'yxatiga qaytish"
+                  title={t("home.topHospitals.backToRegions", { defaultValue: "Viloyatlar ro'yxatiga qaytish" })}
                 >
                   <i className="ri-arrow-left-line text-xl"></i>
                 </button>
@@ -128,6 +133,7 @@ export default function TopHospitals({ darkMode }: TopHospitalsProps) {
                   darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"
                 }`}
                 aria-label="Yopish"
+                title={t("common:buttons.close")}
               >
                 <i className="ri-close-line text-xl"></i>
               </button>

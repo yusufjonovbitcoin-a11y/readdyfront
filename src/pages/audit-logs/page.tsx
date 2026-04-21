@@ -113,8 +113,12 @@ export function AuditLogsPageContent() {
   }, [filtered]);
 
   const pageSize = viewMode === "card" ? 12 : PAGE_SIZE;
-  const totalPages = Math.ceil(filtered.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage((p) => Math.min(totalPages, Math.max(1, p)));
+  }, [totalPages]);
 
   const handleReset = () => {
     setSearch("");
@@ -127,22 +131,38 @@ export function AuditLogsPageContent() {
     setPage(1);
   };
 
+  const escapeCsvCell = (value: unknown): string => {
+    const raw = String(value ?? "");
+    const neutralized = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+    return `"${neutralized.replace(/"/g, '""')}"`;
+  };
+
   const handleExport = () => {
-    const csv = [
-      [t("audit.csv.time"), t("audit.csv.user"), t("audit.csv.role"), t("audit.csv.action"), t("audit.csv.resource"), t("audit.csv.description"), "IP", t("audit.csv.status")].join(","),
-      ...filtered.map((l) =>
-        [
-          new Date(l.timestamp).toLocaleString(),
-          l.userName,
-          l.role,
-          l.action,
-          l.resource,
-          `"${l.detail}"`,
-          l.ip,
-          l.status,
-        ].join(",")
-      ),
-    ].join("\n");
+    const headers = [
+      escapeCsvCell(t("audit.csv.time")),
+      escapeCsvCell(t("audit.csv.user")),
+      escapeCsvCell(t("audit.csv.role")),
+      escapeCsvCell(t("audit.csv.action")),
+      escapeCsvCell(t("audit.csv.resource")),
+      escapeCsvCell(t("audit.csv.description")),
+      escapeCsvCell("IP"),
+      escapeCsvCell(t("audit.csv.status")),
+    ].join(",");
+
+    const rows = filtered.map((l) =>
+      [
+        escapeCsvCell(new Date(l.timestamp).toLocaleString()),
+        escapeCsvCell(l.userName),
+        escapeCsvCell(l.role),
+        escapeCsvCell(l.action),
+        escapeCsvCell(l.resource),
+        escapeCsvCell(l.detail),
+        escapeCsvCell(l.ip),
+        escapeCsvCell(l.status),
+      ].join(","),
+    );
+
+    const csv = [headers, ...rows].join("\n");
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -239,7 +259,7 @@ export function AuditLogsPageContent() {
           </div>
         </div>
         <div className={`rounded-xl border px-4 py-3 text-xs ${darkMode ? "bg-[#1A2235] border-[#2A3448] text-gray-300" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
-          Ushbu bo'lim faqat authoritative audit manbasini ko'rsatadi. Client/local demo faoliyatlar bu ro'yxatga qo'shilmaydi.
+          Ushbu bo'lim faqat authoritative audit manbasini ko'rsatadi. Faqat serverda qayd etilgan faoliyatlar bu ro'yxatga qo'shiladi.
         </div>
 
         {/* Summary Stats */}
@@ -277,7 +297,7 @@ export function AuditLogsPageContent() {
           </p>
           <div className="flex items-center gap-2">
             <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-              {page} / {totalPages || 1} sahifa
+              {page} / {totalPages} sahifa
             </span>
           </div>
         </div>
@@ -308,7 +328,7 @@ export function AuditLogsPageContent() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 darkMode ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-white text-gray-500 hover:text-gray-900"
               }`}
             >
@@ -330,7 +350,7 @@ export function AuditLogsPageContent() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm transition-colors cursor-pointer ${
+                  className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-sm transition-colors cursor-pointer ${
                     page === p
                       ? "bg-emerald-500 text-white font-semibold"
                       : darkMode
@@ -346,7 +366,7 @@ export function AuditLogsPageContent() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 darkMode ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-white text-gray-500 hover:text-gray-900"
               }`}
             >

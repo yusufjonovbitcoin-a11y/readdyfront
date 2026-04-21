@@ -15,7 +15,7 @@ function LanguageSwitcher() {
       uz: t("language.uz", { defaultValue: "O'zbekcha" }),
       ru: t("language.ru", { defaultValue: "Русский" }),
     }),
-    [activeLanguage],
+    [t],
   );
 
   return (

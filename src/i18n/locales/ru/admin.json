@@ -15,7 +15,9 @@
     "auditLogs": "Аудит-логи",
     "settings": "Настройки",
     "logout": "Выйти",
-    "superAdmin": "Супер админ"
+    "superAdmin": "Супер админ",
+    "expand": "Развернуть боковую панель",
+    "collapse": "Свернуть боковую панель"
   },
   "header": {
     "pages": {
@@ -191,6 +193,99 @@
       "resource": "Ресурс",
       "description": "Описание",
       "status": "Статус"
+    }
+  },
+  "auditDetail": {
+    "pageTitle": "Детали аудит-лога",
+    "loading": "Загружаются детали аудит-лога...",
+    "retry": "Перезагрузить",
+    "copy": "Копировать",
+    "copySuccess": "Скопировано",
+    "copyFailed": "Не удалось скопировать",
+    "copyAll": "Копировать данные",
+    "backToList": "Вернуться к Audit Logs",
+    "notFoundTitle": "Лог не найден",
+    "idPrefix": "ID",
+    "breadcrumbDetail": "Детали",
+    "actionDescription": "Описание действия",
+    "fullInfoTitle": "Полные данные",
+    "securityTitle": "Данные безопасности",
+    "quick": {
+      "resource": "Ресурс",
+      "resourceId": "ID ресурса",
+      "ip": "IP адрес",
+      "time": "Время"
+    },
+    "fields": {
+      "logId": "ID лога",
+      "user": "Пользователь",
+      "userId": "ID пользователя",
+      "role": "Роль",
+      "hospital": "Клиника",
+      "hospitalId": "ID клиники",
+      "browserDevice": "Браузер / Устройство",
+      "dateTime": "Дата и время"
+    },
+    "roles": {
+      "SUPER_ADMIN": "Супер админ",
+      "HOSPITAL_ADMIN": "Админ клиники",
+      "DOCTOR": "Врач",
+      "unknown": "Unknown"
+    },
+    "status": {
+      "success": "Успешно",
+      "failed": "Неуспешно",
+      "warning": "Предупреждение",
+      "unknown": "Unknown"
+    },
+    "security": {
+      "authTitle": "Аутентификация",
+      "authDirect": "Прямое auth-действие",
+      "authSession": "Аутентифицированная сессия",
+      "locationTitle": "Локация",
+      "locationDesc": "IP: {{ip}} — Внутренняя сеть",
+      "deviceTitle": "Устройство"
+    },
+    "export": {
+      "auditLog": "Audit Log"
+    }
+  },
+  "hospitalDetail": {
+    "pageTitle": "Детали клиники",
+    "loading": "Загружаются детали клиники...",
+    "retry": "Перезагрузить",
+    "backToHospitals": "Вернуться к списку клиник",
+    "addDoctor": "Добавить врача",
+    "addAdmin": "Добавить администратора",
+    "newDoctor": "Новый врач",
+    "searchPatients": "Поиск пациента...",
+    "adminsTitle": "Администраторы",
+    "settingsTitle": "Настройки клиники",
+    "hospitalStatus": "Статус клиники",
+    "toggleStatus": "Сделать активной/неактивной",
+    "toggleStatusAria": "Переключить статус клиники",
+    "notFoundTitle": "Клиника не найдена",
+    "idPrefix": "ID",
+    "sections": {
+      "overview": "Общая информация",
+      "todayStats": "Статистика за сегодня"
+    },
+    "availabilityNotice": {
+      "section": "Изменения в этом разделе не сохраняются на сервер, пока endpoints не готовы.",
+      "settings": "Действия сохранения в этом разделе не отправляются на сервер, пока endpoints не готовы."
+    },
+    "validation": {
+      "fullNameRequired": "Полное имя обязательно.",
+      "specialtyRequired": "Специализация обязательна.",
+      "phoneFormat": "Телефон должен быть в формате +998 XX XXX XX XX.",
+      "hospitalNameRequired": "Название клиники обязательно.",
+      "addressRequired": "Адрес обязателен."
+    },
+    "toast": {
+      "doctorSavedLocal": "Данные врача пока сохранены только в интерфейсе.",
+      "settingsNotSent": "Настройки не отправлены на сервер, пока endpoint не готов.",
+      "adminAddNotConnected": "Endpoint добавления администратора пока не подключен.",
+      "statusLocal": "Изменение статуса пока отражено только в интерфейсе."
     }
   },
   "settings": {

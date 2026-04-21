@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { CHECKIN_SYMPTOMS } from "@/pages/checkin/constants/symptoms";
 
@@ -75,8 +75,11 @@ function analyzeAnswers(answers: Record<string, string | string[]>, tr: (key: st
 }
 
 export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
-  const { t, i18n } = useTranslation("checkin");
-  const tr = (key: Parameters<typeof t>[0], defaultValue: string) => t(key, { defaultValue });
+  const { t } = useTranslation("checkin");
+  const tr = useCallback(
+    (key: Parameters<typeof t>[0], defaultValue: string) => t(key, { defaultValue }),
+    [t],
+  );
 
   const [showChat, setShowChat] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -88,7 +91,7 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
   const sendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const analysis = useMemo(() => analyzeAnswers(answers, tr), [answers, i18n.language]);
+  const analysis = useMemo(() => analyzeAnswers(answers, tr), [answers, tr]);
   const riskColors = useMemo(
     () => ({
       low: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-700", label: tr("checkin:ai.risk.low", "Past xavf") },
@@ -96,7 +99,7 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
       high: { bg: "bg-orange-50", text: "text-orange-700", border: "border-orange-200", badge: "bg-orange-100 text-orange-700", label: tr("checkin:ai.risk.high", "Yuqori xavf") },
       critical: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200", badge: "bg-red-100 text-red-700", label: tr("checkin:ai.risk.critical", "Kritik xavf") },
     }),
-    [i18n.language],
+    [tr],
   );
   const risk = riskColors[analysis.riskLevel];
 
@@ -107,7 +110,7 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
       tr("checkin:ai.chat.follow2", "Og'riq kuchaygan paytlarda qanday holat bo'ladi? Masalan, harakat qilganda yoki dam olganda?"),
       tr("checkin:ai.chat.result", "Rahmat! Barcha ma'lumotlarni tahlil qildim. Quyida dastlabki baholash natijalarini ko'rishingiz mumkin."),
     ],
-    [i18n.language],
+    [tr],
   );
 
   useEffect(() => {
@@ -125,7 +128,7 @@ export default function AIAssistStep({ answers, onFinish }: AIAssistStepProps) {
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [showChat, aiMessages]);
+  }, [showChat, aiMessages, messages.length]);
 
   useEffect(() => {
     return () => {

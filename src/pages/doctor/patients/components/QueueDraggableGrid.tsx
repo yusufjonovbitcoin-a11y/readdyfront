@@ -1,5 +1,5 @@
 import { useState, type DragEvent } from "react";
-import type { DocPatient } from "@/mocks/doc_patients";
+import type { DoctorPatientDto as DocPatient } from "@/api/types/doctor.types";
 import PatientCard from "./PatientCard";
 
 const DND_TYPE = "application/x-readdynavbat-patient-id";

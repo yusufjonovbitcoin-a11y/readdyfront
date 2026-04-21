@@ -1,15 +1,11 @@
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("@/hooks/useAuth", () => ({
-  getStoredUser: vi.fn(),
-}));
 
 vi.mock("@/auth/sessionSignals", () => ({
   emitSessionFailure: vi.fn(),
 }));
 
-import { apiRequest } from "@/api/client";
-import { getStoredUser } from "@/hooks/useAuth";
+import { apiRequest, AuthError } from "@/api/client";
 import { emitSessionFailure } from "@/auth/sessionSignals";
 
 describe("apiRequest", () => {
@@ -18,50 +14,85 @@ describe("apiRequest", () => {
     vi.stubGlobal("fetch", vi.fn());
   });
 
-  it("sends bearer token when stored user exists", async () => {
-    vi.mocked(getStoredUser).mockReturnValue({
-      id: "u-1",
-      name: "A",
-      email: "a@a.com",
-      role: "SUPER_ADMIN",
-      avatar: "AA",
-      token: "token-123",
-    });
+  it("retries original request after successful refresh on 401", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        text: async () => JSON.stringify({ message: "Token expired" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ ok: true }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ data: 123 }),
+      } as Response);
 
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      text: async () => JSON.stringify({ ok: true }),
-    } as Response);
+    const result = await apiRequest<{ data: number }>("/api/protected");
 
-    await apiRequest<{ ok: boolean }>("/api/demo");
-
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/demo"),
+    expect(result).toEqual({ data: 123 });
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("/api/auth/refresh"),
       expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: "Bearer token-123",
-          "Content-Type": "application/json",
-        }),
+        method: "POST",
+        credentials: "include",
+      }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      3,
+      expect.stringContaining("/api/protected"),
+      expect.objectContaining({
+        credentials: "include",
       }),
     );
   });
 
-  it("throws normalized error and emits session failure on 401", async () => {
-    vi.mocked(getStoredUser).mockReturnValue(null);
-    vi.mocked(fetch).mockResolvedValue({
-      ok: false,
-      status: 401,
-      statusText: "Unauthorized",
-      text: async () => JSON.stringify({ message: "Token expired" }),
-    } as Response);
-
-    await expect(apiRequest("/api/protected")).rejects.toEqual(
-      expect.objectContaining({
+  it("throws AuthError when refresh fails", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: false,
         status: 401,
-        message: "Token expired",
-      }),
+        statusText: "Unauthorized",
+        text: async () => JSON.stringify({ message: "Token expired" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        text: async () => "",
+      } as Response);
+
+    await expect(apiRequest("/api/protected")).rejects.toBeInstanceOf(AuthError);
+    expect(emitSessionFailure).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: "unauthorized", status: 401 }),
     );
+  });
+
+  it("emits session failure after retried request still returns 401", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        text: async () => JSON.stringify({ message: "Token expired" }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ ok: true }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        text: async () => JSON.stringify({ message: "Still unauthorized" }),
+      } as Response);
+
+    await expect(apiRequest("/api/protected")).rejects.toBeInstanceOf(AuthError);
+
     expect(emitSessionFailure).toHaveBeenCalledWith(
       expect.objectContaining({ reason: "unauthorized", status: 401 }),
     );

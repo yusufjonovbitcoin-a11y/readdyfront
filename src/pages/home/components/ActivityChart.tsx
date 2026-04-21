@@ -1,8 +1,11 @@
 import { useId, useRef, useState } from "react";
-import { mockDailyData, mockWeeklyData, mockMonthlyData } from "@/mocks/analytics";
+import type { AnalyticsPeriodPointDto } from "@/api/types/analytics.types";
 
 interface ActivityChartProps {
   darkMode: boolean;
+  dailyData: AnalyticsPeriodPointDto[];
+  weeklyData: AnalyticsPeriodPointDto[];
+  monthlyData: AnalyticsPeriodPointDto[];
 }
 
 type Period = "daily" | "weekly" | "monthly";
@@ -28,16 +31,15 @@ function vxFromPointer(e: React.MouseEvent<SVGSVGElement> | React.PointerEvent<S
   return ratio * 100;
 }
 
-export default function ActivityChart({ darkMode }: ActivityChartProps) {
+export default function ActivityChart({ darkMode, dailyData, weeklyData, monthlyData }: ActivityChartProps) {
   const gradId = useId().replace(/:/g, "");
   const [period, setPeriod] = useState<Period>("daily");
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const scrubbingRef = useRef(false);
-
   const dataMap = {
-    daily: mockDailyData,
-    weekly: mockWeeklyData,
-    monthly: mockMonthlyData,
+    daily: dailyData,
+    weekly: weeklyData,
+    monthly: monthlyData,
   };
 
   const data = dataMap[period];

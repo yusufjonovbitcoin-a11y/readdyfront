@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useMemo } from "react";
-import { getBodyParts } from "@/mocks/checkin_questions";
+import { getCheckinBodyParts } from "@/api/services/checkinUi.service";
 
 interface BodyMapProps {
   selected: string[];
@@ -8,8 +8,8 @@ interface BodyMapProps {
 }
 
 export default function BodyMap({ selected, onChange }: BodyMapProps) {
-  const { t, i18n } = useTranslation("checkin");
-  const bodyParts = useMemo(() => getBodyParts(t), [i18n.language]);
+  const { t } = useTranslation("checkin");
+  const bodyParts = useMemo(() => getCheckinBodyParts(t), [t]);
 
   const toggle = (id: string) => {
     if (selected.includes(id)) {

@@ -1,19 +1,39 @@
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import {
-  haCategories as initCategories, HACategory,
-  haQuestionTemplates as initTemplates, HAQuestionTemplate,
-  haQuestions as initQuestions, HAQuestion,
-} from "@/mocks/ha_questions";
+  createHAQuestion,
+  createHAQuestionCategory,
+  createHAQuestionTemplate,
+  deleteHAQuestion,
+  deleteHAQuestionCategory,
+  deleteHAQuestionTemplate,
+  getHAQuestionCategories,
+  getHAQuestionTemplates,
+  getHAQuestions,
+  updateHAQuestion,
+  updateHAQuestionCategory,
+  updateHAQuestionTemplate,
+  type HACategory,
+  type HAQuestionTemplate,
+  type HAQuestion,
+} from "@/api/services/hospitalAdminData.service";
+import { usePageState } from "@/hooks/usePageState";
 
 type ActiveView = 'templates' | 'categories';
+type PendingDelete =
+  | { type: "category"; id: string }
+  | { type: "template"; id: string }
+  | { type: "question"; id: string }
+  | null;
 
-function CategoryModal({ cat, darkMode, onClose, onSave }: {
-  cat: HACategory | null; darkMode: boolean; onClose: () => void; onSave: (name: string) => void;
+function CategoryModal({ cat, darkMode, onClose, onSave, isSubmitting }: {
+  cat: HACategory | null; darkMode: boolean; onClose: () => void; onSave: (name: string) => void; isSubmitting: boolean;
 }) {
+  const { t } = useTranslation("hospital");
   const modalRef = useModalA11y({ isOpen: true, onClose });
   const fieldId = "ha-questions-category-name";
   const [name, setName] = useState(cat?.name || '');
@@ -24,20 +44,20 @@ function CategoryModal({ cat, darkMode, onClose, onSave }: {
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Category modal"
+        aria-labelledby="ha-category-modal-title"
         tabIndex={-1}
         className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-sm max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{cat ? "Kategoriyani tahrirlash" : "Yangi kategoriya"}</h2>
-          <button aria-label="Close category modal" onClick={onClose} className="w-7 h-7 flex items-center justify-center cursor-pointer"><i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
+          <h2 id="ha-category-modal-title" className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{cat ? t("questions.modal.category.editTitle") : t("questions.modal.category.createTitle")}</h2>
+          <button aria-label={t("questions.modal.closeCategoryAria")} onClick={onClose} disabled={isSubmitting} className={`min-w-[44px] min-h-[44px] flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}><i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
         </div>
         <form onSubmit={e => { e.preventDefault(); onSave(name); }}>
-          <label htmlFor={fieldId} className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Kategoriya nomi *</label>
-          <input id={fieldId} type="text" className={inputClass} placeholder="Kategoriya nomi..." value={name} onChange={e => setName(e.target.value)} required />
+          <label htmlFor={fieldId} className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{t("questions.modal.category.nameLabel")}</label>
+          <input id={fieldId} type="text" className={inputClass} placeholder={t("questions.modal.category.namePlaceholder")} value={name} onChange={e => setName(e.target.value)} required />
           <div className="flex gap-3 mt-4">
-            <button type="button" onClick={onClose} className={`flex-1 h-9 rounded-lg text-sm font-medium cursor-pointer whitespace-nowrap ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>Bekor</button>
-            <button type="submit" className="flex-1 h-9 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium cursor-pointer whitespace-nowrap transition-colors">Saqlash</button>
+            <button type="button" onClick={onClose} disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>{t("common:buttons.cancel")}</button>
+            <button type="submit" disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}>{isSubmitting ? "Saqlanmoqda..." : t("common:buttons.save")}</button>
           </div>
         </form>
       </div>
@@ -45,9 +65,10 @@ function CategoryModal({ cat, darkMode, onClose, onSave }: {
   );
 }
 
-function TemplateModal({ tmpl, categories, darkMode, onClose, onSave }: {
-  tmpl: HAQuestionTemplate | null; categories: HACategory[]; darkMode: boolean; onClose: () => void; onSave: (data: { title: string; categoryId: string }) => void;
+function TemplateModal({ tmpl, categories, darkMode, onClose, onSave, isSubmitting }: {
+  tmpl: HAQuestionTemplate | null; categories: HACategory[]; darkMode: boolean; onClose: () => void; onSave: (data: { title: string; categoryId: string }) => void; isSubmitting: boolean;
 }) {
+  const { t } = useTranslation("hospital");
   const modalRef = useModalA11y({ isOpen: true, onClose });
   const fieldId = {
     title: "ha-questions-template-title",
@@ -62,29 +83,29 @@ function TemplateModal({ tmpl, categories, darkMode, onClose, onSave }: {
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Template modal"
+        aria-labelledby="ha-template-modal-title"
         tabIndex={-1}
         className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{tmpl ? "Shablonni tahrirlash" : "Yangi shablon"}</h2>
-          <button aria-label="Close template modal" onClick={onClose} className="w-7 h-7 flex items-center justify-center cursor-pointer"><i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
+          <h2 id="ha-template-modal-title" className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{tmpl ? t("questions.modal.template.editTitle") : t("questions.modal.template.createTitle")}</h2>
+          <button aria-label={t("questions.modal.closeTemplateAria")} onClick={onClose} disabled={isSubmitting} className={`min-w-[44px] min-h-[44px] flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}><i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
         </div>
         <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
           <div>
-            <label htmlFor={fieldId.title} className={labelClass}>Shablon nomi *</label>
-            <input id={fieldId.title} type="text" className={inputClass} placeholder="Shablon nomi..." value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+            <label htmlFor={fieldId.title} className={labelClass}>{t("questions.modal.template.nameLabel")}</label>
+            <input id={fieldId.title} type="text" className={inputClass} placeholder={t("questions.modal.template.namePlaceholder")} value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
           </div>
           <div>
-            <label htmlFor={fieldId.category} className={labelClass}>Kategoriya *</label>
+            <label htmlFor={fieldId.category} className={labelClass}>{t("questions.modal.template.categoryLabel")}</label>
             <select id={fieldId.category} className={inputClass} value={form.categoryId} onChange={e => setForm({...form, categoryId: e.target.value})} required>
-              <option value="">Tanlang...</option>
+              <option value="">{t("questions.modal.template.selectPlaceholder")}</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div className="flex gap-3">
-            <button type="button" onClick={onClose} className={`flex-1 h-9 rounded-lg text-sm font-medium cursor-pointer whitespace-nowrap ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>Bekor</button>
-            <button type="submit" className="flex-1 h-9 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium cursor-pointer whitespace-nowrap transition-colors">Saqlash</button>
+            <button type="button" onClick={onClose} disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>{t("common:buttons.cancel")}</button>
+            <button type="submit" disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}>{isSubmitting ? "Saqlanmoqda..." : t("common:buttons.save")}</button>
           </div>
         </form>
       </div>
@@ -92,9 +113,10 @@ function TemplateModal({ tmpl, categories, darkMode, onClose, onSave }: {
   );
 }
 
-function QuestionModal({ templateId, question, darkMode, onClose, onSave }: {
-  templateId: string; question: HAQuestion | null; darkMode: boolean; onClose: () => void; onSave: (text: string) => void;
+function QuestionModal({ templateId, question, darkMode, onClose, onSave, isSubmitting }: {
+  templateId: string; question: HAQuestion | null; darkMode: boolean; onClose: () => void; onSave: (text: string) => void; isSubmitting: boolean;
 }) {
+  const { t } = useTranslation("hospital");
   const modalRef = useModalA11y({ isOpen: true, onClose });
   const fieldId = "ha-questions-question-text";
   const [text, setText] = useState(question?.text || '');
@@ -105,31 +127,31 @@ function QuestionModal({ templateId, question, darkMode, onClose, onSave }: {
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Question modal"
+        aria-labelledby="ha-question-modal-title"
         tabIndex={-1}
         className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{question ? "Savolni tahrirlash" : "Yangi savol"}</h2>
-          <button aria-label="Close question modal" onClick={onClose} className="w-7 h-7 flex items-center justify-center cursor-pointer"><i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
+          <h2 id="ha-question-modal-title" className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{question ? t("questions.modal.question.editTitle") : t("questions.modal.question.createTitle")}</h2>
+          <button aria-label={t("questions.modal.closeQuestionAria")} onClick={onClose} disabled={isSubmitting} className={`min-w-[44px] min-h-[44px] flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}><i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i></button>
         </div>
         <form onSubmit={e => { e.preventDefault(); onSave(text); }}>
-          <label htmlFor={fieldId} className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>Savol matni *</label>
+          <label htmlFor={fieldId} className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{t("questions.modal.question.textLabel")}</label>
           <textarea
             id={fieldId}
             aria-describedby={`${fieldId}-help`}
             className={`${inputClass} resize-none`}
             rows={3}
-            placeholder="Savol matni..."
+            placeholder={t("questions.modal.question.textPlaceholder")}
             value={text}
             onChange={e => setText(e.target.value)}
             required
             maxLength={500}
           />
-          <p id={`${fieldId}-help`} className="sr-only">Savol matni 500 ta belgigacha bo'lishi mumkin.</p>
+          <p id={`${fieldId}-help`} className="sr-only">{t("questions.modal.question.help")}</p>
           <div className="flex gap-3 mt-4">
-            <button type="button" onClick={onClose} className={`flex-1 h-9 rounded-lg text-sm font-medium cursor-pointer whitespace-nowrap ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>Bekor</button>
-            <button type="submit" className="flex-1 h-9 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium cursor-pointer whitespace-nowrap transition-colors">Saqlash</button>
+            <button type="button" onClick={onClose} disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>{t("common:buttons.cancel")}</button>
+            <button type="submit" disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}>{isSubmitting ? "Saqlanmoqda..." : t("common:buttons.save")}</button>
           </div>
         </form>
       </div>
@@ -150,9 +172,12 @@ export function HAQuestionsPageContent() {
   const { t } = useTranslation("hospital");
   const darkMode = useHospitalAdminDarkMode();
   const [activeView, setActiveView] = useState<ActiveView>('templates');
-  const [categories, setCategories] = useState<HACategory[]>(initCategories);
-  const [templates, setTemplates] = useState<HAQuestionTemplate[]>(initTemplates);
-  const [questions, setQuestions] = useState<HAQuestion[]>(initQuestions);
+  const categoriesState = usePageState(getHAQuestionCategories);
+  const templatesState = usePageState(getHAQuestionTemplates);
+  const questionsState = usePageState(getHAQuestions);
+  const [categories, setCategories] = useState<HACategory[]>([]);
+  const [templates, setTemplates] = useState<HAQuestionTemplate[]>([]);
+  const [questions, setQuestions] = useState<HAQuestion[]>([]);
 
   const [selectedTemplate, setSelectedTemplate] = useState<HAQuestionTemplate | null>(null);
   const [showCatModal, setShowCatModal] = useState(false);
@@ -162,6 +187,47 @@ export function HAQuestionsPageContent() {
   const [showQModal, setShowQModal] = useState(false);
   const [editingQ, setEditingQ] = useState<HAQuestion | null>(null);
   const [search, setSearch] = useState('');
+  const [isMutating, setIsMutating] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
+
+  useEffect(() => {
+    if (categoriesState.status === "success") setCategories(categoriesState.data ?? []);
+  }, [categoriesState.status, categoriesState.data]);
+
+  useEffect(() => {
+    if (templatesState.status === "success") setTemplates(templatesState.data ?? []);
+  }, [templatesState.status, templatesState.data]);
+
+  useEffect(() => {
+    if (questionsState.status === "success") setQuestions(questionsState.data ?? []);
+  }, [questionsState.status, questionsState.data]);
+
+  if (categoriesState.status === "loading" || templatesState.status === "loading" || questionsState.status === "loading") {
+    return (
+      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-400" : "bg-white border border-gray-100 text-gray-500"}`}>
+        Yuklanmoqda...
+      </div>
+    );
+  }
+
+  if (categoriesState.status === "error" || templatesState.status === "error" || questionsState.status === "error") {
+    return (
+      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-300" : "bg-white border border-gray-100 text-gray-700"}`}>
+        <p className="mb-4">{categoriesState.error ?? templatesState.error ?? questionsState.error}</p>
+        <button
+          type="button"
+          onClick={() => {
+            void categoriesState.reload();
+            void templatesState.reload();
+            void questionsState.reload();
+          }}
+          className="min-h-[44px] px-4 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium"
+        >
+          Qayta yuklash
+        </button>
+      </div>
+    );
+  }
 
   const filteredTemplates = templates.filter(t =>
     t.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -172,48 +238,75 @@ export function HAQuestionsPageContent() {
     ? [...questions].filter((q) => q.templateId === selectedTemplate.id).sort((a, b) => a.order - b.order)
     : [];
 
-  const saveCat = (name: string) => {
-    if (editingCat) {
-      setCategories(prev => prev.map(c => c.id === editingCat.id ? { ...c, name } : c));
-      setTemplates(prev => prev.map(t => t.categoryId === editingCat.id ? { ...t, categoryName: name } : t));
-    } else {
-      setCategories(prev => [...prev, { id: `cat-${Date.now()}`, name }]);
-    }
-    setShowCatModal(false); setEditingCat(null);
+  const reloadAll = async () => {
+    await Promise.all([categoriesState.reload(), templatesState.reload(), questionsState.reload()]);
   };
 
-  const saveTmpl = (data: { title: string; categoryId: string }) => {
-    const cat = categories.find(c => c.id === data.categoryId);
-    if (editingTmpl) {
-      setTemplates(prev => prev.map(t => t.id === editingTmpl.id ? { ...t, ...data, categoryName: cat?.name || '' } : t));
-    } else {
-      setTemplates(prev => [...prev, {
-        id: `tmpl-${Date.now()}`, title: data.title, categoryId: data.categoryId,
-        categoryName: cat?.name || '', questionCount: 0, createdAt: new Date().toISOString().split('T')[0],
-      }]);
+  const saveCat = async (name: string) => {
+    setIsMutating(true);
+    try {
+      if (editingCat) await updateHAQuestionCategory(editingCat.id, name);
+      else await createHAQuestionCategory(name);
+      await reloadAll();
+      setShowCatModal(false);
+      setEditingCat(null);
+    } finally {
+      setIsMutating(false);
     }
-    setShowTmplModal(false); setEditingTmpl(null);
   };
 
-  const saveQ = (text: string) => {
+  const saveTmpl = async (data: { title: string; categoryId: string }) => {
+    setIsMutating(true);
+    try {
+      if (editingTmpl) await updateHAQuestionTemplate(editingTmpl.id, data);
+      else await createHAQuestionTemplate(data);
+      await reloadAll();
+      setShowTmplModal(false);
+      setEditingTmpl(null);
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const saveQ = async (text: string) => {
     if (!selectedTemplate) return;
-    if (editingQ) {
-      setQuestions(prev => prev.map(q => q.id === editingQ.id ? { ...q, text } : q));
-    } else {
-      const newQ: HAQuestion = {
-        id: `q-${Date.now()}`, text, templateId: selectedTemplate.id,
-        order: templateQuestions.length + 1,
-      };
-      setQuestions(prev => [...prev, newQ]);
-      setTemplates(prev => prev.map(t => t.id === selectedTemplate.id ? { ...t, questionCount: t.questionCount + 1 } : t));
+    setIsMutating(true);
+    try {
+      if (editingQ) await updateHAQuestion(editingQ.id, text);
+      else await createHAQuestion({ text, templateId: selectedTemplate.id, order: templateQuestions.length + 1 });
+      await reloadAll();
+      setShowQModal(false);
+      setEditingQ(null);
+    } finally {
+      setIsMutating(false);
     }
-    setShowQModal(false); setEditingQ(null);
   };
 
-  const deleteQ = (id: string) => {
-    setQuestions(prev => prev.filter(q => q.id !== id));
-    if (selectedTemplate) {
-      setTemplates(prev => prev.map(t => t.id === selectedTemplate.id ? { ...t, questionCount: Math.max(0, t.questionCount - 1) } : t));
+  const deleteQ = async (id: string) => {
+    setIsMutating(true);
+    try {
+      await deleteHAQuestion(id);
+      await reloadAll();
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setIsMutating(true);
+    try {
+      if (pendingDelete.type === "category") {
+        await deleteHAQuestionCategory(pendingDelete.id);
+      } else if (pendingDelete.type === "template") {
+        await deleteHAQuestionTemplate(pendingDelete.id);
+      } else {
+        await deleteHAQuestion(pendingDelete.id);
+      }
+      await reloadAll();
+      setPendingDelete(null);
+    } finally {
+      setIsMutating(false);
     }
   };
 
@@ -249,7 +342,7 @@ export function HAQuestionsPageContent() {
             )}
             <button
               onClick={() => activeView === 'templates' ? (setEditingTmpl(null), setShowTmplModal(true)) : (setEditingCat(null), setShowCatModal(true))}
-              className="h-9 px-4 flex items-center gap-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+              className="min-h-[44px] px-4 flex items-center gap-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
             >
               <i className="ri-add-line text-base"></i>
               {activeView === 'templates' ? t("questions.addTemplate") : t("questions.addCategory")}
@@ -270,15 +363,15 @@ export function HAQuestionsPageContent() {
                     <div>
                       <p className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{cat.name}</p>
                       <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                        {templates.filter(t => t.categoryId === cat.id).length} ta shablon
+                        {t("questions.categoryTemplateCount", { count: templates.filter((template) => template.categoryId === cat.id).length })}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button aria-label={`Edit category ${cat.name}`} onClick={() => { setEditingCat(cat); setShowCatModal(true); }} className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+                    <button aria-label={t("questions.actions.editCategoryAria", { name: cat.name })} onClick={() => { setEditingCat(cat); setShowCatModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                       <i aria-hidden="true" className="ri-edit-line text-sm"></i>
                     </button>
-                    <button aria-label={`Delete category ${cat.name}`} onClick={() => setCategories(prev => prev.filter(c => c.id !== cat.id))} className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
+                    <button aria-label={t("questions.actions.deleteCategoryAria", { name: cat.name })} onClick={() => setPendingDelete({ type: "category", id: cat.id })} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors" disabled={isMutating}>
                       <i aria-hidden="true" className="ri-delete-bin-line text-sm"></i>
                     </button>
                   </div>
@@ -303,10 +396,10 @@ export function HAQuestionsPageContent() {
                     <i className="ri-file-list-3-line text-teal-600 text-lg"></i>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button aria-label={`Edit template ${tmpl.title}`} onClick={() => { setEditingTmpl(tmpl); setShowTmplModal(true); }} className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+                    <button aria-label={t("questions.actions.editTemplateAria", { title: tmpl.title })} onClick={() => { setEditingTmpl(tmpl); setShowTmplModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                       <i aria-hidden="true" className="ri-edit-line text-sm"></i>
                     </button>
-                    <button aria-label={`Delete template ${tmpl.title}`} onClick={() => setTemplates(prev => prev.filter(t => t.id !== tmpl.id))} className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
+                    <button aria-label={t("questions.actions.deleteTemplateAria", { title: tmpl.title })} onClick={() => setPendingDelete({ type: "template", id: tmpl.id })} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors" disabled={isMutating}>
                       <i aria-hidden="true" className="ri-delete-bin-line text-sm"></i>
                     </button>
                   </div>
@@ -321,7 +414,7 @@ export function HAQuestionsPageContent() {
                   <h3 className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{tmpl.title}</h3>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">{tmpl.categoryName}</span>
-                    <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{tmpl.questionCount} ta savol</span>
+                    <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("questions.templateQuestionCount", { count: tmpl.questionCount })}</span>
                   </div>
                   {previewQs.length > 0 && (
                     <div className={`mt-3 space-y-1.5 border-t border-dashed pt-3 ${darkMode ? "border-[#1E2130]" : "border-gray-200"}`}>
@@ -333,7 +426,7 @@ export function HAQuestionsPageContent() {
                       ))}
                     </div>
                   )}
-                  <p className={`text-xs mt-2 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Yaratilgan: {tmpl.createdAt}</p>
+                  <p className={`text-xs mt-2 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("questions.createdAt", { date: tmpl.createdAt })}</p>
                 </button>
               </div>
               );
@@ -364,12 +457,12 @@ export function HAQuestionsPageContent() {
                 <h2 className={`text-base font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{selectedTemplate.title}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">{selectedTemplate.categoryName}</span>
-                  <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{templateQuestions.length} ta savol</span>
+                  <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("questions.templateQuestionCount", { count: templateQuestions.length })}</span>
                 </div>
               </div>
               <button
                 onClick={() => { setEditingQ(null); setShowQModal(true); }}
-                className="h-9 px-4 flex items-center gap-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+                className="min-h-[44px] px-4 flex items-center gap-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-add-line text-base"></i>
                 {t("questions.addQuestion")}
@@ -384,10 +477,10 @@ export function HAQuestionsPageContent() {
                   </div>
                   <p className={`flex-1 text-sm ${darkMode ? "text-gray-200" : "text-gray-700"}`}>{q.text}</p>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <button aria-label={`Edit question ${i + 1}`} onClick={() => { setEditingQ(q); setShowQModal(true); }} className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+                    <button aria-label={t("questions.actions.editQuestionAria", { index: i + 1 })} onClick={() => { setEditingQ(q); setShowQModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                       <i aria-hidden="true" className="ri-edit-line text-sm"></i>
                     </button>
-                    <button aria-label={`Delete question ${i + 1}`} onClick={() => deleteQ(q.id)} className="w-7 h-7 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
+                    <button aria-label={t("questions.actions.deleteQuestionAria", { index: i + 1 })} onClick={() => setPendingDelete({ type: "question", id: q.id })} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors" disabled={isMutating}>
                       <i aria-hidden="true" className="ri-delete-bin-line text-sm"></i>
                     </button>
                   </div>
@@ -403,9 +496,21 @@ export function HAQuestionsPageContent() {
         )}
       </div>
 
-      {showCatModal && <CategoryModal cat={editingCat} darkMode={darkMode} onClose={() => { setShowCatModal(false); setEditingCat(null); }} onSave={saveCat} />}
-      {showTmplModal && <TemplateModal tmpl={editingTmpl} categories={categories} darkMode={darkMode} onClose={() => { setShowTmplModal(false); setEditingTmpl(null); }} onSave={saveTmpl} />}
-      {showQModal && selectedTemplate && <QuestionModal templateId={selectedTemplate.id} question={editingQ} darkMode={darkMode} onClose={() => { setShowQModal(false); setEditingQ(null); }} onSave={saveQ} />}
+      {showCatModal && <CategoryModal cat={editingCat} darkMode={darkMode} onClose={() => { setShowCatModal(false); setEditingCat(null); }} onSave={saveCat} isSubmitting={isMutating} />}
+      {showTmplModal && <TemplateModal tmpl={editingTmpl} categories={categories} darkMode={darkMode} onClose={() => { setShowTmplModal(false); setEditingTmpl(null); }} onSave={saveTmpl} isSubmitting={isMutating} />}
+      {showQModal && selectedTemplate && <QuestionModal templateId={selectedTemplate.id} question={editingQ} darkMode={darkMode} onClose={() => { setShowQModal(false); setEditingQ(null); }} onSave={saveQ} isSubmitting={isMutating} />}
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={t("questions.confirmDelete")}
+        description={t("questions.confirmDeleteDesc")}
+        confirmText={t("questions.confirmDeleteAction")}
+        cancelText={t("questions.cancel")}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => { void confirmDelete(); }}
+        confirmDisabled={isMutating}
+        cancelDisabled={isMutating}
+        darkMode={darkMode}
+      />
     </>
   );
 }

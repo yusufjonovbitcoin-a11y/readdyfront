@@ -36,10 +36,10 @@ export function DocAnalyticsContent() {
     return { analytics, presets };
   }, []);
   const pageState = usePageState<DoctorAnalyticsPageData>(fetchAnalyticsPageData);
-  const docAnalytics = pageState.data?.analytics ?? [];
-  const presets = pageState.data?.presets;
 
   const analytics = useMemo(() => {
+    const docAnalytics = pageState.data?.analytics ?? [];
+    const presets = pageState.data?.presets;
     let chartData: { label: string; patients: number; diagnoses: number; avgDuration?: number }[];
 
     if (period === "daily") {
@@ -110,7 +110,7 @@ export function DocAnalyticsContent() {
       totalDiagListed,
       trends,
     };
-  }, [period, docAnalytics, presets]);
+  }, [period, pageState.data]);
 
   const {
     chartData,

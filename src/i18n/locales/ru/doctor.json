@@ -12,7 +12,9 @@
     "specialty": "Кардиология",
     "today": "Сегодня",
     "queue": "Очередь",
-    "completed": "Завершено"
+    "completed": "Завершено",
+    "expand": "Развернуть боковую панель",
+    "collapse": "Свернуть боковую панель"
   },
   "header": {
     "actions": {
@@ -85,7 +87,23 @@
     "chooseTemplate": "Выберите шаблон для клонирования",
     "clone": "Клонировать",
     "confirmDelete": "Подтвердите удаление",
-    "deleteWarning": "Это действие нельзя отменить"
+    "deleteWarning": "Это действие нельзя отменить",
+    "defaultCategory": "Общее",
+    "mutationsDisabled": "Изменение вопросов временно отключено, так как backend mutation endpoints еще не готовы.",
+    "orderTitle": "Порядок: {{order}}",
+    "stats": {
+      "active": "активных",
+      "inactive": "неактивных",
+      "custom": "кастомных"
+    },
+    "aria": {
+      "activate": "Активировать вопрос",
+      "deactivate": "Деактивировать вопрос",
+      "edit": "Редактировать вопрос: {{text}}",
+      "delete": "Удалить вопрос: {{text}}",
+      "closeQuestionModal": "Закрыть окно вопроса",
+      "closeTemplateModal": "Закрыть окно шаблонов"
+    }
   },
   "analytics": {
     "title": "Моя аналитика",

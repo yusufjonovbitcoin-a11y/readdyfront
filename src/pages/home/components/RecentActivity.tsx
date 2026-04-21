@@ -1,7 +1,8 @@
-import { mockAuditLogs } from "@/mocks/analytics";
+import type { HomeAuditLog } from "@/api/adapters/home.adapter";
 
 interface RecentActivityProps {
   darkMode: boolean;
+  logs: HomeAuditLog[];
 }
 
 const roleColors: Record<string, string> = {
@@ -10,12 +11,12 @@ const roleColors: Record<string, string> = {
   DOKTOR: "bg-emerald-500/20 text-emerald-400",
 };
 
-export default function RecentActivity({ darkMode }: RecentActivityProps) {
+export default function RecentActivity({ darkMode, logs }: RecentActivityProps) {
   return (
     <div className={`rounded-xl p-5 ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
       <h3 className={`text-base font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>So'nggi Faoliyat</h3>
       <div className="space-y-3">
-        {mockAuditLogs.slice(0, 5).map((log) => (
+        {logs.slice(0, 5).map((log) => (
           <div key={log.id} className="flex items-start gap-3">
             <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${
               log.role === "SUPER_ADMIN" ? "bg-purple-500/20 text-purple-400" :

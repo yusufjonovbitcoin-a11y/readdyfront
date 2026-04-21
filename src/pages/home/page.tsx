@@ -1,20 +1,25 @@
 import { useTranslation } from "react-i18next";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutDarkMode } from "@/context/LayoutThemeContext";
-import { mockHospitals } from "@/mocks/hospitals";
+import { getDashboardHospitalCount } from "@/api/services/dashboard.service";
+import {
+  getHomeDashboardBundle,
+} from "@/api/services/homeAnalytics.service";
 import StatCard from "./components/StatCard";
 import ActivityChart from "./components/ActivityChart";
 import TopHospitals from "./components/TopHospitals";
 import RecentActivity from "./components/RecentActivity";
+import { usePageState } from "@/hooks/usePageState";
 
 export function DashboardContent() {
   const { t } = useTranslation("admin");
   const dark = useMainLayoutDarkMode();
+  const dashboardState = usePageState(getHomeDashboardBundle);
 
   const stats = [
     {
       title: t("home.stats.totalHospitals"),
-      value: String(mockHospitals.length),
+      value: String(getDashboardHospitalCount()),
       change: t("home.statsChanges.hospitals"),
       changeType: "up" as const,
       icon: "ri-hospital-line",
@@ -46,6 +51,27 @@ export function DashboardContent() {
     },
   ];
 
+  if (dashboardState.status === "loading") {
+    return <div className={`rounded-xl p-8 text-center ${dark ? "bg-[#1A2235] text-gray-400" : "bg-white text-gray-500"}`}>Yuklanmoqda...</div>;
+  }
+
+  if (dashboardState.status === "error") {
+    return (
+      <div className={`rounded-xl p-8 text-center ${dark ? "bg-[#1A2235] text-gray-300" : "bg-white text-gray-700"}`}>
+        <p className="mb-4">{dashboardState.error}</p>
+        <button
+          type="button"
+          onClick={() => {
+            void dashboardState.reload();
+          }}
+          className="min-h-[44px] px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium"
+        >
+          Qayta yuklash
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
         {/* Stats */}
@@ -58,17 +84,22 @@ export function DashboardContent() {
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
-            <ActivityChart darkMode={dark} />
+            <ActivityChart
+              darkMode={dark}
+              dailyData={dashboardState.data?.daily ?? []}
+              weeklyData={dashboardState.data?.weekly ?? []}
+              monthlyData={dashboardState.data?.monthly ?? []}
+            />
           </div>
           <div>
-            <TopHospitals darkMode={dark} />
+            <TopHospitals darkMode={dark} topHospitals={dashboardState.data?.topHospitals ?? []} hospitals={dashboardState.data?.hospitals ?? []} />
           </div>
         </div>
 
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
-            <RecentActivity darkMode={dark} />
+            <RecentActivity darkMode={dark} logs={dashboardState.data?.logs ?? []} />
           </div>
           {/* System Alerts */}
           <div className={`rounded-xl p-5 ${dark ? "bg-[#1A2235]" : "bg-white"}`}>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { useQrPngDataUrl } from "@/components/QrCodeImage";
+import { useQrPngDataUrl } from "@/hooks/useQrPngDataUrl";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
 import {
@@ -382,13 +382,14 @@ export function HADoctorDetailContent() {
               </h3>
             </div>
             <table className="w-full">
+              <caption className="sr-only">Shifokor bemorlari ro'yxati</caption>
               <thead>
                 <tr className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                  <th className="text-left px-5 py-3 font-medium">Bemor</th>
-                  <th className="text-left px-5 py-3 font-medium">Tashxis</th>
-                  <th className="text-left px-5 py-3 font-medium">So'nggi tashrif</th>
-                  <th className="text-left px-5 py-3 font-medium">Tashriflar soni</th>
-                  <th className="text-left px-5 py-3 font-medium">Holat</th>
+                  <th scope="col" className="text-left px-5 py-3 font-medium">Bemor</th>
+                  <th scope="col" className="text-left px-5 py-3 font-medium">Tashxis</th>
+                  <th scope="col" className="text-left px-5 py-3 font-medium">So'nggi tashrif</th>
+                  <th scope="col" className="text-left px-5 py-3 font-medium">Tashriflar soni</th>
+                  <th scope="col" className="text-left px-5 py-3 font-medium">Holat</th>
                 </tr>
               </thead>
               <tbody>

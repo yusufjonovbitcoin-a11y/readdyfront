@@ -37,6 +37,7 @@ export function DoctorThemeProvider({
   return <DoctorThemeContext.Provider value={value}>{children}</DoctorThemeContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDoctorTheme(): DoctorThemeContextValue {
   const value = useContext(DoctorThemeContext);
   if (!value) {

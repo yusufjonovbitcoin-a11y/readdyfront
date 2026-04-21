@@ -107,7 +107,7 @@ export function DocProfileContent() {
                   <span className={`text-sm font-semibold ml-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{doctor.rating}</span>
                 </div>
               </div>
-              <button onClick={() => navigate("/doctor/settings")} className={`w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${editBtn}`}>
+              <button onClick={() => navigate("/doctor/settings")} className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${editBtn}`}>
                 <i className="ri-edit-2-line text-base"></i>
               </button>
             </div>

@@ -136,7 +136,7 @@ export function AnalyticsPageContent() {
             id={hospitalFilterHelpId}
             className={`text-xs -mt-1 ${dm ? "text-amber-400" : "text-amber-700"}`}
           >
-            Demo rejim: kasalxona filtri backend kesim ma'lumotlari ulangandan keyin faollashadi.
+            Kasalxona bo'yicha kesim filtr funksiyasi tez orada faollashadi.
           </p>
         )}
 

@@ -1,4 +1,5 @@
 import { Component, useState, type ErrorInfo, type ReactNode } from "react";
+import * as Sentry from "@sentry/react";
 
 interface SectionErrorBoundaryProps {
   children: ReactNode;
@@ -21,7 +22,7 @@ class SectionBoundaryImpl extends Component<SectionBoundaryImplProps, SectionBou
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // TODO: Send section-level errors to monitoring service.
+    Sentry.captureException(error, { extra: { errorInfo } });
     console.error("Section render error:", error, errorInfo);
   }
 

@@ -11,7 +11,9 @@
     "settings": "Sozlamalar",
     "hospitalName": "Toshkent Klinikasi",
     "hospitalAdmin": "Hospital Admin",
-    "logout": "Chiqish"
+    "logout": "Chiqish",
+    "expand": "Yon panelni kengaytirish",
+    "collapse": "Yon panelni yig'ish"
   },
   "header": {
     "searchPlaceholder": "Qidirish...",
@@ -76,6 +78,51 @@
     "status": {
       "scheduled": "Rejalashtirilgan",
       "discharged": "Chiqarilgan"
+    },
+    "modal": {
+      "editTitle": "Bemorni tahrirlash",
+      "createTitle": "Yangi bemor qo'shish",
+      "closeAria": "Oynani yopish",
+      "fields": {
+        "fullName": "To'liq ism",
+        "phone": "Telefon",
+        "age": "Yosh",
+        "gender": "Jinsi",
+        "status": "Holat",
+        "doctor": "Shifokor",
+        "diagnosis": "Tashxis"
+      },
+      "placeholders": {
+        "fullName": "Ism Familiya",
+        "age": "25",
+        "selectDoctor": "Tanlang...",
+        "diagnosis": "Tashxis..."
+      },
+      "help": {
+        "ageRange": "0 dan 120 gacha"
+      },
+      "options": {
+        "genderMale": "Erkak",
+        "genderFemale": "Ayol",
+        "statusActive": "Faol",
+        "statusScheduled": "Rejalashtirilgan",
+        "statusDischarged": "Chiqarilgan"
+      },
+      "errors": {
+        "nameRequired": "To'liq ism majburiy.",
+        "nameMin": "Ism kamida 3 ta belgidan iborat bo'lishi kerak.",
+        "phoneFormat": "Telefon +998 XX XXX XX XX formatida bo'lishi kerak.",
+        "ageRange": "Yosh 0 dan 120 gacha butun son bo'lishi kerak.",
+        "diagnosisRequired": "Faol yoki rejalashtirilgan holatda tashxis majburiy."
+      }
+    },
+    "dischargeArchive": {
+      "title": "Chiqarilgan bemor — to'liq ma'lumot",
+      "closeAria": "Arxiv oynasini yopish",
+      "empty": "Bu bemor uchun AI tahlili va savol-javoblar hali kiritilmagan.",
+      "aiSection": "AI tahlil va tavsiya",
+      "doctorNotesSection": "Shifokor yozgan xulosalar",
+      "qaSection": "Savollar va bemor javoblari"
     }
   },
   "analytics": {
@@ -112,7 +159,48 @@
     "templateNotFound": "Shablon topilmadi",
     "backToTemplates": "Shablonlarga qaytish",
     "addQuestion": "Savol qo'shish",
-    "noQuestions": "Hali savollar yo'q. Birinchi savolni qo'shing!"
+    "noQuestions": "Hali savollar yo'q. Birinchi savolni qo'shing!",
+    "categoryTemplateCount": "{{count}} ta shablon",
+    "templateQuestionCount": "{{count}} ta savol",
+    "createdAt": "Yaratilgan: {{date}}",
+    "confirmDelete": "O'chirishni tasdiqlang",
+    "confirmDeleteDesc": "Ushbu elementni o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.",
+    "confirmDeleteAction": "O'chirish",
+    "cancel": "Bekor qilish",
+    "actions": {
+      "editCategoryAria": "Kategoriyani tahrirlash: {{name}}",
+      "deleteCategoryAria": "Kategoriyani o'chirish: {{name}}",
+      "editTemplateAria": "Shablonni tahrirlash: {{title}}",
+      "deleteTemplateAria": "Shablonni o'chirish: {{title}}",
+      "editQuestionAria": "{{index}}-savolni tahrirlash",
+      "deleteQuestionAria": "{{index}}-savolni o'chirish"
+    },
+    "modal": {
+      "closeCategoryAria": "Kategoriya oynasini yopish",
+      "closeTemplateAria": "Shablon oynasini yopish",
+      "closeQuestionAria": "Savol oynasini yopish",
+      "category": {
+        "editTitle": "Kategoriyani tahrirlash",
+        "createTitle": "Yangi kategoriya",
+        "nameLabel": "Kategoriya nomi *",
+        "namePlaceholder": "Kategoriya nomi..."
+      },
+      "template": {
+        "editTitle": "Shablonni tahrirlash",
+        "createTitle": "Yangi shablon",
+        "nameLabel": "Shablon nomi *",
+        "namePlaceholder": "Shablon nomi...",
+        "categoryLabel": "Kategoriya *",
+        "selectPlaceholder": "Tanlang..."
+      },
+      "question": {
+        "editTitle": "Savolni tahrirlash",
+        "createTitle": "Yangi savol",
+        "textLabel": "Savol matni *",
+        "textPlaceholder": "Savol matni...",
+        "help": "Savol matni 500 ta belgigacha bo'lishi mumkin."
+      }
+    }
   },
   "settings": {
     "tabs": {
@@ -121,7 +209,64 @@
       "language": "Til va ko'rinish",
       "notifications": "Xabarnomalar"
     },
-    "languageAppearance": "Til va ko'rinish"
+    "languageAppearance": "Til va ko'rinish",
+    "notice": {
+      "backendNotConnected": "Eslatma: settings bo'limidagi saqlash amallari uchun backend endpointlar hali ulanmagan."
+    },
+    "saved": {
+      "localDemo": "Lokal saqlandi",
+      "notSent": "Serverga yuborilmadi"
+    },
+    "profile": {
+      "title": "Profil ma'lumotlari",
+      "avatarInputAria": "Profil surati",
+      "uploadPhoto": "Surat qo‘yish",
+      "removePhoto": "Suratni olib tashlash",
+      "roleLabel": "HOSPITAL_ADMIN",
+      "avatarHint": "Surat ixtiyoriy. Brauzerda saqlanadi.",
+      "fullName": "To'liq ism",
+      "hospital": "Kasalxona",
+      "email": "Email",
+      "phone": "Telefon"
+    },
+    "security": {
+      "title": "Parolni o'zgartirish",
+      "currentPassword": "Joriy parol",
+      "newPassword": "Yangi parol",
+      "confirmPassword": "Yangi parolni tasdiqlang",
+      "passwordMismatch": "Parollar mos kelmaydi",
+      "updatePassword": "Parolni yangilash",
+      "infoTitle": "Xavfsizlik ma'lumotlari",
+      "info": {
+        "lastLogin": "So'nggi kirish",
+        "ipAddress": "IP manzil",
+        "device": "Qurilma"
+      }
+    },
+    "language": {
+      "interfaceLanguage": "Interfeys tili"
+    },
+    "notifications": {
+      "title": "Xabarnoma sozlamalari",
+      "items": {
+        "newPatient": {
+          "label": "Yangi bemor",
+          "desc": "Yangi bemor qo'shilganda xabar olish"
+        },
+        "doctorUpdate": {
+          "label": "Shifokor yangilanishi",
+          "desc": "Shifokor ma'lumotlari o'zgarganda"
+        },
+        "systemAlert": {
+          "label": "Tizim ogohlantirishlari",
+          "desc": "Muhim tizim xabarlari"
+        },
+        "weeklyReport": {
+          "label": "Haftalik hisobot",
+          "desc": "Har dushanba haftalik statistika"
+        }
+      }
+    }
   },
   "dashboard": {
     "title": "Hospital Admin panel",

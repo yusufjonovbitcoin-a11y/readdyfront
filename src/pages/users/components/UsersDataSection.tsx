@@ -114,7 +114,7 @@ export default function UsersDataSection({
                     onClick={() => onToggleStatus(u.id)}
                     disabled={togglingUserIds.has(u.id)}
                     aria-label={`Toggle user status for ${u.name}`}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${togglingUserIds.has(u.id) ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-yellow-400" : "hover:bg-gray-100 text-gray-400 hover:text-yellow-600"}`}
+                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${togglingUserIds.has(u.id) ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-yellow-400" : "hover:bg-gray-100 text-gray-400 hover:text-yellow-600"}`}
                     title={t("users.actions.toggleStatusTitle")}
                   >
                     <i aria-hidden="true" className="ri-toggle-line text-sm" />
@@ -123,7 +123,7 @@ export default function UsersDataSection({
                     onClick={() => onEditUser(u)}
                     disabled={isSavingUser}
                     aria-label={`Edit user ${u.name}`}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSavingUser ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
+                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSavingUser ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
                     title={t("users.actions.editTitle")}
                   >
                     <i aria-hidden="true" className="ri-edit-line text-sm" />
@@ -132,7 +132,7 @@ export default function UsersDataSection({
                     onClick={() => onDeleteUser(u.id)}
                     disabled={Boolean(deletingUserId)}
                     aria-label={`Delete user ${u.name}`}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${deletingUserId ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-red-500/20 text-gray-400 hover:text-red-400" : "hover:bg-red-50 text-gray-400 hover:text-red-500"}`}
+                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${deletingUserId ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-red-500/20 text-gray-400 hover:text-red-400" : "hover:bg-red-50 text-gray-400 hover:text-red-500"}`}
                     title={t("users.actions.deleteTitle")}
                   >
                     <i aria-hidden="true" className="ri-delete-bin-line text-sm" />
@@ -193,7 +193,7 @@ export default function UsersDataSection({
                         onClick={() => onToggleStatus(u.id)}
                         disabled={togglingUserIds.has(u.id)}
                         aria-label={`Toggle user status for ${u.name}`}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${togglingUserIds.has(u.id) ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-yellow-400" : "hover:bg-gray-100 text-gray-400 hover:text-yellow-600"}`}
+                        className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${togglingUserIds.has(u.id) ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-yellow-400" : "hover:bg-gray-100 text-gray-400 hover:text-yellow-600"}`}
                         title={t("users.actions.toggleStatusTitle")}
                       >
                         <i aria-hidden="true" className="ri-toggle-line text-sm" />
@@ -202,7 +202,7 @@ export default function UsersDataSection({
                         onClick={() => onEditUser(u)}
                         disabled={isSavingUser}
                         aria-label={`Edit user ${u.name}`}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSavingUser ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
+                        className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSavingUser ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`}
                         title={t("users.actions.editTitle")}
                       >
                         <i aria-hidden="true" className="ri-edit-line text-sm" />
@@ -211,7 +211,7 @@ export default function UsersDataSection({
                         onClick={() => onDeleteUser(u.id)}
                         disabled={Boolean(deletingUserId)}
                         aria-label={`Delete user ${u.name}`}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${deletingUserId ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-red-500/20 text-gray-400 hover:text-red-400" : "hover:bg-red-50 text-gray-400 hover:text-red-500"}`}
+                        className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${deletingUserId ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-red-500/20 text-gray-400 hover:text-red-400" : "hover:bg-red-50 text-gray-400 hover:text-red-500"}`}
                         title={t("users.actions.deleteTitle")}
                       >
                         <i aria-hidden="true" className="ri-delete-bin-line text-sm" />
@@ -234,7 +234,7 @@ export default function UsersDataSection({
                 aria-label="Go to previous users page"
                 disabled={page <= 1}
                 onClick={() => onPageChange(clampPage(page - 1, totalPages))}
-                className={`w-7 h-7 flex items-center justify-center rounded-md text-xs transition-colors ${page <= 1 ? darkMode ? "text-gray-600 cursor-not-allowed" : "text-gray-300 cursor-not-allowed" : darkMode ? "text-gray-400 hover:bg-[#1E2A3A] cursor-pointer" : "text-gray-500 hover:bg-gray-100 cursor-pointer"}`}
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-xs transition-colors ${page <= 1 ? darkMode ? "text-gray-600 cursor-not-allowed" : "text-gray-300 cursor-not-allowed" : darkMode ? "text-gray-400 hover:bg-[#1E2A3A] cursor-pointer" : "text-gray-500 hover:bg-gray-100 cursor-pointer"}`}
               >
                 <i aria-hidden="true" className="ri-arrow-left-s-line" />
               </button>
@@ -248,7 +248,7 @@ export default function UsersDataSection({
                       onClick={() => onPageChange(item)}
                       aria-label={`Go to users page ${item}`}
                       aria-current={item === page ? "page" : undefined}
-                      className={`w-7 h-7 flex items-center justify-center rounded-md text-xs cursor-pointer transition-colors ${item === page ? "bg-emerald-500 text-white" : darkMode ? "text-gray-400 hover:bg-[#1E2A3A]" : "text-gray-500 hover:bg-gray-100"}`}
+                      className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-xs cursor-pointer transition-colors ${item === page ? "bg-emerald-500 text-white" : darkMode ? "text-gray-400 hover:bg-[#1E2A3A]" : "text-gray-500 hover:bg-gray-100"}`}
                     >
                       {item}
                     </button>
@@ -262,7 +262,7 @@ export default function UsersDataSection({
                 aria-label="Go to next users page"
                 disabled={page >= totalPages}
                 onClick={() => onPageChange(clampPage(page + 1, totalPages))}
-                className={`w-7 h-7 flex items-center justify-center rounded-md text-xs transition-colors ${page >= totalPages ? darkMode ? "text-gray-600 cursor-not-allowed" : "text-gray-300 cursor-not-allowed" : darkMode ? "text-gray-400 hover:bg-[#1E2A3A] cursor-pointer" : "text-gray-500 hover:bg-gray-100 cursor-pointer"}`}
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-xs transition-colors ${page >= totalPages ? darkMode ? "text-gray-600 cursor-not-allowed" : "text-gray-300 cursor-not-allowed" : darkMode ? "text-gray-400 hover:bg-[#1E2A3A] cursor-pointer" : "text-gray-500 hover:bg-gray-100 cursor-pointer"}`}
               >
                 <i aria-hidden="true" className="ri-arrow-right-s-line" />
               </button>

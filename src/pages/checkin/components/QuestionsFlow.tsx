@@ -78,6 +78,10 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
   const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const navigateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoForwardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const noVisibleQuestionsHandledRef = useRef(false);
+  const visibleQuestionsRef = useRef<CheckinQuestion[]>([]);
+  const currentIndexRef = useRef(0);
+  const answersRef = useRef<Record<string, string | string[]>>({});
 
   useEffect(() => {
     let mounted = true;
@@ -118,6 +122,30 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
   // Keep denominator >= 1 to avoid NaN when dynamic filtering returns no visible questions.
   const total = Math.max(visibleQuestions.length, 1);
   const progress = Math.round((currentIndex / total) * 100);
+
+  useEffect(() => {
+    visibleQuestionsRef.current = visibleQuestions;
+  }, [visibleQuestions]);
+
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  useEffect(() => {
+    if (questionsLoadStatus !== "ready") return;
+    if (checkinQuestions.length === 0) return;
+    if (visibleQuestions.length > 0) {
+      noVisibleQuestionsHandledRef.current = false;
+      return;
+    }
+    if (noVisibleQuestionsHandledRef.current) return;
+    noVisibleQuestionsHandledRef.current = true;
+    onComplete(answers);
+  }, [answers, checkinQuestions.length, onComplete, questionsLoadStatus, visibleQuestions.length]);
 
   // Load draft on mount
   useEffect(() => {
@@ -188,22 +216,24 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
     setAnimating(true);
     navigateTimerRef.current = setTimeout(() => {
       navigateTimerRef.current = null;
+      const latestVisibleQuestions = visibleQuestionsRef.current;
+      const latestIndex = currentIndexRef.current;
 
       if (dir === 'forward') {
-        if (currentIndex < visibleQuestions.length - 1) {
-          dispatch({ type: "set_question", questionId: visibleQuestions[currentIndex + 1].id });
+        if (latestIndex < latestVisibleQuestions.length - 1) {
+          dispatch({ type: "set_question", questionId: latestVisibleQuestions[latestIndex + 1].id });
         } else {
-          onComplete(answers);
+          onComplete(answersRef.current);
         }
       } else {
-        if (currentIndex > 0) {
-          dispatch({ type: "set_question", questionId: visibleQuestions[currentIndex - 1].id });
+        if (latestIndex > 0) {
+          dispatch({ type: "set_question", questionId: latestVisibleQuestions[latestIndex - 1].id });
         }
       }
       dispatch({ type: "clear_text" });
       setAnimating(false);
     }, 200);
-  }, [answers, currentIndex, onComplete, visibleQuestions]);
+  }, [onComplete]);
 
   useEffect(() => {
     return () => {
@@ -252,7 +282,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4">
         <div className="text-center">
           <i className="ri-loader-4-line text-teal-500 text-2xl animate-spin" aria-hidden="true" />
-          <p className="mt-2 text-sm font-medium text-gray-600">Savollar yuklanmoqda...</p>
+          <p className="mt-2 text-sm font-medium text-gray-600">{t("questions.loading")}</p>
         </div>
       </div>
     );
@@ -263,14 +293,14 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4">
         <div className="text-center max-w-xs">
           <i className="ri-error-warning-line text-red-500 text-2xl" aria-hidden="true" />
-          <p className="mt-2 text-sm font-medium text-gray-700">Savollarni yuklashda xatolik yuz berdi.</p>
-          <p className="mt-1 text-xs text-gray-500">Iltimos, internet ulanishini tekshirib qayta urinib ko'ring.</p>
+          <p className="mt-2 text-sm font-medium text-gray-700">{t("questions.loadErrorTitle")}</p>
+          <p className="mt-1 text-xs text-gray-500">{t("questions.loadErrorDesc")}</p>
           <button
             type="button"
             onClick={() => setLoadAttempt((prev) => prev + 1)}
-            className="mt-4 px-4 h-10 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold transition-colors cursor-pointer"
+            className="mt-4 px-4 min-h-[44px] rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold transition-colors cursor-pointer"
           >
-            Qayta urinish
+            {t("questions.retry")}
           </button>
         </div>
       </div>
@@ -280,7 +310,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
   if (checkinQuestions.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4">
-        <p className="text-sm font-medium text-gray-600">Savollar hozircha mavjud emas</p>
+        <p className="text-sm font-medium text-gray-600">{t("questions.empty")}</p>
       </div>
     );
   }
@@ -288,7 +318,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
   if (!currentQuestion) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4">
-        <p className="text-sm font-medium text-gray-600">No questions available</p>
+        <p className="text-sm font-medium text-gray-600">{t("questions.emptyVisible")}</p>
       </div>
     );
   }
@@ -303,7 +333,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
           <div className="flex items-center justify-between mb-2">
             <button
               onClick={() => currentIndex > 0 && navigate('back')}
-              className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors cursor-pointer ${
+              className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-colors cursor-pointer ${
                 currentIndex > 0 ? 'text-gray-600 hover:bg-gray-100' : 'text-gray-300 cursor-not-allowed'
               }`}
             >
@@ -415,14 +445,14 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
                     {!currentQuestion.required && (
                       <button
                         onClick={handleSkip}
-                        className="px-4 h-10 rounded-xl border border-gray-200 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer whitespace-nowrap"
+                        className="px-4 min-h-[44px] rounded-xl border border-gray-200 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer whitespace-nowrap"
                       >
                         {t("questions.skip")}
                       </button>
                     )}
                     <button
                       onClick={handleTextSubmit}
-                      className="px-5 h-10 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap"
+                      className="px-5 min-h-[44px] rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap"
                     >
                       {t("questions.continue")}
                     </button>

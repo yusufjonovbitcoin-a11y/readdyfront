@@ -1,4 +1,4 @@
-import type { HAPatient } from "@/mocks/ha_patients";
+import type { HAPatient } from "@/api/services/hospitalAdminData.service";
 import StatusChip from "@/components/ui/StatusChip";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
 
@@ -150,7 +150,7 @@ export default function PatientsTable({
                     title="AI tahlil, shifokor yozuvi va savol-javoblar"
                     aria-label={`View patient ${p.name}`}
                     onClick={() => onOpenDischargeDetail(p)}
-                    className={`h-10 px-3 flex items-center gap-1 rounded-md cursor-pointer text-xs font-medium transition-colors ${darkMode ? "bg-teal-500/15 text-teal-400 hover:bg-teal-500/25" : "bg-teal-50 text-teal-700 hover:bg-teal-100"}`}
+                    className={`min-h-[44px] px-3 flex items-center gap-1 rounded-md cursor-pointer text-xs font-medium transition-colors ${darkMode ? "bg-teal-500/15 text-teal-400 hover:bg-teal-500/25" : "bg-teal-50 text-teal-700 hover:bg-teal-100"}`}
                   >
                     <i className="ri-eye-line text-sm" aria-hidden="true"></i>
                     <span>Ko‘rish</span>
@@ -159,7 +159,7 @@ export default function PatientsTable({
                 <button
                   type="button"
                   onClick={() => onEdit(p)}
-                  className={`w-10 h-10 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                  className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
                   aria-label={`Edit patient ${p.name}`}
                 >
                   <i className="ri-edit-line text-sm" aria-hidden="true"></i>
@@ -167,7 +167,7 @@ export default function PatientsTable({
                 <button
                   type="button"
                   onClick={() => onDelete(p.id)}
-                  className="w-10 h-10 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors"
                   aria-label={`Delete patient ${p.name}`}
                 >
                   <i className="ri-delete-bin-line text-sm" aria-hidden="true"></i>
@@ -223,7 +223,7 @@ export default function PatientsTable({
                           title="AI tahlil, shifokor yozuvi va savol-javoblar"
                           aria-label={`View patient ${p.name}`}
                           onClick={() => onOpenDischargeDetail(p)}
-                          className={`h-10 px-3 flex items-center gap-1 rounded-md cursor-pointer text-xs font-medium transition-colors ${darkMode ? "bg-teal-500/15 text-teal-400 hover:bg-teal-500/25" : "bg-teal-50 text-teal-700 hover:bg-teal-100"}`}
+                          className={`min-h-[44px] px-3 flex items-center gap-1 rounded-md cursor-pointer text-xs font-medium transition-colors ${darkMode ? "bg-teal-500/15 text-teal-400 hover:bg-teal-500/25" : "bg-teal-50 text-teal-700 hover:bg-teal-100"}`}
                         >
                           <i className="ri-eye-line text-sm" aria-hidden="true"></i>
                           <span className="hidden sm:inline">Ko‘rish</span>
@@ -233,7 +233,7 @@ export default function PatientsTable({
                         type="button"
                         onClick={() => onEdit(p)}
                         aria-label={`Edit patient ${p.name}`}
-                        className={`w-10 h-10 flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                        className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
                       >
                         <i className="ri-edit-line text-sm" aria-hidden="true"></i>
                       </button>
@@ -241,7 +241,7 @@ export default function PatientsTable({
                         type="button"
                         onClick={() => onDelete(p.id)}
                         aria-label={`Delete patient ${p.name}`}
-                        className="w-10 h-10 flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors"
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors"
                       >
                         <i className="ri-delete-bin-line text-sm" aria-hidden="true"></i>
                       </button>
@@ -266,7 +266,7 @@ export default function PatientsTable({
               {(page - 1) * perPage + 1}–{Math.min(page * perPage, filteredCount)} / {filteredCount}
             </span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className={`w-10 h-10 flex items-center justify-center rounded-md text-sm cursor-pointer disabled:opacity-40 ${darkMode ? "hover:bg-[#1A2235] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-sm cursor-pointer disabled:opacity-40 ${darkMode ? "hover:bg-[#1A2235] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                 <i className="ri-arrow-left-s-line"></i>
               </button>
               <span className={`sm:hidden px-2 text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
@@ -280,7 +280,7 @@ export default function PatientsTable({
                       onClick={() => setPage(item)}
                       aria-label={`Go to patients page ${item}`}
                       aria-current={item === page ? "page" : undefined}
-                      className={`w-10 h-10 flex items-center justify-center rounded-md text-xs cursor-pointer ${item === page ? "bg-teal-500 text-white" : darkMode ? "text-gray-400 hover:bg-[#1A2235]" : "text-gray-500 hover:bg-gray-100"}`}
+                      className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-xs cursor-pointer ${item === page ? "bg-teal-500 text-white" : darkMode ? "text-gray-400 hover:bg-[#1A2235]" : "text-gray-500 hover:bg-gray-100"}`}
                     >
                       {item}
                     </button>
@@ -291,7 +291,7 @@ export default function PatientsTable({
                   ),
                 )}
               </div>
-              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className={`w-10 h-10 flex items-center justify-center rounded-md text-sm cursor-pointer disabled:opacity-40 ${darkMode ? "hover:bg-[#1A2235] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-sm cursor-pointer disabled:opacity-40 ${darkMode ? "hover:bg-[#1A2235] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                 <i className="ri-arrow-right-s-line"></i>
               </button>
             </div>

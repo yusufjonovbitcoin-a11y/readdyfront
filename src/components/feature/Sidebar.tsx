@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import type { RefObject } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import medcoreLogoImage from "@/assets/medcore-logo.png";
@@ -15,9 +16,10 @@ interface SidebarProps {
   darkMode: boolean;
   mobileOpen: boolean;
   onCloseMobile: () => void;
+  drawerRef?: RefObject<HTMLElement | null>;
 }
 
-export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onCloseMobile }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onCloseMobile, drawerRef }: SidebarProps) {
   const { t } = useTranslation("admin");
   const location = useLocation();
   const showExpanded = mobileOpen || !collapsed;
@@ -33,14 +35,19 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  const handleProfileClick = () => {
+  const handleProfileClick = async () => {
     onCloseMobile();
-    logout();
+    await logout();
     navigate("/login");
   };
 
   return (
     <aside
+      ref={drawerRef}
+      role={mobileOpen ? "dialog" : undefined}
+      aria-modal={mobileOpen ? "true" : undefined}
+      aria-label={mobileOpen ? "Navigation menu" : undefined}
+      tabIndex={mobileOpen ? -1 : undefined}
       className={`fixed left-0 top-0 h-full z-40 flex flex-col transition-[width,transform] duration-300 ease-out isolate ${
         collapsed ? "w-64 md:w-16" : "w-64"
       } ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} ${
@@ -64,7 +71,8 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
         <button
           type="button"
           onClick={onToggle}
-          aria-label={collapsed ? "Yon panelni kengaytirish" : "Yon panelni yig'ish"}
+          aria-label={collapsed ? t("sidebar.expand") : t("sidebar.collapse")}
+          title={collapsed ? t("sidebar.expand") : t("sidebar.collapse")}
           className={`ml-auto w-6 h-6 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
             darkMode ? "text-gray-400 hover:text-white hover:bg-[#1E2A3A]" : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
           }`}
@@ -101,6 +109,8 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
                 onClick={onCloseMobile}
                 className={itemClass}
                 aria-current={isActive ? "page" : undefined}
+                aria-label={item.label}
+                title={item.label}
               >
                 <div className="w-5 h-5 flex items-center justify-center flex-shrink-0" aria-hidden="true">
                   <i className={`${item.icon} text-base`}></i>

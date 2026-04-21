@@ -1,12 +1,10 @@
-import { lazy, Suspense, type ReactNode } from "react";
-import { Navigate, type RouteObject } from "react-router-dom";
+import { lazy } from "react";
+import { type RouteObject } from "react-router-dom";
 import AdminSectionLayout from "./layouts/AdminSectionLayout";
-import { useAuth, type UserRole } from "@/hooks/useAuth";
-
 import HospitalAdminSectionLayout from "./layouts/HospitalAdminSectionLayout";
-
 import DoctorSectionLayout from "./layouts/DoctorSectionLayout";
 import ProtectedRoute from "./ProtectedRoute";
+import { RouteFallback, RootIndexRedirect, WithSuspense } from "./helpers";
 
 const LoginPage = lazy(() => import("../pages/login/page"));
 const NotFoundPage = lazy(() => import("../pages/NotFound"));
@@ -81,48 +79,6 @@ const DocProfileContent = lazy(() =>
   import("../pages/doctor/profile/page").then((m) => ({ default: m.DocProfileContent })),
 );
 
-function RouteFallback() {
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center text-sm text-gray-500">
-      Loading...
-    </div>
-  );
-}
-
-function AuthBootstrapFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
-        <i className="ri-loader-4-line animate-spin text-base text-emerald-600" aria-hidden="true" />
-        <span>Autentifikatsiya tekshirilmoqda...</span>
-      </div>
-    </div>
-  );
-}
-
-function getHomePathByRole(role: UserRole): string {
-  if (role === "SUPER_ADMIN") return "/dashboard";
-  if (role === "HOSPITAL_ADMIN") return "/hospital-admin";
-  return "/doctor/patients";
-}
-
-function RootIndexRedirect() {
-  const { user, isBootstrapping } = useAuth();
-
-  if (isBootstrapping) {
-    return <AuthBootstrapFallback />;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <Navigate to={getHomePathByRole(user.role)} replace />;
-}
-
-function WithSuspense({ children }: { children: ReactNode }) {
-  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>;
-}
 
 const routes: RouteObject[] = [
   {

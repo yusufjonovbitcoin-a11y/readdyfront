@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
-import { currentDoctorSession } from "@/mocks/current_doctor";
+import { getCurrentDoctorSession } from "@/api/services/doctorSession.service";
 import { useModalA11y } from "@/hooks/useModalA11y";
 
 interface DocHeaderProps {
@@ -17,15 +17,18 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
   const [showNotif, setShowNotif] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const notifTriggerRef = useRef<HTMLButtonElement>(null);
+  const previousNotificationsOpenRef = useRef(false);
   const navigate = useNavigate();
   const { darkMode, toggleDarkMode } = useDoctorTheme();
   const notifPopoverRef = useModalA11y({
     isOpen: showNotif,
     onClose: () => setShowNotif(false),
     triggerRef: notifTriggerRef,
+    isolateBackground: false,
     trapFocus: false,
     lockScroll: false,
   });
+  const currentDoctorSession = getCurrentDoctorSession();
 
   const notifications = [
     { id: 1, text: t("header.notifications.newPatient"), time: t("header.notifications.twoMin"), type: "info", to: "/doctor/patients?tab=in_progress" },
@@ -33,6 +36,24 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
     { id: 3, text: t("header.notifications.todayQueue"), time: t("header.notifications.oneHour"), type: "info", to: "/doctor/patients?tab=completed" },
   ];
   const unreadCount = notificationCount ?? notifications.length;
+
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showNotif) {
+        setShowNotif(false);
+        notifTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [showNotif]);
+
+  useEffect(() => {
+    if (previousNotificationsOpenRef.current && !showNotif) {
+      notifTriggerRef.current?.focus();
+    }
+    previousNotificationsOpenRef.current = showNotif;
+  }, [showNotif]);
 
   return (
     <header
@@ -43,7 +64,7 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
       <button
         type="button"
         onClick={onToggleMobile}
-        className={`mr-2 md:hidden w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+        className={`mr-2 md:hidden w-11 h-11 flex items-center justify-center rounded-lg transition-colors ${
           darkMode ? "bg-[#1C2333] text-gray-300 hover:bg-[#252D3D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
         }`}
         aria-label={t("header.actions.openSidebar")}
@@ -64,7 +85,7 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
         <button
           onClick={toggleDarkMode}
           aria-label={darkMode ? t("header.actions.switchToLight") : t("header.actions.switchToDark")}
-          className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+          className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
             darkMode ? "bg-[#1C2333] text-yellow-400 hover:bg-[#252D3D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}
         >
@@ -77,7 +98,10 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
             ref={notifTriggerRef}
             onClick={() => setShowNotif(!showNotif)}
             aria-label={showNotif ? t("header.actions.hideNotifications") : t("header.actions.showNotifications")}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer relative ${
+            aria-expanded={showNotif}
+            aria-controls="doctor-notification-popover"
+            aria-haspopup="true"
+            className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors cursor-pointer relative ${
               darkMode ? "bg-[#1C2333] text-gray-300 hover:bg-[#252D3D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -89,9 +113,9 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
           {showNotif && (
             <div
               ref={notifPopoverRef}
-              role="dialog"
-              aria-modal={false}
-              aria-labelledby="doctor-notifications-title"
+              id="doctor-notification-popover"
+              role="region"
+              aria-label="Bildirishnomalar"
               tabIndex={-1}
               className={`absolute right-0 top-12 w-80 rounded-xl shadow-lg border z-50 ${
                 darkMode ? "bg-[#161B27] border-[#1C2333]" : "bg-white border-gray-100"
@@ -121,6 +145,9 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-xs leading-relaxed ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{n.text}</p>
+                      <span className="sr-only">
+                        {n.type === "critical" ? "Kritik ogohlantirish" : "Ma'lumot"}
+                      </span>
                       <p className={`text-xs mt-1 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{n.time}</p>
                     </div>
                   </button>
@@ -136,7 +163,7 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
           onClick={() => navigate("/doctor/profile")}
           title={currentDoctorSession.name}
           aria-label={t("header.actions.openProfile")}
-          className="w-9 h-9 shrink-0 overflow-hidden rounded-full bg-violet-600 flex items-center justify-center cursor-pointer ring-2 ring-transparent hover:ring-violet-400/50 transition-[box-shadow,transform] hover:scale-[1.02]"
+          className="w-11 h-11 shrink-0 overflow-hidden rounded-full bg-violet-600 flex items-center justify-center cursor-pointer ring-2 ring-transparent hover:ring-violet-400/50 transition-[box-shadow,transform] hover:scale-[1.02]"
         >
           {!avatarFailed ? (
             <img

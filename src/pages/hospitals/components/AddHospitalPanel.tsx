@@ -1,4 +1,6 @@
 import { useState, type RefObject } from "react";
+import { useTranslation } from "react-i18next";
+import * as Sentry from "@sentry/react";
 import { useModalA11y } from "@/hooks/useModalA11y";
 
 interface AddHospitalPanelProps {
@@ -11,6 +13,7 @@ interface AddHospitalPanelProps {
 }
 
 export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, triggerRef, submitting = false }: AddHospitalPanelProps) {
+  const { t } = useTranslation("hospital");
   const [form, setForm] = useState({
     name: "",
     address: "",
@@ -20,6 +23,7 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
     adminPassword: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const modalRef = useModalA11y({
     isOpen: open,
@@ -41,6 +45,7 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
 
   const handleSubmit = async () => {
     if (loading || submitting) return;
+    setSubmitError(null);
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     setLoading(true);
@@ -49,6 +54,12 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
       setForm({ name: "", address: "", phone: "", adminName: "", adminPhone: "", adminPassword: "" });
       setErrors({});
       onClose();
+    } catch (err) {
+      setSubmitError(t("addHospital.errors.submitFailed", { defaultValue: "Saqlashda xatolik yuz berdi." }));
+      Sentry.captureException(err, {
+        tags: { area: "hospitals", op: "create" },
+      });
+      return;
     } finally {
       setLoading(false);
     }
@@ -86,7 +97,7 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
           </div>
           <button
             onClick={onClose}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
             aria-label="Kasalxona qo'shish panelini yopish"
           >
             <i className="ri-close-line text-lg" aria-hidden="true"></i>
@@ -151,7 +162,13 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
         </div>
 
         {/* Footer */}
-        <div className={`px-6 py-4 border-t flex gap-3 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+        <div className={`px-6 py-4 border-t space-y-2 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+          {submitError && (
+            <p className="text-xs text-red-500" role="alert">
+              {submitError}
+            </p>
+          )}
+          <div className="flex gap-3">
           <button
             onClick={onClose}
             disabled={loading || submitting}
@@ -166,6 +183,7 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
           >
             {loading || submitting ? "Saqlanmoqda..." : "Saqlash"}
           </button>
+          </div>
         </div>
       </div>
     </>

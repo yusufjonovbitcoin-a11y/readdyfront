@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { docPatients, type DocPatient } from "@/mocks/doc_patients";
+import { getInitialDocPatients, type DocPatient } from "@/api/services/docPatients.service";
 import { formatLocalYMD } from "@/utils/date";
 
 /** Navbatdagi bemorlar uchun reorder: to‘liq yoki ko‘rinayotgan subset id ro‘yxatini qabul qiladi */
@@ -48,7 +48,7 @@ interface DocPatientsContextValue {
 const DocPatientsContext = createContext<DocPatientsContextValue | null>(null);
 
 export function DocPatientsProvider({ children }: { children: ReactNode }) {
-  const [patients, setPatients] = useState<DocPatient[]>(() => docPatients.map((p) => ({ ...p })));
+  const [patients, setPatients] = useState<DocPatient[]>(() => getInitialDocPatients());
 
   /** Kun almashganda bugundan oldingi kunlar bo'yicha faol bemorlarni tarixga */
   useEffect(() => {
@@ -116,6 +116,7 @@ export function DocPatientsProvider({ children }: { children: ReactNode }) {
   return <DocPatientsContext.Provider value={value}>{children}</DocPatientsContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDocPatients(): DocPatientsContextValue {
   const ctx = useContext(DocPatientsContext);
   if (!ctx) {

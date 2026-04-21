@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import HASidebar from "./HASidebar";
 import HAHeader from "./HAHeader";
 import { usePersistedHospitalAdminTheme } from "@/hooks/usePersistedHospitalAdminTheme";
+import { useMobileDrawerA11y } from "@/hooks/useMobileDrawerA11y";
 import { HospitalAdminThemeProvider } from "@/context/HospitalAdminThemeContext";
 import { layoutSystem } from "@/styles/layoutSystem";
 
@@ -14,6 +15,7 @@ export default function HALayout({ children, title }: HALayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode] = usePersistedHospitalAdminTheme();
+  const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
 
   return (
     <HospitalAdminThemeProvider darkMode={darkMode}>
@@ -24,13 +26,20 @@ export default function HALayout({ children, title }: HALayoutProps) {
           darkMode={darkMode}
           mobileOpen={mobileSidebarOpen}
           onCloseMobile={() => setMobileSidebarOpen(false)}
+          drawerRef={drawerRef}
         />
         <HAHeader
           title={title}
           darkMode={darkMode}
           onToggleDark={toggleDarkMode}
           sidebarCollapsed={collapsed}
-          onToggleMobile={() => setMobileSidebarOpen((v) => !v)}
+          onToggleMobile={() =>
+            setMobileSidebarOpen((v) => {
+              const next = !v;
+              if (next) captureTrigger();
+              return next;
+            })
+          }
         />
         {mobileSidebarOpen && (
           <button
@@ -41,6 +50,8 @@ export default function HALayout({ children, title }: HALayoutProps) {
           />
         )}
         <main
+          id="main-content"
+          tabIndex={-1}
           className={`transition-[margin-left] duration-300 ease-out pt-16 min-h-screen ${
             collapsed ? "md:ml-16" : "md:ml-64"
           }`}

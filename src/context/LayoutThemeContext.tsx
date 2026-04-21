@@ -24,6 +24,7 @@ export function LayoutThemeProvider({
 }
 
 /** MainLayout ichidagi kontentda — header/sidebar bilan bir xil tema */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useMainLayoutDarkMode(): boolean {
   const v = useContext(LayoutThemeContext);
   if (!v) throw new Error("useMainLayoutDarkMode requires LayoutThemeProvider");
@@ -31,6 +32,7 @@ export function useMainLayoutDarkMode(): boolean {
 }
 
 /** Tema o‘zgartirish (masalan Sozlamalar → Ko‘rinish) */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useMainLayoutTheme(): LayoutThemeValue {
   const v = useContext(LayoutThemeContext);
   if (!v) throw new Error("useMainLayoutTheme requires LayoutThemeProvider");

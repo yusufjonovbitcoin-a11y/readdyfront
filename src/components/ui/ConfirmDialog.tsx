@@ -66,7 +66,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={cancelDisabled}
-            className={`flex-1 h-10 rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${cancelDisabled ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}
+            className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${cancelDisabled ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}
           >
             {cancelText}
           </button>
@@ -74,7 +74,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={confirmDisabled}
-            className={`flex-1 h-10 rounded-lg ${confirmBtnClass} text-white text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${confirmDisabled ? "" : "cursor-pointer"}`}
+            className={`flex-1 min-h-[44px] rounded-lg ${confirmBtnClass} text-white text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${confirmDisabled ? "" : "cursor-pointer"}`}
           >
             {confirmText}
           </button>

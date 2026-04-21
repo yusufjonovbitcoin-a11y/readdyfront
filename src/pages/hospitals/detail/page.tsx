@@ -1,53 +1,20 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutDarkMode } from "@/context/LayoutThemeContext";
 import { isBlank, isValidUzPhone, normalizeWhitespace } from "@/utils/fieldValidation";
 import AppToast from "@/components/ui/AppToast";
 import { useAppToast } from "@/hooks/useAppToast";
-import { getHospitalById } from "@/api/hospitals";
-import { getDoctors, getDoctorAnalytics, getDoctorPatients } from "@/api/doctor";
-import type { Hospital } from "@/types";
-import type { DoctorDto, DoctorPatientDto, DoctorAnalyticsDto } from "@/api/types/doctor.types";
-import { usePageState } from "@/hooks/usePageState";
+import { useHospitalDetailData } from "./useHospitalDetailData";
 
 type Tab = "overview" | "doctors" | "admins" | "patients" | "analytics" | "settings";
 
-type HospitalDetailPayload = {
-  hospital: Hospital | null;
-  doctors: DoctorDto[];
-  patients: DoctorPatientDto[];
-  dailyData: DoctorAnalyticsDto[];
-};
-
 export function HospitalDetailContent() {
+  const { t } = useTranslation("admin");
   const dm = useMainLayoutDarkMode();
   const { id } = useParams();
   const navigate = useNavigate();
-  const fetchDetail = useCallback(async (): Promise<HospitalDetailPayload> => {
-    if (!id) {
-      return { hospital: null, doctors: [], patients: [], dailyData: [] };
-    }
-    const [hospital, allDoctors, allPatients, analytics] = await Promise.all([
-      getHospitalById(id),
-      getDoctors(),
-      getDoctorPatients(),
-      getDoctorAnalytics(),
-    ]);
-    if (!hospital) {
-      return { hospital: null, doctors: [], patients: [], dailyData: analytics };
-    }
-    const hospitalAliasId = hospital.id.startsWith("hosp-") ? hospital.id : `hosp-00${hospital.id}`;
-    const doctors = allDoctors.filter((doctor) => doctor.hospitalId === hospital.id || doctor.hospitalId === hospitalAliasId);
-    const doctorIds = new Set(doctors.map((doctor) => doctor.id));
-    const patients = allPatients.filter((patient) =>
-      patient.hospitalId === hospital.id ||
-      patient.hospitalId === hospitalAliasId ||
-      doctorIds.has(patient.doctorId),
-    );
-    return { hospital, doctors, patients, dailyData: analytics };
-  }, [id]);
-  const pageState = usePageState(fetchDetail);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [patientSearch, setPatientSearch] = useState("");
   const [showAddDoctor, setShowAddDoctor] = useState(false);
@@ -55,29 +22,9 @@ export function HospitalDetailContent() {
   const [doctorFormErrors, setDoctorFormErrors] = useState<Partial<Record<keyof typeof doctorForm, string>>>({});
   const [settingsForm, setSettingsForm] = useState({ name: "", address: "", phone: "" });
   const [settingsErrors, setSettingsErrors] = useState<Partial<Record<keyof typeof settingsForm, string>>>({});
-  const [demoStatus, setDemoStatus] = useState<"active" | "inactive">("active");
+  const [statusSwitch, setStatusSwitch] = useState<"active" | "inactive">("active");
   const { toast, showToast } = useAppToast(2400);
-  const hospital = pageState.data?.hospital ?? null;
-  const doctors = pageState.data?.doctors ?? [];
-  const doctorNameById = useMemo(() => {
-    const m = new Map<string, string>();
-    doctors.forEach((d) => m.set(d.id, d.name));
-    return m;
-  }, [doctors]);
-  const patients = useMemo(
-    () =>
-      (pageState.data?.patients ?? [])
-        .filter((p) => p.name.toLowerCase().includes(patientSearch.toLowerCase()) || p.phone.includes(patientSearch))
-        .map((p) => ({
-          ...p,
-          dob: "-",
-          lastVisit: p.date,
-          status: p.status === "history" ? "discharged" : "active",
-          doctorName: doctorNameById.get(p.doctorId) ?? "-",
-          genderLabel: p.gender === "male" ? "Erkak" : "Ayol",
-        })),
-    [doctorNameById, pageState.data?.patients, patientSearch],
-  );
+  const { pageState, hospital, doctors, patients, dailyData } = useHospitalDetailData(id, patientSearch);
   const detailTodayStats = {
     newPatients: (pageState.data?.patients ?? []).filter((p) => p.date === new Date().toISOString().slice(0, 10)).length,
     appointments: (pageState.data?.patients ?? []).length,
@@ -94,7 +41,6 @@ export function HospitalDetailContent() {
     { key: "settings", label: "Sozlamalar", icon: "ri-settings-3-line" },
   ];
 
-  const dailyData = pageState.data?.dailyData ?? [];
   const maxPatients = Math.max(...dailyData.map((d) => d.patients), 1);
 
   useEffect(() => {
@@ -104,14 +50,14 @@ export function HospitalDetailContent() {
       address: hospital.address,
       phone: hospital.phone,
     });
-    setDemoStatus(hospital.status === "inactive" ? "inactive" : "active");
+    setStatusSwitch(hospital.status === "inactive" ? "inactive" : "active");
   }, [hospital]);
 
   if (pageState.status === "loading") {
     return (
       <div className={`rounded-xl p-14 text-center ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
         <i className="ri-loader-4-line animate-spin text-2xl text-emerald-500" />
-        <p className={`mt-3 text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>Kasalxona tafsilotlari yuklanmoqda...</p>
+        <p className={`mt-3 text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("hospitalDetail.loading")}</p>
       </div>
     );
   }
@@ -126,7 +72,7 @@ export function HospitalDetailContent() {
           onClick={pageState.reload}
           className="mt-4 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium"
         >
-          Qayta yuklash
+          {t("hospitalDetail.retry")}
         </button>
       </div>
     );
@@ -139,13 +85,13 @@ export function HospitalDetailContent() {
   const validateDoctorForm = () => {
     const nextErrors: Partial<Record<keyof typeof doctorForm, string>> = {};
     if (isBlank(doctorForm.name)) {
-      nextErrors.name = "To'liq ism majburiy.";
+      nextErrors.name = t("hospitalDetail.validation.fullNameRequired");
     }
     if (isBlank(doctorForm.specialty)) {
-      nextErrors.specialty = "Mutaxassislik majburiy.";
+      nextErrors.specialty = t("hospitalDetail.validation.specialtyRequired");
     }
     if (!isValidUzPhone(doctorForm.phone)) {
-      nextErrors.phone = "Telefon +998 XX XXX XX XX formatida bo'lishi kerak.";
+      nextErrors.phone = t("hospitalDetail.validation.phoneFormat");
     }
     return nextErrors;
   };
@@ -155,19 +101,19 @@ export function HospitalDetailContent() {
     setDoctorFormErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     setShowAddDoctor(false);
-    showToast("Demo rejim: shifokor ma'lumoti faqat lokal ko'rinishda saqlandi.", "info");
+    showToast(t("hospitalDetail.toast.doctorSavedLocal"), "info");
   };
 
   const validateSettingsForm = () => {
     const nextErrors: Partial<Record<keyof typeof settingsForm, string>> = {};
     if (isBlank(settingsForm.name)) {
-      nextErrors.name = "Kasalxona nomi majburiy.";
+      nextErrors.name = t("hospitalDetail.validation.hospitalNameRequired");
     }
     if (isBlank(settingsForm.address)) {
-      nextErrors.address = "Manzil majburiy.";
+      nextErrors.address = t("hospitalDetail.validation.addressRequired");
     }
     if (!isValidUzPhone(settingsForm.phone)) {
-      nextErrors.phone = "Telefon +998 XX XXX XX XX formatida bo'lishi kerak.";
+      nextErrors.phone = t("hospitalDetail.validation.phoneFormat");
     }
     return nextErrors;
   };
@@ -181,7 +127,7 @@ export function HospitalDetailContent() {
       address: normalizeWhitespace(settingsForm.address),
       phone: normalizeWhitespace(settingsForm.phone),
     });
-    showToast("Demo rejim: sozlamalar serverga yuborilmadi.", "info");
+    showToast(t("hospitalDetail.toast.settingsNotSent"), "info");
   };
 
   return (
@@ -192,8 +138,8 @@ export function HospitalDetailContent() {
           <button
             type="button"
             onClick={() => navigate("/hospitals")}
-            aria-label="Kasalxonalar ro'yxatiga qaytish"
-            className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${dm ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-white text-gray-400 hover:text-gray-700"}`}
+            aria-label={t("hospitalDetail.backToHospitals")}
+            className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${dm ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-white text-gray-400 hover:text-gray-700"}`}
           >
             <i className="ri-arrow-left-line text-sm" aria-hidden="true"></i>
           </button>
@@ -201,7 +147,7 @@ export function HospitalDetailContent() {
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className={`text-lg font-semibold ${dm ? "text-white" : "text-gray-900"}`}>{hospital.name}</h2>
               <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${hospital.status === "active" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
-                {hospital.status === "active" ? "Faol" : "Nofaol"}
+                {hospital.status === "active" ? t("common:status.active") : t("common:status.inactive")}
               </span>
             </div>
             <p className={`text-xs mt-0.5 ${dm ? "text-gray-400" : "text-gray-500"}`}>{hospital.address}</p>
@@ -286,16 +232,16 @@ export function HospitalDetailContent() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className={`text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>{doctors.length} ta shifokor</p>
               <button onClick={() => setShowAddDoctor(true)} className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-emerald-600 whitespace-nowrap">
-                <i className="ri-add-line"></i> Shifokor qo'shish
+                <i className="ri-add-line"></i> {t("hospitalDetail.addDoctor")}
               </button>
             </div>
             <p className={`text-xs ${dm ? "text-amber-400" : "text-amber-600"}`}>
-              Demo rejim: bu bo'limdagi o'zgarishlar backendga saqlanmaydi.
+              {t("hospitalDetail.availabilityNotice.section")}
             </p>
 
             {showAddDoctor && (
               <div className={`rounded-xl p-5 border ${dm ? "bg-[#1A2235] border-emerald-500/30" : "bg-white border-emerald-200"}`}>
-                <h4 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>Yangi Shifokor</h4>
+                <h4 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>{t("hospitalDetail.newDoctor")}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {[
                     { key: "name", placeholder: "To'liq ism" },
@@ -333,8 +279,8 @@ export function HospitalDetailContent() {
                   </div>
                 )}
                 <div className="flex gap-2 mt-3">
-                  <button onClick={() => setShowAddDoctor(false)} className={`px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap ${dm ? "bg-[#0F1117] text-gray-400" : "bg-gray-100 text-gray-600"}`}>Bekor</button>
-                  <button onClick={handleSaveDoctorForm} className="px-4 py-2 rounded-lg text-sm bg-emerald-500 text-white cursor-pointer whitespace-nowrap hover:bg-emerald-600">Saqlash</button>
+                  <button onClick={() => setShowAddDoctor(false)} className={`px-4 py-2 rounded-lg text-sm cursor-pointer whitespace-nowrap ${dm ? "bg-[#0F1117] text-gray-400" : "bg-gray-100 text-gray-600"}`}>{t("common:buttons.cancel")}</button>
+                  <button onClick={handleSaveDoctorForm} className="px-4 py-2 rounded-lg text-sm bg-emerald-500 text-white cursor-pointer whitespace-nowrap hover:bg-emerald-600">{t("common:buttons.save")}</button>
                 </div>
               </div>
             )}
@@ -380,7 +326,7 @@ export function HospitalDetailContent() {
               </div>
               <input
                 className={`flex-1 bg-transparent text-sm outline-none ${dm ? "text-white placeholder-gray-600" : "text-gray-900 placeholder-gray-400"}`}
-                placeholder="Bemor qidirish..."
+                placeholder={t("hospitalDetail.searchPatients")}
                 value={patientSearch}
                 onChange={(e) => setPatientSearch(e.target.value)}
               />
@@ -425,16 +371,17 @@ export function HospitalDetailContent() {
 
               <div className="hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[940px]">
+                  <caption className="sr-only">Bemorlar ro'yxati</caption>
                   <thead>
                     <tr className={dm ? "bg-[#0F1117]" : "bg-gray-50"}>
-                      <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Ism</th>
-                      <th className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Telefon</th>
-                      <th className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Tug'ilgan sana</th>
-                      <th className={`hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Jins</th>
-                      <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Shifokor</th>
-                      <th className={`hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>So'nggi tashrif</th>
-                      <th className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Tashxis</th>
-                      <th className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Holat</th>
+                      <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Ism</th>
+                      <th scope="col" className={`hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Telefon</th>
+                      <th scope="col" className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Tug'ilgan sana</th>
+                      <th scope="col" className={`hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Jins</th>
+                      <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Shifokor</th>
+                      <th scope="col" className={`hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>So'nggi tashrif</th>
+                      <th scope="col" className={`hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Tashxis</th>
+                      <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${dm ? "text-gray-500" : "text-gray-400"}`}>Holat</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -506,12 +453,12 @@ export function HospitalDetailContent() {
         {activeTab === "admins" && (
           <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>Administratorlar</h3>
+              <h3 className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>{t("hospitalDetail.adminsTitle")}</h3>
               <button
-                onClick={() => showToast("Demo rejim: admin qo'shish backendga ulanmagan.", "info")}
+                onClick={() => showToast(t("hospitalDetail.toast.adminAddNotConnected"), "info")}
                 className="flex items-center gap-2 px-3 py-2 bg-emerald-500 text-white rounded-lg text-sm cursor-pointer hover:bg-emerald-600 whitespace-nowrap"
               >
-                <i className="ri-add-line"></i> Admin qo'shish
+                <i className="ri-add-line"></i> {t("hospitalDetail.addAdmin")}
               </button>
             </div>
             <div className="space-y-3">
@@ -528,7 +475,7 @@ export function HospitalDetailContent() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="px-2.5 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">{a.role}</span>
-                    <span className="px-2.5 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-400">Faol</span>
+                    <span className="px-2.5 py-1 rounded-full text-xs bg-emerald-500/20 text-emerald-400">{t("common:status.active")}</span>
                   </div>
                 </div>
               ))}
@@ -538,9 +485,9 @@ export function HospitalDetailContent() {
 
         {activeTab === "settings" && (
           <div className={`rounded-xl p-5 max-w-lg ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
-            <h3 className={`text-sm font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>Kasalxona Sozlamalari</h3>
+            <h3 className={`text-sm font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>{t("hospitalDetail.settingsTitle")}</h3>
             <p className={`text-xs mb-4 ${dm ? "text-amber-400" : "text-amber-600"}`}>
-              Demo rejim: bu bo'limdagi saqlash amallari serverga yuborilmaydi.
+              {t("hospitalDetail.availabilityNotice.settings")}
             </p>
             <div className="space-y-4">
               {[
@@ -584,27 +531,27 @@ export function HospitalDetailContent() {
               {settingsErrors.phone && <p id="hospital-settings-phone-error" className="text-xs text-red-500">{settingsErrors.phone}</p>}
               <div className="flex items-center justify-between pt-2">
                 <div>
-                  <p className={`text-sm font-medium ${dm ? "text-white" : "text-gray-900"}`}>Kasalxona holati</p>
-                  <p className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>Faol/Nofaol qilish</p>
+                  <p className={`text-sm font-medium ${dm ? "text-white" : "text-gray-900"}`}>{t("hospitalDetail.hospitalStatus")}</p>
+                  <p className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("hospitalDetail.toggleStatus")}</p>
                 </div>
                 <button
                   type="button"
                   role="switch"
-                  aria-checked={demoStatus === "active"}
-                  aria-label="Kasalxona holatini demo tarzda almashtirish"
+                  aria-checked={statusSwitch === "active"}
+                  aria-label={t("hospitalDetail.toggleStatusAria")}
                   onClick={() => {
-                    setDemoStatus((prev) => (prev === "active" ? "inactive" : "active"));
-                    showToast("Demo rejim: holat o'zgarishi lokal ko'rinishda.", "info");
+                    setStatusSwitch((prev) => (prev === "active" ? "inactive" : "active"));
+                    showToast(t("hospitalDetail.toast.statusLocal"), "info");
                   }}
                   className={`w-11 h-6 rounded-full cursor-pointer transition-colors ${
-                    demoStatus === "active" ? "bg-emerald-500" : dm ? "bg-[#1E2A3A]" : "bg-gray-200"
+                    statusSwitch === "active" ? "bg-emerald-500" : dm ? "bg-[#1E2A3A]" : "bg-gray-200"
                   }`}
                 >
-                  <div className={`w-5 h-5 rounded-full bg-white mt-0.5 transition-transform ${demoStatus === "active" ? "translate-x-5 ml-0.5" : "translate-x-0.5"}`}></div>
+                  <div className={`w-5 h-5 rounded-full bg-white mt-0.5 transition-transform ${statusSwitch === "active" ? "translate-x-5 ml-0.5" : "translate-x-0.5"}`}></div>
                 </button>
               </div>
               <button onClick={handleSaveSettings} className="w-full py-2.5 bg-emerald-500 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-emerald-600 whitespace-nowrap">
-                Saqlash
+                {t("common:buttons.save")}
               </button>
             </div>
           </div>
@@ -614,27 +561,29 @@ export function HospitalDetailContent() {
 }
 
 function HospitalNotFoundContent() {
+  const { t } = useTranslation("admin");
   const dm = useMainLayoutDarkMode();
   const navigate = useNavigate();
   const { id } = useParams();
   return (
     <div className="flex flex-col items-center justify-center py-20">
       <i className={`ri-hospital-line text-4xl mb-4 ${dm ? "text-gray-600" : "text-gray-300"}`} />
-      <h2 className={`text-lg font-semibold mb-1 ${dm ? "text-white" : "text-gray-900"}`}>Kasalxona topilmadi</h2>
-      <p className={`text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>ID: {id ?? "unknown"}</p>
+      <h2 className={`text-lg font-semibold mb-1 ${dm ? "text-white" : "text-gray-900"}`}>{t("hospitalDetail.notFoundTitle")}</h2>
+      <p className={`text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("hospitalDetail.idPrefix")}: {id ?? "unknown"}</p>
       <button
         onClick={() => navigate("/hospitals")}
         className="mt-5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium cursor-pointer whitespace-nowrap"
       >
-        Kasalxonalar ro'yxatiga qaytish
+        {t("hospitalDetail.backToHospitals")}
       </button>
     </div>
   );
 }
 
 export default function HospitalDetailPage() {
+  const { t } = useTranslation("admin");
   return (
-    <MainLayout title="Kasalxona tafsiloti">
+    <MainLayout title={t("hospitalDetail.pageTitle")}>
       <HospitalDetailContent />
     </MainLayout>
   );
