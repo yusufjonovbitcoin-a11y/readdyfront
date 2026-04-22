@@ -19,13 +19,14 @@ const EMPTY_DETAIL_PAYLOAD: HospitalDetailPayload = {
   dailyData: [],
 };
 
-const isValidHospitalId = (value?: string) => Boolean(value && /^hosp-\d+$/.test(value));
+const isValidHospitalId = (value?: string) => Boolean(value && (/^hosp-\d+$/.test(value) || /^[0-9a-f-]{36}$/i.test(value)));
 
 export function useHospitalDetailData(id: string | undefined, patientSearch: string) {
   const fetchDetail = useCallback(async (): Promise<HospitalDetailPayload> => {
     if (!isValidHospitalId(id)) return EMPTY_DETAIL_PAYLOAD;
+    const hospitalId = id as string;
     const [hospital, allDoctors, allPatients, analytics] = await Promise.all([
-      getHospitalById(id),
+      getHospitalById(hospitalId),
       getDoctors(),
       getDoctorPatients(),
       getDoctorAnalytics(),

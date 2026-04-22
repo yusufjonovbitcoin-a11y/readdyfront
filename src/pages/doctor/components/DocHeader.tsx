@@ -29,6 +29,15 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
     lockScroll: false,
   });
   const currentDoctorSession = getCurrentDoctorSession();
+  const profileName = currentDoctorSession?.name ?? "Doctor";
+  const profileAvatar = currentDoctorSession?.avatar ?? "";
+  const profileInitials = profileName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const notifications = [
     { id: 1, text: t("header.notifications.newPatient"), time: t("header.notifications.twoMin"), type: "info", to: "/doctor/patients?tab=in_progress" },
@@ -161,21 +170,21 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
         <button
           type="button"
           onClick={() => navigate("/doctor/profile")}
-          title={currentDoctorSession.name}
+          title={profileName}
           aria-label={t("header.actions.openProfile")}
           className="w-11 h-11 shrink-0 overflow-hidden rounded-full bg-violet-600 flex items-center justify-center cursor-pointer ring-2 ring-transparent hover:ring-violet-400/50 transition-[box-shadow,transform] hover:scale-[1.02]"
         >
-          {!avatarFailed ? (
+          {!avatarFailed && profileAvatar ? (
             <img
-              src={currentDoctorSession.avatarUrl}
-              alt={currentDoctorSession.name}
+              src={profileAvatar}
+              alt={profileName}
               width={36}
               height={36}
               className="h-full w-full object-cover"
               onError={() => setAvatarFailed(true)}
             />
           ) : (
-            <span className="text-white text-xs font-bold">{currentDoctorSession.initials}</span>
+            <span className="text-white text-xs font-bold">{profileInitials || "DR"}</span>
           )}
         </button>
       </div>

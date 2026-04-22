@@ -34,6 +34,14 @@ export function DocSettingsContent() {
   }, [localAvatarUrl]);
   const { darkMode, setDarkMode, patientDetailLayout, setPatientDetailLayout } = useDoctorTheme();
   const currentDoctorSession = getCurrentDoctorSession();
+  const fallbackAvatar = currentDoctorSession?.avatar ?? "";
+  const fallbackInitials = (currentDoctorSession?.name ?? "Doctor")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
@@ -178,7 +186,7 @@ export function DocSettingsContent() {
                   <div className="w-16 h-16 shrink-0 overflow-hidden rounded-full bg-violet-600 flex items-center justify-center">
                     {!avatarFailed ? (
                       <img
-                        src={localAvatarUrl ?? currentDoctorSession.avatarUrl}
+                        src={localAvatarUrl ?? fallbackAvatar}
                         alt={profile.name}
                         width={64}
                         height={64}
@@ -186,7 +194,7 @@ export function DocSettingsContent() {
                         onError={() => setAvatarFailed(true)}
                       />
                     ) : (
-                      <span className="text-white text-xl font-bold">{currentDoctorSession.initials}</span>
+                      <span className="text-white text-xl font-bold">{fallbackInitials || "DR"}</span>
                     )}
                   </div>
                   <div>

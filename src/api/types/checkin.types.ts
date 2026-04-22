@@ -1,8 +1,9 @@
 export interface CheckinQuestionDto {
   id: string;
   text: string;
-  type: "single" | "multi" | "text" | "bodymap";
-  options?: string[];
+  type: "single" | "multi" | "text" | "bodymap" | "yes_no" | "select" | "body_map";
+  options?: Array<string | { value: string; label: string }>;
+  category?: string;
   required?: boolean;
   conditionalOn?: {
     questionId: string;

@@ -32,7 +32,7 @@ const AuditLogsPageContent = lazy(() =>
   import("../pages/audit-logs/page").then((m) => ({ default: m.AuditLogsPageContent })),
 );
 const AuditLogDetailContent = lazy(() =>
-  import("../pages/audit-logs/detail/page").then((m) => ({ default: m.AuditLogDetailContent })),
+  import("../pages/audit-logs/detail/page").then((m) => ({ default: m.default })),
 );
 
 const HADashboardContent = lazy(() =>

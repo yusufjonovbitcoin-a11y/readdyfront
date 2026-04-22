@@ -9,12 +9,12 @@ type ProtectedRouteProps = {
 };
 
 function AuthBootstrapFallback() {
-  const { t } = useTranslation();
+  const { t } = useTranslation("auth");
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
         <i className="ri-loader-4-line animate-spin text-base text-emerald-600" aria-hidden="true" />
-        <span>{t("auth.redirecting")}</span>
+        <span>{t("redirecting")}</span>
       </div>
     </div>
   );
@@ -28,7 +28,7 @@ function getHomePathByRole(role: UserRole): string {
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t } = useTranslation("common");
   const { user, isBootstrapping } = useAuth();
 
   /**
@@ -50,7 +50,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
    * Redirect to the role's own section home instead of showing forbidden content.
    */
   if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to={getHomePathByRole(user.role)} replace state={{ deniedReason: t("common.forbidden") }} />;
+    return <Navigate to={getHomePathByRole(user.role)} replace state={{ deniedReason: t("forbidden") }} />;
   }
 
   return <>{children}</>;

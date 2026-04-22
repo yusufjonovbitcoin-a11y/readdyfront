@@ -47,7 +47,7 @@ function formatTime(ts: string, locale: string) {
 }
 
 export default function AuditCard({ log, darkMode }: AuditCardProps) {
-  const { i18n } = useTranslation();
+  const { i18n } = useTranslation("admin");
   const locale = i18n.language === "ru" ? "ru-RU" : "uz-UZ";
   const actionCfg = ACTION_COLORS[log.action] || { bg: "bg-gray-500/15", text: "text-gray-400", icon: "ri-question-line" };
   const statusCfg = STATUS_CONFIG[log.status] || {

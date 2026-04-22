@@ -181,7 +181,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
     ROLE_COLORS[log.role as keyof typeof ROLE_COLORS] ??
     { text: "text-amber-500", bg: "bg-amber-500" };
   const roleLabel = t(`auditDetail.roles.${log.role}`, { defaultValue: t("auditDetail.roles.unknown") });
-  const statusLabel = t(statusCfg.labelKey);
+  const statusLabel = String(t(statusCfg.labelKey as never));
   const initials = log.userName.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase();
 
   return (

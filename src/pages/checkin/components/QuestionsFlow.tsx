@@ -407,24 +407,26 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
             {/* SELECT */}
             {currentQuestion.type === 'select' && currentQuestion.options && (
               <div className="space-y-2">
-                {currentQuestion.options.map((opt) => (
+                {currentQuestion.options.map((opt) => {
+                  const normalized = typeof opt === "string" ? { value: opt, label: opt } : opt;
+                  return (
                   <button
-                    key={opt.value}
-                    onClick={() => handleAnswer(opt.value)}
+                    key={normalized.value}
+                    onClick={() => handleAnswer(normalized.value)}
                     className={`w-full px-4 py-3.5 rounded-xl border-2 text-left text-sm font-medium transition-all cursor-pointer flex items-center justify-between ${
-                      currentAnswer === opt.value
+                      currentAnswer === normalized.value
                         ? 'border-teal-500 bg-teal-50 text-teal-700'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
-                    <span>{opt.label}</span>
-                    {currentAnswer === opt.value && (
+                    <span>{normalized.label}</span>
+                    {currentAnswer === normalized.value && (
                       <div className="w-5 h-5 flex items-center justify-center rounded-full bg-teal-500">
                         <i className="ri-check-line text-white text-xs"></i>
                       </div>
                     )}
                   </button>
-                ))}
+                )})}
               </div>
             )}
 

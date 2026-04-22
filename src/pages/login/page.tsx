@@ -6,9 +6,6 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import loginBgImage from "@/assets/login-bg.jpg";
 import medcoreLogoImage from "@/assets/medcore-logo.png";
 
-/** +998 dan keyingi 9 raqam (masalan 901111111) */
-const UZ_PHONE_PREFIX = "+998";
-
 const ROLE_REDIRECT: Record<UserRole, string> = {
   SUPER_ADMIN: "/dashboard",
   HOSPITAL_ADMIN: "/hospital-admin",
@@ -21,8 +18,8 @@ export default function LoginPage() {
   const { authenticate } = useAuth();
   const { t } = useTranslation(["auth", "common"]);
 
-  /** +998 dan keyin 9 ta raqam */
-  const [phoneRest, setPhoneRest] = useState("");
+  /** To'liq telefon raqam qo'lda kiritiladi (masalan: +998901234567) */
+  const [phoneInput, setPhoneInput] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -44,8 +41,8 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    const digits = phoneRest.replace(/\D/g, "").slice(0, 9);
-    if (digits.length < 9) {
+    const digits = phoneInput.replace(/\D/g, "");
+    if (digits.length < 12) {
       setError(t("auth:login.errors.phoneRequired"));
       return;
     }
@@ -56,7 +53,7 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const fullPhone = `${UZ_PHONE_PREFIX}${digits}`;
+      const fullPhone = `+${digits}`;
       const user = await authenticate({
         phone: fullPhone,
         password,
@@ -152,33 +149,23 @@ export default function LoginPage() {
             {/* Telefon */}
             <div>
               <label htmlFor="login-phone" className="block text-sm font-medium text-gray-700 mb-1.5">{t("auth:login.phoneLabel")}</label>
-              <div className="flex rounded-lg border border-gray-200 overflow-hidden bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-transparent">
-                <span
-                  className="shrink-0 px-3 py-2.5 bg-gray-50 text-gray-800 text-sm font-medium border-r border-gray-200 flex items-center tabular-nums"
-                  aria-hidden
-                >
-                  {UZ_PHONE_PREFIX}
-                </span>
-                <div className="relative flex-1 min-w-0 flex items-center">
-                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center pointer-events-none">
-                    <i className="ri-phone-line text-gray-400 text-sm"></i>
-                  </div>
-                  <input
-                    id="login-phone"
-                    type="tel"
-                    value={phoneRest}
-                    onChange={(e) => {
-                      const d = e.target.value.replace(/\D/g, "").slice(0, 9);
-                      setPhoneRest(d);
-                      setError("");
-                    }}
-                    placeholder={t("auth:login.phonePlaceholder")}
-                    className="w-full pl-9 pr-3 py-2.5 text-sm border-0 focus:ring-0 focus:outline-none text-gray-900 placeholder-gray-400"
-                    autoComplete="tel"
-                    inputMode="numeric"
-                    aria-label={t("auth:login.phoneAria")}
-                  />
+              <div className="relative rounded-lg border border-gray-200 overflow-hidden bg-white focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-transparent">
+                <div className="absolute left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center pointer-events-none">
+                  <i className="ri-phone-line text-gray-400 text-sm"></i>
                 </div>
+                <input
+                  id="login-phone"
+                  type="tel"
+                  value={phoneInput}
+                  onChange={(e) => {
+                    setPhoneInput(e.target.value);
+                    setError("");
+                  }}
+                  placeholder="+998901234567"
+                  className="w-full pl-9 pr-3 py-2.5 text-sm border-0 focus:ring-0 focus:outline-none text-gray-900 placeholder-gray-400"
+                  autoComplete="tel"
+                  aria-label={t("auth:login.phoneAria")}
+                />
               </div>
             </div>
 
@@ -252,23 +239,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          {/* Role Info */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <p className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">{t("auth:login.roleRouting")}</p>
-            <div className="space-y-1.5">
-              {[
-                { role: t("auth:login.roles.superAdmin"), path: "/dashboard", color: "text-emerald-600" },
-                { role: t("auth:login.roles.hospitalAdmin"), path: "/hospital-admin", color: "text-teal-600" },
-                { role: t("auth:login.roles.doctor"), path: "/doctor/patients", color: "text-violet-600" },
-              ].map((r) => (
-                <div key={r.role} className="flex items-center justify-between">
-                  <span className={`text-xs font-medium ${r.color}`}>{r.role}</span>
-                  <span className="text-xs text-gray-400 font-mono">{r.path}</span>
-                </div>
-              ))}
-            </div>
-          </div>
 
           <p className="text-center text-xs text-gray-400 mt-6">
             &copy; 2026 MedCore &mdash; {t("auth:login.footer")}

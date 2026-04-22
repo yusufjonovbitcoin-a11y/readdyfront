@@ -62,7 +62,7 @@ function formatTime(ts: string, locale: string) {
 
 export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableProps) {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { i18n } = useTranslation("admin");
   const locale = i18n.language === "ru" ? "ru-RU" : "uz-UZ";
   const panelClass = darkMode ? "bg-[#1A2235]" : "bg-white";
   const fallbackStatusCfg = { icon: "ri-alert-line", cls: "text-amber-500" };
