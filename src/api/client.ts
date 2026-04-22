@@ -23,10 +23,13 @@ const MAX_RETRY_ATTEMPTS = 2;
 const RETRY_BASE_DELAY_MS = 350;
 const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
-let refreshInFlight: Promise<boolean> | null = null;
 let refreshFailureNotified = false;
 
-function normalizeError<T = unknown>(status: number, message: string, data: T | null = null): ApiError<T> {
+function normalizeError<T = unknown>(
+  status: number,
+  message: string,
+  data: T | null = null,
+): ApiError<T> {
   return { status, message, data };
 }
 
@@ -36,43 +39,13 @@ function notifySessionFailureOnce() {
   emitSessionFailure({ reason: "unauthorized", status: 401, at: Date.now() });
 }
 
-async function refreshSessionToken(): Promise<boolean> {
-  if (!refreshInFlight) {
-    refreshInFlight = (async () => {
-      try {
-        const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-          method: "POST",
-          credentials: "include",
-        });
-        if (refreshResponse.ok) {
-          refreshFailureNotified = false;
-          return true;
-        }
-        notifySessionFailureOnce();
-        return false;
-      } catch {
-        notifySessionFailureOnce();
-        return false;
-      } finally {
-        refreshInFlight = null;
-      }
-    })();
-  }
-  return refreshInFlight;
-}
-
-/**
- * Base HTTP client for API requests.
- * Uses cookie-based auth (credentials: include) and normalizes errors.
- * Auth-side effects are emitted as session signals and handled in React auth/router layer.
- */
 export async function apiRequest<TResponse>(
   path: string,
   options: RequestOptions = {},
-  skipRefresh = false,
 ): Promise<TResponse> {
   const method = (options.method ?? "GET").toUpperCase();
   const canRetry = IDEMPOTENT_METHODS.has(method);
+
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...options.headers,
@@ -85,9 +58,11 @@ export async function apiRequest<TResponse>(
     options.signal?.addEventListener("abort", onAbort, { once: true });
 
     let response: Response;
+
     try {
       response = await fetch(`${API_BASE_URL}${path}`, {
         ...options,
+        method,
         signal: controller.signal,
         headers,
         credentials: "include",
@@ -99,18 +74,22 @@ export async function apiRequest<TResponse>(
           error !== null &&
           "name" in error &&
           (error as { name?: unknown }).name === "AbortError");
+
       const isLastAttempt = attempt >= MAX_RETRY_ATTEMPTS;
+
       if (!isLastAttempt && canRetry && !options.signal?.aborted) {
         const retryDelay = RETRY_BASE_DELAY_MS * (attempt + 1);
         await new Promise((resolve) => globalThis.setTimeout(resolve, retryDelay));
         continue;
       }
+
       if (isAbortError) {
         throw normalizeError(
           0,
           "So'rov vaqti tugadi (timeout). Internet ulanishini tekshirib qayta urinib ko'ring.",
         );
       }
+
       throw normalizeError(
         0,
         "Tarmoq ulanishida xatolik yuz berdi. Backend bilan aloqa o'rnatilmadi.",
@@ -122,6 +101,7 @@ export async function apiRequest<TResponse>(
 
     let responseData: unknown = null;
     const text = await response.text();
+
     if (text) {
       try {
         responseData = JSON.parse(text) as unknown;
@@ -131,16 +111,11 @@ export async function apiRequest<TResponse>(
     }
 
     if (!response.ok) {
-      if (response.status === 401 && !skipRefresh) {
-        const refreshed = await refreshSessionToken();
-        if (refreshed) {
-          return apiRequest<TResponse>(path, options, true);
-        }
-        throw new AuthError();
-      }
-
       const shouldRetryStatus =
-        canRetry && RETRYABLE_STATUS_CODES.has(response.status) && attempt < MAX_RETRY_ATTEMPTS;
+        canRetry &&
+        RETRYABLE_STATUS_CODES.has(response.status) &&
+        attempt < MAX_RETRY_ATTEMPTS;
+
       if (shouldRetryStatus) {
         const retryDelay = RETRY_BASE_DELAY_MS * (attempt + 1);
         await new Promise((resolve) => globalThis.setTimeout(resolve, retryDelay));
@@ -152,18 +127,17 @@ export async function apiRequest<TResponse>(
         responseData !== null &&
         "message" in responseData &&
         typeof (responseData as { message?: unknown }).message === "string"
-          ? ((responseData as { message: string }).message)
+          ? (responseData as { message: string }).message
           : response.statusText || "Request failed";
-
-      const error = normalizeError(response.status, message, responseData);
 
       if (response.status === 401) {
         notifySessionFailureOnce();
         throw new AuthError();
       }
 
-      throw error;
+      throw normalizeError(response.status, message, responseData);
     }
+
 
     return responseData as TResponse;
   }
