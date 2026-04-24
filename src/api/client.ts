@@ -17,13 +17,21 @@ export class AuthError extends Error {
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+
 const REQUEST_TIMEOUT_MS = 12000;
 const MAX_RETRY_ATTEMPTS = 2;
 const RETRY_BASE_DELAY_MS = 350;
+
 const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
+
 let refreshFailureNotified = false;
+
+function buildUrl(path: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE_URL}${normalizedPath}`;
+}
 
 function normalizeError<T = unknown>(
   status: number,
@@ -35,8 +43,40 @@ function normalizeError<T = unknown>(
 
 function notifySessionFailureOnce() {
   if (refreshFailureNotified) return;
+
   refreshFailureNotified = true;
-  emitSessionFailure({ reason: "unauthorized", status: 401, at: Date.now() });
+
+  emitSessionFailure({
+    reason: "unauthorized",
+    status: 401,
+    at: Date.now(),
+  });
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
+}
+
+function isAbortError(error: unknown) {
+  return (
+    error instanceof DOMException ||
+    (typeof error === "object" &&
+      error !== null &&
+      "name" in error &&
+      (error as { name?: unknown }).name === "AbortError")
+  );
+}
+
+async function parseResponse(response: Response): Promise<unknown> {
+  const text = await response.text();
+
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 export async function apiRequest<TResponse>(
@@ -53,37 +93,76 @@ export async function apiRequest<TResponse>(
 
   for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
     const controller = new AbortController();
-    const timeoutId = globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeoutId = globalThis.setTimeout(
+      () => controller.abort(),
+      REQUEST_TIMEOUT_MS,
+    );
+
     const onAbort = () => controller.abort();
     options.signal?.addEventListener("abort", onAbort, { once: true });
 
-    let response: Response;
-
     try {
-      response = await fetch(`${API_BASE_URL}${path}`, {
+      const response = await fetch(buildUrl(path), {
         ...options,
         method,
         signal: controller.signal,
         headers,
         credentials: "include",
       });
-    } catch (error) {
-      const isAbortError =
-        error instanceof DOMException ||
-        (typeof error === "object" &&
-          error !== null &&
-          "name" in error &&
-          (error as { name?: unknown }).name === "AbortError");
 
+      const responseData = await parseResponse(response);
+
+      if (!response.ok) {
+        const shouldRetryStatus =
+          canRetry &&
+          RETRYABLE_STATUS_CODES.has(response.status) &&
+          attempt < MAX_RETRY_ATTEMPTS;
+
+        if (shouldRetryStatus) {
+          await sleep(RETRY_BASE_DELAY_MS * (attempt + 1));
+          continue;
+        }
+
+        const message =
+          typeof responseData === "object" &&
+          responseData !== null &&
+          "message" in responseData &&
+          typeof (responseData as { message?: unknown }).message === "string"
+            ? (responseData as { message: string }).message
+            : response.statusText || "Request failed";
+
+        if (response.status === 401) {
+          notifySessionFailureOnce();
+          throw new AuthError();
+        }
+
+        throw normalizeError(response.status, message, responseData);
+      }
+
+      return responseData as TResponse;
+    } catch (error) {
       const isLastAttempt = attempt >= MAX_RETRY_ATTEMPTS;
 
       if (!isLastAttempt && canRetry && !options.signal?.aborted) {
-        const retryDelay = RETRY_BASE_DELAY_MS * (attempt + 1);
-        await new Promise((resolve) => globalThis.setTimeout(resolve, retryDelay));
+        await sleep(RETRY_BASE_DELAY_MS * (attempt + 1));
         continue;
       }
 
-      if (isAbortError) {
+      if (error instanceof AuthError) {
+        throw error;
+      }
+
+
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "status" in error &&
+        "message" in error
+      ) {
+        throw error;
+      }
+
+      if (isAbortError(error)) {
         throw normalizeError(
           0,
           "So'rov vaqti tugadi (timeout). Internet ulanishini tekshirib qayta urinib ko'ring.",
@@ -98,48 +177,6 @@ export async function apiRequest<TResponse>(
       globalThis.clearTimeout(timeoutId);
       options.signal?.removeEventListener("abort", onAbort);
     }
-
-    let responseData: unknown = null;
-    const text = await response.text();
-
-    if (text) {
-      try {
-        responseData = JSON.parse(text) as unknown;
-      } catch {
-        responseData = text;
-      }
-    }
-
-    if (!response.ok) {
-      const shouldRetryStatus =
-        canRetry &&
-        RETRYABLE_STATUS_CODES.has(response.status) &&
-        attempt < MAX_RETRY_ATTEMPTS;
-
-      if (shouldRetryStatus) {
-        const retryDelay = RETRY_BASE_DELAY_MS * (attempt + 1);
-        await new Promise((resolve) => globalThis.setTimeout(resolve, retryDelay));
-        continue;
-      }
-
-      const message =
-        typeof responseData === "object" &&
-        responseData !== null &&
-        "message" in responseData &&
-        typeof (responseData as { message?: unknown }).message === "string"
-          ? (responseData as { message: string }).message
-          : response.statusText || "Request failed";
-
-      if (response.status === 401) {
-        notifySessionFailureOnce();
-        throw new AuthError();
-      }
-
-      throw normalizeError(response.status, message, responseData);
-    }
-
-
-    return responseData as TResponse;
   }
 
   throw normalizeError(0, "So'rovni qayta yuborishda noma'lum xatolik yuz berdi.");
