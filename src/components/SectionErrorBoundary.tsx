@@ -12,6 +12,7 @@ interface SectionBoundaryImplProps {
 
 interface SectionBoundaryImplState {
   hasError: boolean;
+  errorMessage?: string;
 }
 
 class SectionBoundaryImpl extends Component<SectionBoundaryImplProps, SectionBoundaryImplState> {
@@ -24,6 +25,7 @@ class SectionBoundaryImpl extends Component<SectionBoundaryImplProps, SectionBou
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     Sentry.captureException(error, { extra: { errorInfo } });
     console.error("Section render error:", error, errorInfo);
+    this.setState({ errorMessage: error?.message || "Unknown error" });
   }
 
   render() {
@@ -32,6 +34,9 @@ class SectionBoundaryImpl extends Component<SectionBoundaryImplProps, SectionBou
     return (
       <div className="m-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
         <p className="text-sm font-medium text-amber-800">This section failed to load.</p>
+        {this.state.errorMessage ? (
+          <p className="mt-1 text-xs text-amber-900 break-all">Error: {this.state.errorMessage}</p>
+        ) : null}
         <button
           type="button"
           onClick={this.props.onRetry}

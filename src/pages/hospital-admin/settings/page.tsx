@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
 import {
@@ -10,6 +11,13 @@ import {
 } from "@/lib/haAdminProfile";
 
 type SettingsTab = 'profile' | 'security' | 'language' | 'notifications';
+
+function resolveSettingsTab(value: string | null): SettingsTab {
+  if (value === "profile" || value === "security" || value === "language" || value === "notifications") {
+    return value;
+  }
+  return "profile";
+}
 
 export default function HASettingsPage() {
   const { t } = useTranslation("hospital");
@@ -22,10 +30,11 @@ export default function HASettingsPage() {
 
 export function HASettingsPageContent() {
   const { t, i18n } = useTranslation("hospital");
+  const [searchParams, setSearchParams] = useSearchParams();
   const darkMode = useHospitalAdminDarkMode();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(getHaAdminStoredAvatar);
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() => resolveSettingsTab(searchParams.get("tab")));
   const [lang, setLang] = useState<'uz' | 'ru'>(i18n.language === "ru" ? "ru" : "uz");
   const [notifications, setNotifications] = useState({
     newPatient: true, doctorUpdate: true, systemAlert: false, weeklyReport: true,
@@ -35,6 +44,11 @@ export function HASettingsPageContent() {
   });
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const fromUrl = resolveSettingsTab(searchParams.get("tab"));
+    setActiveTab((prev) => (prev === fromUrl ? prev : fromUrl));
+  }, [searchParams]);
 
   const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
 
@@ -93,7 +107,14 @@ export function HASettingsPageContent() {
           {tabs.map(tab => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => {
+                setActiveTab(tab.key);
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.set("tab", tab.key);
+                  return next;
+                });
+              }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === tab.key
                   ? darkMode ? "bg-[#141824] text-teal-400" : "bg-white text-teal-600"

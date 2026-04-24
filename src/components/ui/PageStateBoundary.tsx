@@ -16,7 +16,7 @@ const defaultCardClassName = "rounded-xl border py-14 text-center bg-white dark:
 function DefaultLoadingFallback({ className }: { className: string }) {
   return (
     <div className={className}>
-      <i className="ri-loader-4-line animate-spin text-2xl text-teal-500" aria-hidden="true" />
+      <i className="ri-loader-4-line always-spin text-2xl text-teal-500" aria-hidden="true" />
       <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Ma'lumotlar yuklanmoqda...</p>
     </div>
   );

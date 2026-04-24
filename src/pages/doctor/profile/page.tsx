@@ -1,10 +1,13 @@
 import { useTranslation } from "react-i18next";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import QrCodeImage from "@/components/QrCodeImage";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { copyTextWithFallback } from "@/utils/clipboard";
+import { useAuth } from "@/hooks/useAuth";
+import { getDoctorById } from "@/api/doctor";
+import type { DoctorDto } from "@/api/types/doctor.types";
 
 export default function DocProfilePage() {
   const { t } = useTranslation("doctor");
@@ -18,9 +21,11 @@ export default function DocProfilePage() {
 export function DocProfileContent() {
   const { t } = useTranslation("doctor");
   const { darkMode } = useDoctorTheme();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [qrCopied, setQrCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const [doctor, setDoctor] = useState<DoctorDto | null>(null);
 
   const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
@@ -43,26 +48,34 @@ export function DocProfileContent() {
   const quickArrow = darkMode ? "text-gray-500" : "text-gray-400";
   const sectionTitle = darkMode ? "text-gray-200" : "text-gray-700";
 
-  const doctor = {
-    id: "doc-001",
-    name: "Dr. Alisher Karimov",
-    specialty: "Kardiologiya",
-    phone: "+998 90 123 45 67",
-    email: "a.karimov@medcore.uz",
-    experience: "8 yil",
-    hospital: "Toshkent Klinikasi",
-    joinDate: "2021-03-15",
-    totalPatients: 1240,
-    todayPatients: 7,
-    rating: 4.9,
-    bio: "Yurak-qon tomir kasalliklari bo'yicha mutaxassis. Toshkent Tibbiyot Akademiyasini tamomlagan. Kardiologiya sohasida 8 yillik tajribaga ega.",
-    checkinUrl: "/checkin?doctor_id=doc-001",
-  };
+  useEffect(() => {
+    if (!user?.id || user.role !== "DOCTOR") return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const profile = await getDoctorById(user.id);
+        if (cancelled) return;
+        setDoctor(profile);
+      } catch {
+        if (cancelled) return;
+        setDoctor(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.role]);
+
+  const checkinTarget = doctor?.qrCode?.trim() || "/checkin";
 
   const checkinFullUrl = useMemo(
-    () =>
-      typeof window !== "undefined" ? `${window.location.origin}${doctor.checkinUrl}` : "",
-    [doctor.checkinUrl],
+    () => {
+      if (typeof window === "undefined") return "";
+      if (!checkinTarget) return "";
+      if (/^https?:\/\//i.test(checkinTarget)) return checkinTarget;
+      return `${window.location.origin}${checkinTarget.startsWith("/") ? checkinTarget : `/${checkinTarget}`}`;
+    },
+    [checkinTarget],
   );
 
   const handleCopyLink = () => {
@@ -93,9 +106,9 @@ export function DocProfileContent() {
                 <span className="text-white text-2xl font-bold">AK</span>
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className={`text-xl font-bold ${pageTitle}`}>{doctor.name}</h2>
-                <p className="text-violet-500 font-medium">{doctor.specialty}</p>
-                <p className={`text-sm mt-1 ${pageMuted}`}>{doctor.hospital}</p>
+                <h2 className={`text-xl font-bold ${pageTitle}`}>{doctor?.name ?? user?.name ?? "Doctor"}</h2>
+                <p className="text-violet-500 font-medium">{doctor?.specialty ?? "General"}</p>
+                <p className={`text-sm mt-1 ${pageMuted}`}>{user?.hospitalName ?? "MedCore"}</p>
                 <div className="flex items-center gap-1 mt-2">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="w-4 h-4 flex items-center justify-center">
@@ -104,7 +117,7 @@ export function DocProfileContent() {
                       ></i>
                     </div>
                   ))}
-                  <span className={`text-sm font-semibold ml-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{doctor.rating}</span>
+                    <span className={`text-sm font-semibold ml-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{doctor?.rating ?? 0}</span>
                 </div>
               </div>
               <button onClick={() => navigate("/doctor/settings")} className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${editBtn}`}>
@@ -112,14 +125,14 @@ export function DocProfileContent() {
               </button>
             </div>
 
-            <p className={`text-sm mt-4 leading-relaxed ${bodyText}`}>{doctor.bio}</p>
+            <p className={`text-sm mt-4 leading-relaxed ${bodyText}`}>{t("profile.qrSubtitle")}</p>
 
             <div className="grid grid-cols-2 gap-4 mt-5">
               {[
-                { icon: "ri-phone-line", label: "Telefon", value: doctor.phone },
-                { icon: "ri-mail-line", label: "Email", value: doctor.email },
-                { icon: "ri-time-line", label: "Tajriba", value: doctor.experience },
-                { icon: "ri-calendar-line", label: "Qo'shilgan", value: doctor.joinDate },
+                { icon: "ri-phone-line", label: "Telefon", value: doctor?.phone ?? "-" },
+                { icon: "ri-mail-line", label: "Email", value: user?.email || "-" },
+                { icon: "ri-time-line", label: "Tajriba", value: "-" },
+                { icon: "ri-calendar-line", label: "Qo'shilgan", value: doctor?.joinDate?.slice(0, 10) ?? "-" },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className={`w-8 h-8 flex items-center justify-center rounded-lg ${iconBox}`}>
@@ -136,9 +149,9 @@ export function DocProfileContent() {
 
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Jami bemorlar", value: doctor.totalPatients, icon: "ri-user-heart-line", color: "text-violet-600", bg: "bg-violet-50" },
-              { label: "Bugun", value: doctor.todayPatients, icon: "ri-calendar-check-line", color: "text-green-600", bg: "bg-green-50" },
-              { label: "Reyting", value: doctor.rating, icon: "ri-star-line", color: "text-amber-600", bg: "bg-amber-50" },
+              { label: "Jami bemorlar", value: doctor?.totalPatients ?? 0, icon: "ri-user-heart-line", color: "text-violet-600", bg: "bg-violet-50" },
+              { label: "Bugun", value: doctor?.todayPatients ?? 0, icon: "ri-calendar-check-line", color: "text-green-600", bg: "bg-green-50" },
+              { label: "Reyting", value: doctor?.rating ?? 0, icon: "ri-star-line", color: "text-amber-600", bg: "bg-amber-50" },
             ].map((stat, i) => (
               <div key={i} className={`rounded-xl p-4 text-center ${cardBase}`}>
                 <div className={`w-10 h-10 flex items-center justify-center rounded-lg ${stat.bg} mx-auto mb-2`}>
@@ -185,7 +198,13 @@ export function DocProfileContent() {
                 {qrCopied ? t("profile.copied") : copyError ? "Nusxalab bo'lmadi" : t("profile.copyLink")}
               </button>
               <button
-                onClick={() => navigate(doctor.checkinUrl)}
+                onClick={() => {
+                  if (/^https?:\/\//i.test(checkinTarget)) {
+                    window.open(checkinTarget, "_blank", "noopener,noreferrer");
+                    return;
+                  }
+                  navigate(checkinTarget);
+                }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors whitespace-nowrap"
               >
                 <i className="ri-external-link-line text-sm"></i>

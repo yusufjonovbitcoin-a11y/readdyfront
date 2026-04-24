@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
   path: string;
+  to?: string;
   icon: string;
   label: string;
   exact?: boolean;
@@ -36,6 +37,8 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
     { path: "/doctor/history", icon: "ri-history-line", label: t("sidebar.history") },
     { path: "/doctor/questions", icon: "ri-questionnaire-line", label: t("sidebar.questions") },
     { path: "/doctor/analytics", icon: "ri-bar-chart-2-line", label: t("sidebar.analytics") },
+    { path: "/doctor/notifications", icon: "ri-notification-3-line", label: t("sidebar.notifications") },
+    { path: "/doctor/support", icon: "ri-customer-service-2-line", label: t("sidebar.support") },
     { path: "/doctor/settings", icon: "ri-settings-3-line", label: t("sidebar.settings") },
   ];
 
@@ -100,8 +103,8 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
 
             return (
               <Link
-                key={item.path}
-                to={item.path}
+                key={item.to ?? item.path}
+                to={item.to ?? item.path}
                 prefetch="none"
                 onClick={onCloseMobile}
                 className={itemClass}

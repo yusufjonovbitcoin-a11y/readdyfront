@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
 
-const HospitalAdminThemeContext = createContext<boolean | null>(null);
+export const HospitalAdminThemeContext = createContext<boolean | null>(null);
 
 export function HospitalAdminThemeProvider({
   darkMode,

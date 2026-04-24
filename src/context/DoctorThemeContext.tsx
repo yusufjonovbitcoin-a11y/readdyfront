@@ -9,7 +9,7 @@ interface DoctorThemeContextValue {
   setPatientDetailLayout: (next: PatientDetailLayoutMode) => void;
 }
 
-const DoctorThemeContext = createContext<DoctorThemeContextValue | null>(null);
+export const DoctorThemeContext = createContext<DoctorThemeContextValue | null>(null);
 
 interface DoctorThemeProviderProps extends DoctorThemeContextValue {
   children: ReactNode;

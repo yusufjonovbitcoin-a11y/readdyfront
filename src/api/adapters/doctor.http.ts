@@ -21,10 +21,56 @@ type BackendDoctorDto = {
   specialization: string;
   hospital_id: string;
   created_at?: string;
+  checkin_url?: string;
+  checkinUrl?: string;
+  queue_url?: string;
+  queueUrl?: string;
+  registration_url?: string;
+  registrationUrl?: string;
+  link?: string;
+  url?: string;
   hospital?: {
     name?: string;
   } | null;
-};
+} & Record<string, unknown>;
+
+function isCheckinPathLike(value: string): boolean {
+  return /\/h\/[^/]+\/[^/]+\/d\/[^/\s"]+/i.test(value) || /\/checkin/i.test(value);
+}
+
+function normalizeUrlLike(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+function extractCheckinUrl(dto: BackendDoctorDto): string {
+  const knownCandidates = [
+    dto.checkin_url,
+    dto.checkinUrl,
+    dto.queue_url,
+    dto.queueUrl,
+    dto.registration_url,
+    dto.registrationUrl,
+    dto.link,
+    dto.url,
+  ];
+
+  for (const candidate of knownCandidates) {
+    if (typeof candidate === "string" && isCheckinPathLike(candidate)) {
+      return normalizeUrlLike(candidate);
+    }
+  }
+
+  for (const value of Object.values(dto)) {
+    if (typeof value === "string" && isCheckinPathLike(value)) {
+      return normalizeUrlLike(value);
+    }
+  }
+
+  return `/checkin?doctor_id=${encodeURIComponent(dto.id)}`;
+}
 
 function normalizeDoctor(dto: BackendDoctorDto): DoctorDto {
   return {
@@ -40,7 +86,7 @@ function normalizeDoctor(dto: BackendDoctorDto): DoctorDto {
     status: "active",
     joinDate: dto.created_at ?? new Date().toISOString(),
     hospitalId: dto.hospital_id,
-    qrCode: dto.id,
+    qrCode: extractCheckinUrl(dto),
   };
 }
 

@@ -16,6 +16,8 @@ interface ConfirmDialogProps {
   cancelDisabled?: boolean;
 }
 
+const DIALOG_INERT_SELECTORS = ["header", "main", "aside"];
+
 export default function ConfirmDialog({
   open,
   title,
@@ -34,7 +36,7 @@ export default function ConfirmDialog({
     isOpen: open,
     onClose: onCancel,
     triggerRef,
-    inertSelectors: ["header", "main", "aside"],
+    inertSelectors: DIALOG_INERT_SELECTORS,
   });
 
   if (!open) return null;

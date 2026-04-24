@@ -17,6 +17,14 @@ type BackendDoctorDto = {
   hospital?: { name?: string } | null;
 };
 
+function normalizePhoneDigits(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+async function getAdmins(): Promise<BackendAdminDto[]> {
+  return apiRequest<BackendAdminDto[]>("/api/admins");
+}
+
 function buildDoctorUser(doctor: BackendDoctorDto): AuthUserDto {
   return {
     id: doctor.id,
@@ -51,16 +59,17 @@ export async function login(input: LoginInput): Promise<LoginResult> {
   });
 
   const [admins, doctors] = await Promise.all([
-    apiRequest<BackendAdminDto[]>("/api/admins").catch(() => [] as BackendAdminDto[]),
+    getAdmins().catch(() => [] as BackendAdminDto[]),
     apiRequest<BackendDoctorDto[]>("/api/doctors").catch(() => [] as BackendDoctorDto[]),
   ]);
 
-  const admin = admins.find((candidate) => candidate.phone_number === input.phone);
+  const targetPhone = normalizePhoneDigits(input.phone);
+  const admin = admins.find((candidate) => normalizePhoneDigits(candidate.phone_number) === targetPhone);
   if (admin) {
     return { user: buildAdminUser(admin) };
   }
 
-  const doctor = doctors.find((candidate) => candidate.phone_number === input.phone);
+  const doctor = doctors.find((candidate) => normalizePhoneDigits(candidate.phone_number) === targetPhone);
   if (doctor) {
     return { user: buildDoctorUser(doctor) };
   }

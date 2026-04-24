@@ -10,7 +10,7 @@ type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 function getInitialLanguage(): SupportedLanguage {
   if (typeof window === "undefined") {
-    return "uz";
+    return "ru";
   }
 
   const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -18,7 +18,7 @@ function getInitialLanguage(): SupportedLanguage {
     return saved as SupportedLanguage;
   }
 
-  return "uz";
+  return "ru";
 }
 
 i18n
@@ -30,7 +30,7 @@ i18n
   .use(initReactI18next)
   .init({
     lng: getInitialLanguage(),
-    fallbackLng: "uz",
+    fallbackLng: "ru",
     supportedLngs: SUPPORTED_LANGUAGES,
     ns: NAMESPACES,
     defaultNS: DEFAULT_NAMESPACE,

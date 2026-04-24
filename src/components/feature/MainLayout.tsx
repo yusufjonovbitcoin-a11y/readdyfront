@@ -1,4 +1,5 @@
 import { useState, ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 import { LayoutThemeProvider } from "@/context/LayoutThemeContext";
@@ -12,10 +13,12 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children, title }: MainLayoutProps) {
+  const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode, setDarkMode] = usePersistedSuperAdminTheme();
   const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
+  const isFullBleedRoute = pathname.includes("support") || pathname.includes("notifications");
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-[#0F1117]" : "bg-[#F5F6FA]"}`}>
@@ -56,7 +59,7 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
             collapsed ? "md:ml-16" : "md:ml-64"
           }`}
         >
-          <div className={layoutSystem.pagePadding}>{children}</div>
+          <div className={isFullBleedRoute ? "" : layoutSystem.pagePadding}>{children}</div>
         </main>
       </LayoutThemeProvider>
     </div>

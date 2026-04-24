@@ -9,6 +9,8 @@ import App from './App.tsx'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider } from './hooks/useAuth'
 import { onIntegrationError } from "./api/integrationSignals";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
@@ -43,9 +45,11 @@ async function bootstrap() {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <ErrorBoundary>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </QueryClientProvider>
       </ErrorBoundary>
     </StrictMode>,
   )

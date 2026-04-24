@@ -10,7 +10,7 @@ function readStoredDark(): boolean {
   } catch {
     /* ignore */
   }
-  return true;
+  return false;
 }
 
 function persistDark(next: boolean) {

@@ -10,6 +10,8 @@ interface TopHospitalsProps {
   hospitals: Hospital[];
 }
 
+const PANEL_INERT_SELECTORS = ["header", "main", "aside"];
+
 function countByViloyat(hospitals: Hospital[]) {
   const map = new Map<string, number>();
   for (const h of hospitals) {
@@ -47,7 +49,7 @@ export default function TopHospitals({ darkMode, topHospitals, hospitals }: TopH
     isOpen: panelOpen,
     onClose: closePanel,
     returnFocusRef: openPanelButtonRef,
-    inertSelectors: ["header", "main", "aside"],
+    inertSelectors: PANEL_INERT_SELECTORS,
   });
 
   return (

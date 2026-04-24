@@ -1,24 +1,26 @@
 import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutDarkMode } from "@/context/LayoutThemeContext";
 import AddHospitalPanel from "./components/AddHospitalPanel";
 import HospitalsToolbar from "./components/HospitalsToolbar";
 import HospitalsDataSection from "./components/HospitalsDataSection";
-import { usePageState } from "@/hooks/usePageState";
-import { createHospital, deleteHospital, getHospitals, updateHospital } from "@/api/hospitals";
+import { createHospital, deleteHospital, updateHospital } from "@/api/hospitals";
+import { createUser } from "@/api/users";
 import type { Hospital } from "@/types";
 import { clampPage, getWindowedPageItems, paginateCollection } from "@/utils/pagination";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import AppToast from "@/components/ui/AppToast";
 import { useAppToast } from "@/hooks/useAppToast";
+import { useHospitals } from "@/hooks/useHospitals";
 
 export function HospitalsPageContent() {
   const { t } = useTranslation("admin");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const dm = useMainLayoutDarkMode();
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [showAdd, setShowAdd] = useState(false);
@@ -28,12 +30,12 @@ export function HospitalsPageContent() {
   const [deletingHospitalId, setDeletingHospitalId] = useState<string | null>(null);
   const { toast, showToast } = useAppToast();
   const [page, setPage] = useState(1);
-  const fetchHospitals = useCallback(async () => getHospitals(), []);
-  const pageState = usePageState(fetchHospitals);
+  const { hospitals, isLoading, isFetching, error, refetch } = useHospitals();
   const addHospitalTriggerRef = useRef<HTMLButtonElement>(null);
   const deleteTriggerRef = useRef<HTMLElement | null>(null);
 
   const PAGE_SIZE = 3;
+  const cardClass = `rounded-xl p-4 border ${dm ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`;
 
   const filtered = hospitals.filter((h) => {
     const matchSearch = h.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -55,10 +57,12 @@ export function HospitalsPageContent() {
     setPage((p) => clampPage(p, totalPages));
   }, [totalPages]);
 
-  useEffect(() => {
-    if (!pageState.data) return;
-    setHospitals(pageState.data);
-  }, [pageState.data]);
+  const updateHospitalsCache = useCallback(
+    (updater: (prev: Hospital[]) => Hospital[]) => {
+      queryClient.setQueryData<Hospital[]>(["hospitals"], (prev) => updater(prev ?? []));
+    },
+    [queryClient],
+  );
 
   const handleAdd = async (data: Record<string, string>) => {
     if (isAddingHospital) return;
@@ -72,14 +76,43 @@ export function HospitalsPageContent() {
         adminName: data.adminName,
         adminPhone: data.adminPhone,
       });
-      setHospitals((prev) => [created, ...prev]);
+      await createUser({
+        name: data.adminName,
+        phone: data.adminPhone,
+        email: "",
+        role: "HOSPITAL_ADMIN",
+        hospitalId: created.id,
+        password: data.adminPassword,
+      });
+      updateHospitalsCache((prev) => [
+        {
+          ...created,
+          adminName: data.adminName,
+          adminPhone: data.adminPhone,
+        },
+        ...prev,
+      ]);
       showToast(t("hospitals.toast.added"));
-    } catch {
-      showToast("Kasalxona qo'shishda xatolik yuz berdi", "error");
+    } catch (error) {
+      showToast("Kasalxona yoki admin yaratishda xatolik yuz berdi", "error");
+      throw error;
     } finally {
       setIsAddingHospital(false);
     }
   };
+
+  const renderListSkeleton = () => (
+    <div className={`${cardClass} p-0 overflow-hidden`} aria-hidden="true">
+      <div className="p-4 md:p-5 space-y-3">
+        {Array.from({ length: 6 }).map((_, idx) => (
+          <div
+            key={`hospital-skeleton-${idx}`}
+            className={`h-14 rounded-lg animate-pulse ${dm ? "bg-[#1A2235]" : "bg-gray-100"}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
 
   const handleDelete = (id: string) => {
     if (deletingHospitalId) return;
@@ -91,7 +124,7 @@ export function HospitalsPageContent() {
           showToast("Kasalxonani o'chirib bo'lmadi", "error");
           return;
         }
-        setHospitals((prev) => prev.filter((h) => h.id !== id));
+        updateHospitalsCache((prev) => prev.filter((h) => h.id !== id));
         setDeleteId(null);
         showToast(t("hospitals.toast.deleted"));
       } catch {
@@ -120,7 +153,7 @@ export function HospitalsPageContent() {
           showToast("Kasalxona holatini yangilab bo'lmadi", "error");
           return;
         }
-        setHospitals((prev) => prev.map((hospital) => (hospital.id === id ? updated : hospital)));
+        updateHospitalsCache((prev) => prev.map((hospital) => (hospital.id === id ? updated : hospital)));
         showToast("Kasalxona holati yangilandi");
       } catch {
         showToast("Kasalxona holatini yangilashda xatolik yuz berdi", "error");
@@ -133,8 +166,6 @@ export function HospitalsPageContent() {
       }
     })();
   };
-  const cardClass = `rounded-xl p-4 border ${dm ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`;
-
   return (
     <>
       <AppToast toast={toast} />
@@ -155,26 +186,23 @@ export function HospitalsPageContent() {
       />
 
       <div className="space-y-5">
-        {pageState.status === "loading" ? (
-          <div className={`${cardClass} py-16 text-center`}>
-            <i className="ri-loader-4-line animate-spin text-2xl text-emerald-500" />
-            <p className={`mt-3 text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>Kasalxonalar yuklanmoqda...</p>
-          </div>
-        ) : null}
-        {pageState.status === "error" ? (
+        {isLoading && hospitals.length === 0 ? renderListSkeleton() : null}
+        {error ? (
           <div className={`${cardClass} py-14 text-center`}>
             <i className="ri-error-warning-line text-2xl text-red-500" />
-            <p className={`mt-3 text-sm ${dm ? "text-gray-300" : "text-gray-600"}`}>{pageState.error}</p>
+            <p className={`mt-3 text-sm ${dm ? "text-gray-300" : "text-gray-600"}`}>{error.message}</p>
             <button
               type="button"
-              onClick={pageState.reload}
+              onClick={() => {
+                void refetch();
+              }}
               className="mt-4 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium"
             >
               Qayta yuklash
             </button>
           </div>
         ) : null}
-        {pageState.status === "success" && hospitals.length === 0 && !showAdd ? (
+        {!isLoading && !error && hospitals.length === 0 && !showAdd ? (
           <div className={`${cardClass} py-14 text-center`}>
             <i className={`ri-hospital-line text-3xl ${dm ? "text-gray-500" : "text-gray-400"}`} />
             <p className={`mt-3 text-sm ${dm ? "text-gray-300" : "text-gray-600"}`}>Kasalxonalar ro'yxati hozircha bo'sh.</p>
@@ -189,7 +217,9 @@ export function HospitalsPageContent() {
               </button>
               <button
                 type="button"
-                onClick={pageState.reload}
+                onClick={() => {
+                  void refetch();
+                }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium ${dm ? "bg-[#0F1117] text-gray-300" : "bg-gray-100 text-gray-700"}`}
               >
                 Qayta tekshirish
@@ -197,8 +227,13 @@ export function HospitalsPageContent() {
             </div>
           </div>
         ) : null}
-        {pageState.status !== "success" ? null : (
+        {error || (isLoading && hospitals.length === 0) ? null : (
         <>
+          {isFetching ? (
+            <div className={`h-1 w-full rounded-full overflow-hidden ${dm ? "bg-[#1A2235]" : "bg-gray-100"}`}>
+              <div className="h-full w-1/3 bg-emerald-500 animate-pulse" />
+            </div>
+          ) : null}
           <HospitalsToolbar
             darkMode={dm}
             search={search}

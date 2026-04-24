@@ -185,7 +185,10 @@ export function UsersPageContent() {
 
       {pageState.status === "loading" ? (
         <div className={`${cardClass} py-16 text-center`}>
-          <i className="ri-loader-4-line animate-spin text-2xl text-emerald-500" />
+          <i
+            className="ri-loader-4-line always-spin text-2xl text-emerald-500"
+            aria-hidden="true"
+          />
           <p className={`mt-3 text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>Foydalanuvchilar yuklanmoqda...</p>
         </div>
       ) : null}

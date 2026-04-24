@@ -281,7 +281,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
     return (
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 flex items-center justify-center px-4">
         <div className="text-center">
-          <i className="ri-loader-4-line text-teal-500 text-2xl animate-spin" aria-hidden="true" />
+          <i className="ri-loader-4-line text-teal-500 text-2xl always-spin" aria-hidden="true" />
           <p className="mt-2 text-sm font-medium text-gray-600">{t("questions.loading")}</p>
         </div>
       </div>

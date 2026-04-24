@@ -1,22 +1,56 @@
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutTheme } from "@/context/LayoutThemeContext";
 import AppToast from "@/components/ui/AppToast";
 import { useAppToast } from "@/hooks/useAppToast";
 
 type SettingsTab = "profile" | "security" | "language" | "appearance" | "notifications";
+type NotificationPreferences = {
+  email: boolean;
+  system: boolean;
+  reports: boolean;
+  security: boolean;
+};
+const NOTIFICATION_PREFS_KEY = "medcore_admin_notification_prefs";
+
+function resolveSettingsTab(value: string | null): SettingsTab {
+  if (
+    value === "profile" ||
+    value === "security" ||
+    value === "language" ||
+    value === "appearance" ||
+    value === "notifications"
+  ) {
+    return value;
+  }
+  return "profile";
+}
 
 export function SettingsPageContent() {
   const { t, i18n } = useTranslation("admin");
+  const [searchParams, setSearchParams] = useSearchParams();
   const { darkMode: dm, setDarkMode } = useMainLayoutTheme();
-  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() => resolveSettingsTab(searchParams.get("tab")));
   const [lang, setLang] = useState<"uz" | "ru">(i18n.language === "ru" ? "ru" : "uz");
-  const [notifications, setNotifications] = useState({
-    email: true,
-    system: true,
-    reports: false,
-    security: true,
+  const [notifications, setNotifications] = useState<NotificationPreferences>(() => {
+    if (typeof window === "undefined") {
+      return { email: true, system: true, reports: false, security: true };
+    }
+    try {
+      const raw = window.localStorage.getItem(NOTIFICATION_PREFS_KEY);
+      if (!raw) return { email: true, system: true, reports: false, security: true };
+      const parsed = JSON.parse(raw) as Partial<NotificationPreferences>;
+      return {
+        email: Boolean(parsed.email ?? true),
+        system: Boolean(parsed.system ?? true),
+        reports: Boolean(parsed.reports ?? false),
+        security: Boolean(parsed.security ?? true),
+      };
+    } catch {
+      return { email: true, system: true, reports: false, security: true };
+    }
   });
   const [profile, setProfile] = useState({
     name: "Super Admin",
@@ -26,6 +60,20 @@ export function SettingsPageContent() {
   });
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
   const { toast, showToast } = useAppToast();
+
+  useEffect(() => {
+    const fromUrl = resolveSettingsTab(searchParams.get("tab"));
+    setActiveTab((prev) => (prev === fromUrl ? prev : fromUrl));
+  }, [searchParams]);
+
+  const saveNotificationPreferences = () => {
+    try {
+      window.localStorage.setItem(NOTIFICATION_PREFS_KEY, JSON.stringify(notifications));
+      showToast("Xabarnoma sozlamalari saqlandi", "success");
+    } catch {
+      showToast("Sozlamalarni saqlashda xatolik yuz berdi", "error");
+    }
+  };
 
   const tabs: { key: SettingsTab; label: string; icon: string }[] = [
     { key: "profile", label: t("settings.tabs.profile"), icon: "ri-user-line" },
@@ -42,16 +90,23 @@ export function SettingsPageContent() {
     <>
       <AppToast toast={toast} />
 
-      <div className="flex flex-col lg:flex-row gap-5">
-        {/* Sidebar Tabs */}
-        <div className={`lg:w-56 rounded-xl p-3 h-fit ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
-          <div className="space-y-1">
+      <div className="space-y-5">
+        {/* Top Tabs */}
+        <div className={`rounded-xl p-3 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+          <div className="flex flex-wrap gap-2">
             {tabs.map((t) => (
               <button
                 key={t.key}
                 type="button"
-                onClick={() => setActiveTab(t.key)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors text-left whitespace-nowrap ${
+                onClick={() => {
+                  setActiveTab(t.key);
+                  setSearchParams((prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.set("tab", t.key);
+                    return next;
+                  });
+                }}
+                className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors whitespace-nowrap ${
                   activeTab === t.key
                     ? "bg-emerald-500 text-white shadow-sm"
                     : dm ? "text-gray-400 hover:bg-[#0F1117] hover:text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
@@ -67,7 +122,7 @@ export function SettingsPageContent() {
         </div>
 
         {/* Content */}
-        <div className="flex-1">
+        <div>
           {activeTab === "profile" && (
             <div className={`rounded-xl p-6 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
               <h3 className={`text-base font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>{t("settings.profile.title")}</h3>
@@ -99,15 +154,6 @@ export function SettingsPageContent() {
                     className={inputClass}
                     value={profile.name}
                     onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="settings-profile-email" className={labelClass}>{t("settings.profile.fields.email")}</label>
-                  <input
-                    id="settings-profile-email"
-                    className={inputClass}
-                    value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                   />
                 </div>
                 <div>
@@ -297,7 +343,6 @@ export function SettingsPageContent() {
               <h3 className={`text-base font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>{t("settings.notifications.title")}</h3>
               <div className="space-y-4">
                 {[
-                  { key: "email" as const, label: t("settings.notifications.channels.email.label"), desc: t("settings.notifications.channels.email.description") },
                   { key: "system" as const, label: t("settings.notifications.channels.system.label"), desc: t("settings.notifications.channels.system.description") },
                   { key: "reports" as const, label: t("settings.notifications.channels.reports.label"), desc: t("settings.notifications.channels.reports.description") },
                   { key: "security" as const, label: t("settings.notifications.channels.security.label"), desc: t("settings.notifications.channels.security.description") },
@@ -312,7 +357,23 @@ export function SettingsPageContent() {
                       role="switch"
                       aria-checked={notifications[n.key]}
                       aria-label={n.label}
-                      onClick={() => setNotifications({ ...notifications, [n.key]: !notifications[n.key] })}
+                      onClick={() => {
+                        const next = !notifications[n.key];
+                        const updated = { ...notifications, [n.key]: next };
+                        setNotifications(updated);
+                        try {
+                          window.localStorage.setItem(NOTIFICATION_PREFS_KEY, JSON.stringify(updated));
+                        } catch {
+                          // ignore storage failures
+                        }
+                        const toggleLabel = i18n.language === "ru"
+                          ? (next ? "включено" : "выключено")
+                          : (next ? "yoqildi" : "o'chirildi");
+                        showToast(
+                          `${n.label}: ${toggleLabel}`,
+                          "success",
+                        );
+                      }}
                       className={`w-11 h-6 rounded-full cursor-pointer transition-colors flex-shrink-0 relative ${notifications[n.key] ? "bg-emerald-500" : dm ? "bg-[#1E2A3A]" : "bg-gray-200"}`}
                     >
                       <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${notifications[n.key] ? "translate-x-5 left-0.5" : "translate-x-0 left-0.5"}`}></div>
@@ -320,18 +381,6 @@ export function SettingsPageContent() {
                   </div>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  showToast(
-                    "Notification settings endpointi ulanmaguncha bu amal vaqtincha o'chirilgan.",
-                    "info",
-                  )
-                }
-                className="mt-5 px-5 py-2.5 bg-emerald-500 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-emerald-600 whitespace-nowrap"
-              >
-                {t("settings.notifications.saveButton")}
-              </button>
             </div>
           )}
         </div>

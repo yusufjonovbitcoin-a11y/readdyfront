@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { DoctorDto as HADoctor } from "@/api/types/doctor.types";
 import { useModalA11y } from "@/hooks/useModalA11y";
@@ -16,7 +16,13 @@ const specialties = ['Kardiologiya', 'Nevrologiya', 'Ortopediya', 'Pediatriya', 
 
 export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isSaving = false }: DoctorFormModalProps) {
   const { t } = useTranslation("hospital");
-  const modalRef = useModalA11y({ isOpen: true, onClose });
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const specialtySelectRef = useRef<HTMLSelectElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const statusSelectRef = useRef<HTMLSelectElement>(null);
+  const [activeField, setActiveField] = useState<"name" | "specialty" | "phone" | "email" | "status">("name");
+  const modalRef = useModalA11y({ isOpen: true, onClose, initialFocusRef: nameInputRef });
   const fieldId = {
     name: "ha-doctor-form-name",
     specialty: "ha-doctor-form-specialty",
@@ -38,6 +44,24 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
       setForm({ name: doctor.name, specialty: doctor.specialty, phone: doctor.phone, email: doctor.email, status: doctor.status });
     }
   }, [doctor]);
+
+  useEffect(() => {
+    const targetRef =
+      activeField === "name"
+        ? nameInputRef
+        : activeField === "specialty"
+          ? specialtySelectRef
+          : activeField === "phone"
+            ? phoneInputRef
+            : activeField === "email"
+              ? emailInputRef
+              : statusSelectRef;
+    const el = targetRef.current;
+    if (!el) return;
+    if (document.activeElement !== el) {
+      el.focus();
+    }
+  }, [form, activeField]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,6 +144,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
           <div>
             <label htmlFor={fieldId.name} className={labelClass}>To'liq ism *</label>
             <input
+              ref={nameInputRef}
               id={fieldId.name}
               aria-invalid={Boolean(errors.name)}
               aria-describedby={errors.name ? `${fieldId.name}-error` : undefined}
@@ -127,6 +152,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
               className={inputClass}
               placeholder="Dr. Ism Familiya"
               value={form.name}
+              onFocus={() => setActiveField("name")}
               onChange={e => setForm({ ...form, name: e.target.value })}
               required
             />
@@ -135,11 +161,13 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
           <div>
             <label htmlFor={fieldId.specialty} className={labelClass}>Mutaxassislik *</label>
             <select
+              ref={specialtySelectRef}
               id={fieldId.specialty}
               aria-invalid={Boolean(errors.specialty)}
               aria-describedby={errors.specialty ? `${fieldId.specialty}-error` : undefined}
               className={inputClass}
               value={form.specialty}
+              onFocus={() => setActiveField("specialty")}
               onChange={e => setForm({ ...form, specialty: e.target.value })}
               required
             >
@@ -151,6 +179,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
           <div>
             <label htmlFor={fieldId.phone} className={labelClass}>Telefon *</label>
             <input
+              ref={phoneInputRef}
               id={fieldId.phone}
               aria-invalid={Boolean(errors.phone)}
               aria-describedby={errors.phone ? `${fieldId.phone}-error` : `${fieldId.phone}-help`}
@@ -158,6 +187,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
               className={inputClass}
               placeholder="+998 90 000 00 00"
               value={form.phone}
+              onFocus={() => setActiveField("phone")}
               onChange={e => setForm({ ...form, phone: e.target.value })}
               required
             />
@@ -167,6 +197,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
           <div>
             <label htmlFor={fieldId.email} className={labelClass}>Email</label>
             <input
+              ref={emailInputRef}
               id={fieldId.email}
               aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? `${fieldId.email}-error` : `${fieldId.email}-help`}
@@ -174,6 +205,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
               className={inputClass}
               placeholder="doctor@medcore.uz"
               value={form.email}
+              onFocus={() => setActiveField("email")}
               onChange={e => setForm({ ...form, email: e.target.value })}
             />
             <p id={`${fieldId.email}-help`} className="sr-only">Ixtiyoriy email manzil.</p>
@@ -182,9 +214,11 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
           <div>
             <label htmlFor={fieldId.status} className={labelClass}>Holat</label>
             <select
+              ref={statusSelectRef}
               id={fieldId.status}
               className={inputClass}
               value={form.status}
+              onFocus={() => setActiveField("status")}
               onChange={e => setForm({ ...form, status: e.target.value as 'active' | 'inactive' })}
             >
               <option value="active">Faol</option>

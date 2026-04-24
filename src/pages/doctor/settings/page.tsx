@@ -1,10 +1,18 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { getCurrentDoctorSession } from "@/api/services/doctorSession.service";
 
 type SettingsTab = 'profile' | 'security' | 'language' | 'notifications';
+
+function resolveSettingsTab(value: string | null): SettingsTab {
+  if (value === "profile" || value === "security" || value === "language" || value === "notifications") {
+    return value;
+  }
+  return "profile";
+}
 
 export default function DocSettingsPage() {
   const { t } = useTranslation("doctor");
@@ -17,7 +25,8 @@ export default function DocSettingsPage() {
 
 export function DocSettingsContent() {
   const { t, i18n } = useTranslation("doctor");
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() => resolveSettingsTab(searchParams.get("tab")));
   const [language, setLanguage] = useState<'uz' | 'ru'>(i18n.language === "ru" ? "ru" : "uz");
   const [saved, setSaved] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
@@ -32,6 +41,11 @@ export function DocSettingsContent() {
       }
     };
   }, [localAvatarUrl]);
+
+  useEffect(() => {
+    const fromUrl = resolveSettingsTab(searchParams.get("tab"));
+    setActiveTab((prev) => (prev === fromUrl ? prev : fromUrl));
+  }, [searchParams]);
   const { darkMode, setDarkMode, patientDetailLayout, setPatientDetailLayout } = useDoctorTheme();
   const currentDoctorSession = getCurrentDoctorSession();
   const fallbackAvatar = currentDoctorSession?.avatar ?? "";
@@ -59,7 +73,6 @@ export function DocSettingsContent() {
     specialty: 'Kardiologiya',
     phone: '+998 90 123 45 67',
     experience: '8 yil',
-    bio: 'Yurak-qon tomir kasalliklari bo\'yicha mutaxassis. Toshkent Tibbiyot Akademiyasini tamomlagan.',
   });
 
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
@@ -136,7 +149,14 @@ export function DocSettingsContent() {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setSearchParams((prev) => {
+                      const next = new URLSearchParams(prev);
+                      next.set("tab", tab.id);
+                      return next;
+                    });
+                  }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer text-left whitespace-nowrap ${
                     activeTab === tab.id
                       ? darkMode
@@ -252,19 +272,6 @@ export function DocSettingsContent() {
                       className={inputBase}
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label htmlFor="doctor-settings-bio" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Bio</label>
-                  <textarea
-                    id="doctor-settings-bio"
-                    value={profile.bio}
-                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                    rows={3}
-                    maxLength={500}
-                    className={`${inputBase} resize-none`}
-                  />
-                  <p className={`text-xs mt-1 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{profile.bio.length}/500</p>
                 </div>
 
                 <button

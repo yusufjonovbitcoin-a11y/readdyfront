@@ -24,8 +24,16 @@ export async function getHAQuestionCategories(): Promise<HACategoryDto[]> {
   return hospitalAdminAdapter.getCategories();
 }
 
+export async function getHAQuestionCategoryById(id: string): Promise<HACategoryDto | null> {
+  return hospitalAdminAdapter.getCategoryById(id);
+}
+
 export async function getHAQuestionTemplates(): Promise<HAQuestionTemplateDto[]> {
   return hospitalAdminAdapter.getQuestionTemplates();
+}
+
+export async function getHAQuestionTemplateById(id: string): Promise<HAQuestionTemplateDto | null> {
+  return hospitalAdminAdapter.getQuestionTemplateById(id);
 }
 
 export async function getHAQuestions(): Promise<HAQuestionDto[]> {

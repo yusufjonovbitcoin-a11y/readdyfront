@@ -8,7 +8,9 @@ function getDoctorTitle(pathname: string, t: (key: string) => string): string {
   if (pathname.startsWith("/doctor/history")) return t("sidebar.history");
   if (pathname.startsWith("/doctor/questions")) return t("sidebar.questions");
   if (pathname.startsWith("/doctor/analytics")) return t("sidebar.analytics");
+  if (pathname.startsWith("/doctor/notifications")) return t("sidebar.notifications");
   if (pathname.startsWith("/doctor/settings")) return t("sidebar.settings");
+  if (pathname.startsWith("/doctor/support")) return t("sidebar.support");
   if (pathname.startsWith("/doctor/profile")) return t("profile.title");
   return t("sidebar.newPatients");
 }

@@ -28,6 +28,8 @@ interface DoctorQuestionsPageData {
   templates: DoctorQuestionTemplateDto[];
 }
 
+const MODAL_INERT_SELECTORS = ["header", "main", "aside"];
+
 function getDefaultQuestionFormData(categories: DoctorQuestionCategoryDto[]): QuestionFormData {
   const defaultCategory =
     categories.find((category) => category.id === "cat-001") ??
@@ -88,6 +90,7 @@ export function DocQuestionsContent() {
 
   const addQuestionButtonRef = useRef<HTMLButtonElement>(null);
   const cloneButtonRef = useRef<HTMLButtonElement>(null);
+  const addEditTextRef = useRef<HTMLTextAreaElement>(null);
 
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
@@ -208,18 +211,19 @@ export function DocQuestionsContent() {
     isOpen: showAddModal || Boolean(editingQuestion),
     onClose: closeAddEditModal,
     returnFocusRef: addQuestionButtonRef,
-    inertSelectors: ["header", "main", "aside"],
+    initialFocusRef: addEditTextRef,
+    inertSelectors: MODAL_INERT_SELECTORS,
   });
   const cloneModalRef = useModalA11y({
     isOpen: showCloneModal,
     onClose: () => setShowCloneModal(false),
     returnFocusRef: cloneButtonRef,
-    inertSelectors: ["header", "main", "aside"],
+    inertSelectors: MODAL_INERT_SELECTORS,
   });
   const deleteModalRef = useModalA11y({
     isOpen: Boolean(deleteConfirm),
     onClose: () => setDeleteConfirm(null),
-    inertSelectors: ["header", "main", "aside"],
+    inertSelectors: MODAL_INERT_SELECTORS,
   });
 
   return (
@@ -402,6 +406,7 @@ export function DocQuestionsContent() {
               <div>
                 <label htmlFor={questionTextId} className={`block text-sm font-medium mb-1.5 ${labelCls}`}>{t("questions.questionText")}</label>
                 <textarea
+                  ref={addEditTextRef}
                   id={questionTextId}
                   value={formData.text}
                   onChange={(e) => setFormData({ ...formData, text: e.target.value })}

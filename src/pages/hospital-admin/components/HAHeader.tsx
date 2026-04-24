@@ -90,7 +90,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
       <div className="min-w-0 flex-1">
         <h1 className={`truncate text-lg font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{title}</h1>
         <p className={`truncate text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-          {t("sidebar.hospitalName")} &bull; {new Date().toLocaleDateString(i18n.language === "ru" ? "ru-RU" : "uz-UZ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          {new Date().toLocaleDateString(i18n.language === "ru" ? "ru-RU" : "uz-UZ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         </p>
       </div>
 

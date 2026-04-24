@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import * as Sentry from "@sentry/react";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
@@ -24,7 +24,8 @@ function PatientModal({ patient, darkMode, onClose, onSave, doctors, isSubmittin
   patient: HAPatient | null; darkMode: boolean; onClose: () => void; onSave: (data: PatientFormData) => void; doctors: DoctorDto[]; isSubmitting: boolean;
 }) {
   const { t } = useTranslation("hospital");
-  const modalRef = useModalA11y({ isOpen: true, onClose });
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useModalA11y({ isOpen: true, onClose, initialFocusRef: nameInputRef });
   const fieldId = {
     name: "ha-patient-form-name",
     phone: "ha-patient-form-phone",
@@ -120,6 +121,7 @@ function PatientModal({ patient, darkMode, onClose, onSave, doctors, isSubmittin
             <div className="col-span-2">
               <label htmlFor={fieldId.name} className={labelClass}>{t("patients.modal.fields.fullName")} *</label>
               <input
+                ref={nameInputRef}
                 id={fieldId.name}
                 aria-invalid={Boolean(errors.name)}
                 aria-describedby={errors.name ? `${fieldId.name}-error` : undefined}

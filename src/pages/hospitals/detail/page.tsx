@@ -56,7 +56,7 @@ export function HospitalDetailContent() {
   if (pageState.status === "loading") {
     return (
       <div className={`rounded-xl p-14 text-center ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
-        <i className="ri-loader-4-line animate-spin text-2xl text-emerald-500" />
+        <i className="ri-loader-4-line always-spin text-2xl text-emerald-500" />
         <p className={`mt-3 text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("hospitalDetail.loading")}</p>
       </div>
     );

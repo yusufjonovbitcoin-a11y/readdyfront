@@ -1,7 +1,9 @@
-import { useState, type RefObject } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import * as Sentry from "@sentry/react";
 import { useModalA11y } from "@/hooks/useModalA11y";
+
+const PANEL_INERT_SELECTORS = ["header", "main", "aside"];
 
 interface AddHospitalPanelProps {
   open: boolean;
@@ -14,6 +16,7 @@ interface AddHospitalPanelProps {
 
 export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, triggerRef, submitting = false }: AddHospitalPanelProps) {
   const { t } = useTranslation("hospital");
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: "",
     address: "",
@@ -29,7 +32,8 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
     isOpen: open,
     onClose,
     triggerRef,
-    inertSelectors: ["header", "main", "aside"],
+    initialFocusRef: nameInputRef,
+    inertSelectors: PANEL_INERT_SELECTORS,
   });
 
   const validate = () => {
@@ -117,7 +121,14 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
             <div className="space-y-4">
               <div>
                 <label htmlFor="add-hospital-name" className={labelClass}>Kasalxona Nomi *</label>
-                <input id="add-hospital-name" className={inputClass("name")} placeholder="Masalan: Toshkent Klinik Kasalxonasi" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <input
+                  ref={nameInputRef}
+                  id="add-hospital-name"
+                  className={inputClass("name")}
+                  placeholder="Masalan: Toshkent Klinik Kasalxonasi"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
                 {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
               </div>
               <div>

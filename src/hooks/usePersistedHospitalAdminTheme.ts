@@ -10,8 +10,8 @@ function readStoredDark(): boolean {
   } catch {
     /* ignore */
   }
-  /* Birinchi kirish: qorong‘u (yorug‘ni headerdagi tugma bilan tanlash mumkin) */
-  return true;
+  /* Birinchi kirish: yorug‘ (foydalanuvchi keyin o‘zi o‘zgartirishi mumkin) */
+  return false;
 }
 
 function persistDark(next: boolean) {

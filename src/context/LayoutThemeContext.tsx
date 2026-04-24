@@ -5,7 +5,7 @@ export type LayoutThemeValue = {
   setDarkMode: (dark: boolean) => void;
 };
 
-const LayoutThemeContext = createContext<LayoutThemeValue | null>(null);
+export const LayoutThemeContext = createContext<LayoutThemeValue | null>(null);
 
 export function LayoutThemeProvider({
   darkMode,

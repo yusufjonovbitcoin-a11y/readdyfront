@@ -2,8 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useModalA11y } from "@/hooks/useModalA11y";
-import { getHospitals } from "@/api/hospitals";
-import type { Hospital } from "@/types";
+import { useHospitals } from "@/hooks/useHospitals";
 
 interface HeaderProps {
   title: string;
@@ -21,6 +20,8 @@ type SearchHit = {
   to: string;
 };
 
+const MODAL_INERT_SELECTORS = ["header", "main", "aside"];
+
 function normalize(s: string) {
   return s.toLowerCase().trim();
 }
@@ -32,7 +33,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
-  const [hospitalHits, setHospitalHits] = useState<SearchHit[]>([]);
+  const { hospitals } = useHospitals();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
   const notificationsTriggerRef = useRef<HTMLButtonElement>(null);
@@ -43,28 +44,26 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
     return /Mac|iPhone|iPod|iPad/i.test(navigator.platform ?? "") ? "⌘K" : "Ctrl+K";
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
-    void (async () => {
-      try {
-        const hospitals = await getHospitals();
-        if (!mounted) return;
-        const nextHits: SearchHit[] = hospitals.map((h: Hospital) => ({
-          id: `h-${h.id}`,
-          kind: "hospital",
-          label: h.name,
-          hint: h.viloyat,
-          to: `/hospitals/${h.id}`,
-        }));
-        setHospitalHits(nextHits);
-      } catch {
-        if (mounted) setHospitalHits([]);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const headerDateLabel = useMemo(() => {
+    const now = new Date();
+    return now.toLocaleDateString(i18n.language === "ru" ? "ru-RU" : "uz-UZ", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }, [i18n.language]);
+
+  const hospitalHits = useMemo(
+    (): SearchHit[] =>
+      hospitals.map((h) => ({
+        id: `h-${h.id}`,
+        kind: "hospital",
+        label: h.name,
+        hint: h.viloyat,
+        to: `/hospitals/${h.id}`,
+      })),
+    [hospitals],
+  );
 
   const allHits = useMemo((): SearchHit[] => {
     const pages: SearchHit[] = [
@@ -106,7 +105,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
     onClose: closeSearch,
     returnFocusRef: searchTriggerRef,
     initialFocusRef: searchInputRef,
-    inertSelectors: ["header", "main", "aside"],
+    inertSelectors: MODAL_INERT_SELECTORS,
   });
   const notificationsPanelRef = useModalA11y({
     isOpen: showNotifications,
@@ -219,7 +218,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
       <div className="min-w-0 flex-1">
         <h1 className={`truncate text-lg font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{title}</h1>
         <p className={`truncate text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-          {new Date().toLocaleDateString(i18n.language === "ru" ? "ru-RU" : "uz-UZ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          {headerDateLabel}
         </p>
       </div>
 

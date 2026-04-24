@@ -22,7 +22,7 @@ function readStoredTheme(): boolean {
     /* ignore storage errors */
   }
 
-  return getSystemPreference();
+  return false;
 }
 
 function persistTheme(next: boolean) {

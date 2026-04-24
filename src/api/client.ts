@@ -19,7 +19,7 @@ export class AuthError extends Error {
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
-const REQUEST_TIMEOUT_MS = 12000;
+const REQUEST_TIMEOUT_MS = 5000;
 const MAX_RETRY_ATTEMPTS = 2;
 const RETRY_BASE_DELAY_MS = 350;
 
@@ -141,13 +141,6 @@ export async function apiRequest<TResponse>(
 
       return responseData as TResponse;
     } catch (error) {
-      const isLastAttempt = attempt >= MAX_RETRY_ATTEMPTS;
-
-      if (!isLastAttempt && canRetry && !options.signal?.aborted) {
-        await sleep(RETRY_BASE_DELAY_MS * (attempt + 1));
-        continue;
-      }
-
       if (error instanceof AuthError) {
         throw error;
       }

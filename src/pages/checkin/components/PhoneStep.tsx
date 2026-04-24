@@ -13,6 +13,8 @@ interface PhoneStepProps {
   doctorAvatar: string;
 }
 
+const MODAL_INERT_SELECTORS = ["header", "main", "aside"];
+
 export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecialty, doctorAvatar }: PhoneStepProps) {
   const { t, i18n } = useTranslation("checkin");
   const [phone, setPhone] = useState('');
@@ -27,7 +29,7 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
     isOpen: showDraftModal && Boolean(draft),
     onClose: closeDraftModal,
     returnFocusRef: continueButtonRef,
-    inertSelectors: ["header", "main", "aside"],
+    inertSelectors: MODAL_INERT_SELECTORS,
   });
 
   useEffect(() => {
@@ -199,7 +201,7 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
           >
             {loading ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full always-spin"></div>
                 {t("phoneStep.checking")}
               </>
             ) : (

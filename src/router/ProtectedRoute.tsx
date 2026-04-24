@@ -13,7 +13,7 @@ function AuthBootstrapFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 shadow-sm">
-        <i className="ri-loader-4-line animate-spin text-base text-emerald-600" aria-hidden="true" />
+        <i className="ri-loader-4-line always-spin text-base text-emerald-600" aria-hidden="true" />
         <span>{t("redirecting")}</span>
       </div>
     </div>

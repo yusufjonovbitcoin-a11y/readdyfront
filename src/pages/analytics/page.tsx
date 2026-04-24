@@ -43,7 +43,7 @@ export function AnalyticsPageContent() {
   const hospitalFilterHelpId = useId().replace(/:/g, "") + "-hospital-filter-help";
   const [period, setPeriod] = useState<Period>("daily");
   const [hospitalFilter, setHospitalFilter] = useState("all");
-  const isHospitalFilterReady = false;
+  const isHospitalFilterReady = true;
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const scrubbingRef = useRef(false);
   const [analytics, setAnalytics] = useState<AnalyticsDashboardDto>(EMPTY_ANALYTICS);
@@ -94,6 +94,20 @@ export function AnalyticsPageContent() {
   const totalCompleted = data.reduce((s, d) => s + d.completed, 0);
   const completionRate = totalAppointments > 0 ? Math.round((totalCompleted / totalAppointments) * 100) : 0;
 
+  const filteredHospitals =
+    hospitalFilter === "all"
+      ? analytics.topHospitals
+      : analytics.topHospitals.filter((h) => h.name === hospitalFilter);
+
+  const fallbackPeakValues = Array.from({ length: 12 }, () => 8);
+  const normalizedPeakValues =
+    data.length > 0
+      ? Array.from({ length: 12 }, (_, i) => {
+          const row = data[i % data.length];
+          return Math.max(8, Math.min(100, Math.round((row?.appointments ?? 0) / Math.max(maxVal, 1) * 100)));
+        })
+      : fallbackPeakValues;
+
   return (
     <div className="space-y-5">
         {/* Filters */}
@@ -131,14 +145,14 @@ export function AnalyticsPageContent() {
             ))}
           </select>
         </div>
-        {!isHospitalFilterReady && (
+        {!isHospitalFilterReady ? (
           <p
             id={hospitalFilterHelpId}
             className={`text-xs -mt-1 ${dm ? "text-amber-400" : "text-amber-700"}`}
           >
             Kasalxona bo'yicha kesim filtr funksiyasi tez orada faollashadi.
           </p>
-        )}
+        ) : null}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -340,7 +354,7 @@ export function AnalyticsPageContent() {
           <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
             <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>{t("admin:analytics.hospitalComparison")}</h3>
             <div className="space-y-4">
-              {analytics.topHospitals.map((h, i) => (
+              {filteredHospitals.map((h, i) => (
                 <div key={i}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className={`text-xs font-medium ${dm ? "text-gray-300" : "text-gray-700"}`}>{h.name}</span>
@@ -363,7 +377,7 @@ export function AnalyticsPageContent() {
             <div className={`mt-5 pt-4 border-t ${dm ? "border-[#1E2130]" : "border-gray-100"}`}>
               <p className={`text-xs font-semibold mb-3 ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("admin:analytics.peakHours")}</p>
               <div className="flex items-end gap-1 h-12">
-                {[20, 45, 80, 95, 100, 88, 72, 60, 55, 48, 35, 25].map((v, i) => (
+                {normalizedPeakValues.map((v, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
                     <div className="w-full rounded-sm bg-emerald-500/60" style={{ height: `${v * 0.44}px` }}></div>
                     <span className={`text-xs ${dm ? "text-gray-600" : "text-gray-400"}`}>{8 + i}</span>

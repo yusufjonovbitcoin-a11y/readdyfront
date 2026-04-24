@@ -162,13 +162,13 @@ export function HADoctorsPageContent() {
     <>
       <AppToast toast={toast} />
       {pageState.status === "loading" ? (
-        <div className="rounded-xl border py-16 text-center bg-white dark:bg-[#141824]">
-          <i className="ri-loader-4-line animate-spin text-2xl text-teal-500" />
+        <div className={`rounded-xl border py-16 text-center ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
+          <i className="ri-loader-4-line always-spin text-2xl text-teal-500" />
           <p className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Shifokorlar yuklanmoqda...</p>
         </div>
       ) : null}
       {pageState.status === "error" ? (
-        <div className="rounded-xl border py-14 text-center bg-white dark:bg-[#141824]">
+        <div className={`rounded-xl border py-14 text-center ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
           <i className="ri-error-warning-line text-2xl text-red-500" />
           <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{pageState.error}</p>
           <button
@@ -181,7 +181,7 @@ export function HADoctorsPageContent() {
         </div>
       ) : null}
       {pageState.status === "success" && doctors.length === 0 && !showModal ? (
-        <div className="rounded-xl border py-14 text-center bg-white dark:bg-[#141824]">
+        <div className={`rounded-xl border py-14 text-center ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
           <i className={`ri-stethoscope-line text-3xl ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
           <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{t("doctors.empty")}</p>
           <div className="mt-4 flex items-center justify-center gap-2">

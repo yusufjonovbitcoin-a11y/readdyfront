@@ -218,7 +218,7 @@ export function HADoctorDetailContent() {
   if (loading) {
     return (
       <div className="text-center py-20">
-        <i className="ri-loader-4-line animate-spin text-2xl text-teal-500" />
+        <i className="ri-loader-4-line always-spin text-2xl text-teal-500" />
         <p className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
           Shifokor tafsilotlari yuklanmoqda...
         </p>

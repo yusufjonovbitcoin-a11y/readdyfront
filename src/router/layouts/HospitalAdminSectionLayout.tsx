@@ -8,7 +8,9 @@ function getHospitalTitle(pathname: string, t: (key: string) => string): string 
   if (pathname.startsWith("/hospital-admin/patients")) return t("sidebar.patients");
   if (pathname.startsWith("/hospital-admin/questions")) return t("sidebar.questions");
   if (pathname.startsWith("/hospital-admin/analytics")) return t("sidebar.analytics");
+  if (pathname.startsWith("/hospital-admin/notifications")) return t("sidebar.notifications");
   if (pathname.startsWith("/hospital-admin/settings")) return t("sidebar.settings");
+  if (pathname.startsWith("/hospital-admin/support")) return t("sidebar.support");
   return t("titles.dashboard");
 }
 

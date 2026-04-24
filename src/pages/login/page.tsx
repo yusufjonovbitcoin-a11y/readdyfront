@@ -1,4 +1,4 @@
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth, UserRole } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,7 @@ const ROLE_REDIRECT: Record<UserRole, string> = {
   HOSPITAL_ADMIN: "/hospital-admin",
   DOCTOR: "/doctor/patients",
 };
+const REMEMBERED_PHONE_STORAGE_KEY = "remembered_login_phone";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -25,6 +26,18 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    try {
+      const rememberedPhone = localStorage.getItem(REMEMBERED_PHONE_STORAGE_KEY);
+      if (rememberedPhone) {
+        setPhoneInput(rememberedPhone);
+        setRememberMe(true);
+      }
+    } catch {
+      // Ignore storage read failures (e.g. private mode restrictions).
+    }
+  }, []);
 
   const getRoleSafeRedirect = (role: UserRole, intendedPath?: string) => {
     if (!intendedPath) return ROLE_REDIRECT[role];
@@ -59,6 +72,15 @@ export default function LoginPage() {
         password,
         rememberMe,
       });
+      try {
+        if (rememberMe) {
+          localStorage.setItem(REMEMBERED_PHONE_STORAGE_KEY, fullPhone);
+        } else {
+          localStorage.removeItem(REMEMBERED_PHONE_STORAGE_KEY);
+        }
+      } catch {
+        // Ignore storage write failures.
+      }
       const intendedPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
       navigate(getRoleSafeRedirect(user.role, intendedPath), { replace: true });
     } catch {
@@ -228,7 +250,7 @@ export default function LoginPage() {
             >
               {loading ? (
                 <>
-                  <i className="ri-loader-4-line animate-spin text-base"></i>
+                  <i className="ri-loader-4-line always-spin text-base"></i>
                   <span>{t("auth:login.checking")}</span>
                 </>
               ) : (

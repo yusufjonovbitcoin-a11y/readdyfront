@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
@@ -34,7 +34,8 @@ function CategoryModal({ cat, darkMode, onClose, onSave, isSubmitting }: {
   cat: HACategory | null; darkMode: boolean; onClose: () => void; onSave: (name: string) => void; isSubmitting: boolean;
 }) {
   const { t } = useTranslation("hospital");
-  const modalRef = useModalA11y({ isOpen: true, onClose });
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useModalA11y({ isOpen: true, onClose, initialFocusRef: nameInputRef });
   const fieldId = "ha-questions-category-name";
   const [name, setName] = useState(cat?.name || '');
   const inputClass = `w-full px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"}`;
@@ -54,7 +55,7 @@ function CategoryModal({ cat, darkMode, onClose, onSave, isSubmitting }: {
         </div>
         <form onSubmit={e => { e.preventDefault(); onSave(name); }}>
           <label htmlFor={fieldId} className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{t("questions.modal.category.nameLabel")}</label>
-          <input id={fieldId} type="text" className={inputClass} placeholder={t("questions.modal.category.namePlaceholder")} value={name} onChange={e => setName(e.target.value)} required />
+          <input ref={nameInputRef} id={fieldId} type="text" className={inputClass} placeholder={t("questions.modal.category.namePlaceholder")} value={name} onChange={e => setName(e.target.value)} required />
           <div className="flex gap-3 mt-4">
             <button type="button" onClick={onClose} disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>{t("common:buttons.cancel")}</button>
             <button type="submit" disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}>{isSubmitting ? "Saqlanmoqda..." : t("common:buttons.save")}</button>
@@ -69,7 +70,8 @@ function TemplateModal({ tmpl, categories, darkMode, onClose, onSave, isSubmitti
   tmpl: HAQuestionTemplate | null; categories: HACategory[]; darkMode: boolean; onClose: () => void; onSave: (data: { title: string; categoryId: string }) => void; isSubmitting: boolean;
 }) {
   const { t } = useTranslation("hospital");
-  const modalRef = useModalA11y({ isOpen: true, onClose });
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useModalA11y({ isOpen: true, onClose, initialFocusRef: titleInputRef });
   const fieldId = {
     title: "ha-questions-template-title",
     category: "ha-questions-template-category",
@@ -94,7 +96,7 @@ function TemplateModal({ tmpl, categories, darkMode, onClose, onSave, isSubmitti
         <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
           <div>
             <label htmlFor={fieldId.title} className={labelClass}>{t("questions.modal.template.nameLabel")}</label>
-            <input id={fieldId.title} type="text" className={inputClass} placeholder={t("questions.modal.template.namePlaceholder")} value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
+            <input ref={titleInputRef} id={fieldId.title} type="text" className={inputClass} placeholder={t("questions.modal.template.namePlaceholder")} value={form.title} onChange={e => setForm({...form, title: e.target.value})} required />
           </div>
           <div>
             <label htmlFor={fieldId.category} className={labelClass}>{t("questions.modal.template.categoryLabel")}</label>
@@ -117,7 +119,8 @@ function QuestionModal({ templateId, question, darkMode, onClose, onSave, isSubm
   templateId: string; question: HAQuestion | null; darkMode: boolean; onClose: () => void; onSave: (text: string) => void; isSubmitting: boolean;
 }) {
   const { t } = useTranslation("hospital");
-  const modalRef = useModalA11y({ isOpen: true, onClose });
+  const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const modalRef = useModalA11y({ isOpen: true, onClose, initialFocusRef: questionTextareaRef });
   const fieldId = "ha-questions-question-text";
   const [text, setText] = useState(question?.text || '');
   const inputClass = `w-full px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"}`;
@@ -138,6 +141,7 @@ function QuestionModal({ templateId, question, darkMode, onClose, onSave, isSubm
         <form onSubmit={e => { e.preventDefault(); onSave(text); }}>
           <label htmlFor={fieldId} className={`block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{t("questions.modal.question.textLabel")}</label>
           <textarea
+            ref={questionTextareaRef}
             id={fieldId}
             aria-describedby={`${fieldId}-help`}
             className={`${inputClass} resize-none`}

@@ -94,6 +94,14 @@ export const hospitalAdminAdapter = {
       name: department.name,
     }));
   },
+  getCategoryById: async (id: string): Promise<HACategoryDto | null> => {
+    const department = await apiRequest<BackendDepartmentDto | null>(`/api/departments/${encodeURIComponent(id)}`);
+    if (!department) return null;
+    return {
+      id: department.id,
+      name: department.name,
+    };
+  },
   getQuestionTemplates: async (): Promise<HAQuestionTemplateDto[]> => {
     const [questionnaires, departments, questions] = await Promise.all([
       apiRequest<BackendQuestionnaireDto[]>("/api/questionnaires"),
@@ -112,6 +120,26 @@ export const hospitalAdminAdapter = {
         createdAt: questionnaire.created_at ?? new Date().toISOString(),
       };
     });
+  },
+  getQuestionTemplateById: async (id: string): Promise<HAQuestionTemplateDto | null> => {
+    const questionnaire = await apiRequest<BackendQuestionnaireDto | null>(
+      `/api/questionnaires/${encodeURIComponent(id)}`,
+    );
+    if (!questionnaire) return null;
+    const [departments, questions] = await Promise.all([
+      apiRequest<BackendDepartmentDto[]>("/api/departments"),
+      apiRequest<BackendQuestionDto[]>("/api/questions"),
+    ]);
+    const category = departments.find((department) => department.id === questionnaire.department_id);
+    const questionCount = questions.filter((question) => question.questionnaire_id === questionnaire.id).length;
+    return {
+      id: questionnaire.id,
+      title: questionnaire.title,
+      categoryId: questionnaire.department_id,
+      categoryName: category?.name ?? "Uncategorized",
+      questionCount,
+      createdAt: questionnaire.created_at ?? new Date().toISOString(),
+    };
   },
   getQuestions: async (): Promise<HAQuestionDto[]> => {
     const questions = await apiRequest<BackendQuestionDto[]>("/api/questions");
@@ -170,10 +198,13 @@ export const hospitalAdminAdapter = {
   createTemplate: async (
     input: Pick<HAQuestionTemplateDto, "title" | "categoryId">,
   ): Promise<HAQuestionTemplateDto> => {
+    const department = await apiRequest<BackendDepartmentDto>(
+      `/api/departments/${encodeURIComponent(input.categoryId)}`,
+    );
     const created = await apiRequest<BackendQuestionnaireDto>("/api/questionnaires", {
       method: "POST",
       body: JSON.stringify({
-        hospital_id: "3b1f208a-f0bb-4641-b3f9-b91cafdb794d",
+        hospital_id: department.hospital_id,
         department_id: input.categoryId,
         title: input.title,
         is_active: true,

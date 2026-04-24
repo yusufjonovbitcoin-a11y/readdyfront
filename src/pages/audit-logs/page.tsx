@@ -178,7 +178,7 @@ export function AuditLogsPageContent() {
     <div className="space-y-4">
         {pageState.status === "loading" ? (
           <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
-            <i className="ri-loader-4-line animate-spin text-2xl text-emerald-500" />
+            <i className="ri-loader-4-line always-spin text-2xl text-emerald-500" />
             <p className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Audit loglar yuklanmoqda...</p>
           </div>
         ) : null}

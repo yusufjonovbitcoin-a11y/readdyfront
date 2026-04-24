@@ -25,6 +25,9 @@ const AnalyticsPageContent = lazy(() =>
 const UsersPageContent = lazy(() =>
   import("../pages/users/page").then((m) => ({ default: m.UsersPageContent })),
 );
+const SuperAdminNotificationsPageContent = lazy(() =>
+  import("../pages/notifications/page").then((m) => ({ default: m.SuperAdminNotificationsPageContent })),
+);
 const SettingsPageContent = lazy(() =>
   import("../pages/settings/page").then((m) => ({ default: m.SettingsPageContent })),
 );
@@ -77,6 +80,12 @@ const DocSettingsContent = lazy(() =>
 );
 const DocProfileContent = lazy(() =>
   import("../pages/doctor/profile/page").then((m) => ({ default: m.DocProfileContent })),
+);
+const SupportPageContent = lazy(() =>
+  import("../pages/support/page").then((m) => ({ default: m.SupportPageContent })),
+);
+const NotificationsPageContent = lazy(() =>
+  import("../pages/notifications/page").then((m) => ({ default: m.SuperAdminNotificationsPageContent })),
 );
 
 
@@ -149,6 +158,14 @@ const routes: RouteObject[] = [
         ),
       },
       {
+        path: "/notifications",
+        element: (
+          <WithSuspense>
+            <SuperAdminNotificationsPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
         path: "/audit-logs",
         element: (
           <WithSuspense>
@@ -169,6 +186,14 @@ const routes: RouteObject[] = [
         element: (
           <WithSuspense>
             <SettingsPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "/support",
+        element: (
+          <WithSuspense>
+            <SupportPageContent />
           </WithSuspense>
         ),
       },
@@ -237,6 +262,22 @@ const routes: RouteObject[] = [
           </WithSuspense>
         ),
       },
+      {
+        path: "/hospital-admin/support",
+        element: (
+          <WithSuspense>
+            <SupportPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "/hospital-admin/notifications",
+        element: (
+          <WithSuspense>
+            <NotificationsPageContent />
+          </WithSuspense>
+        ),
+      },
     ],
   },
   {
@@ -300,6 +341,22 @@ const routes: RouteObject[] = [
         element: (
           <WithSuspense>
             <DocProfileContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "support",
+        element: (
+          <WithSuspense>
+            <SupportPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "notifications",
+        element: (
+          <WithSuspense>
+            <NotificationsPageContent />
           </WithSuspense>
         ),
       },

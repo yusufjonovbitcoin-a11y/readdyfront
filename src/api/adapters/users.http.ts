@@ -31,6 +31,41 @@ type BackendDepartmentDto = {
   name: string;
 };
 
+async function getAdminsList(): Promise<BackendAdminDto[]> {
+  return apiRequest<BackendAdminDto[]>("/api/admins");
+}
+
+async function getAdminById(id: string): Promise<BackendAdminDto | null> {
+  const encodedId = encodeURIComponent(id);
+  return apiRequest<BackendAdminDto | null>(`/api/admins/${encodedId}`);
+}
+
+async function createAdmin(input: CreateUserInput): Promise<BackendAdminDto> {
+  const payload = {
+    phone_number: input.phone,
+    password: input.password,
+    is_super_admin: false,
+    hospital_id: input.hospitalId || null,
+  };
+  return apiRequest<BackendAdminDto>("/api/admins", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+async function patchAdmin(id: string, payload: Record<string, unknown>): Promise<void> {
+  const encodedId = encodeURIComponent(id);
+  await apiRequest<unknown>(`/api/admins/${encodedId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+async function removeAdmin(id: string): Promise<void> {
+  const encodedId = encodeURIComponent(id);
+  await apiRequest<null>(`/api/admins/${encodedId}`, { method: "DELETE" });
+}
+
 function toIsoOrNow(value?: string) {
   return value ?? new Date().toISOString();
 }
@@ -69,7 +104,7 @@ function normalizeDoctor(doctor: BackendDoctorDto): UserDto {
 
 export async function getUsers(): Promise<UserDto[]> {
   const [admins, doctors] = await Promise.all([
-    apiRequest<BackendAdminDto[]>("/api/admins").catch(() => [] as BackendAdminDto[]),
+    getAdminsList().catch(() => [] as BackendAdminDto[]),
     apiRequest<BackendDoctorDto[]>("/api/doctors").catch(() => [] as BackendDoctorDto[]),
   ]);
   return [...admins.map(normalizeAdmin), ...doctors.map(normalizeDoctor)];
@@ -77,7 +112,7 @@ export async function getUsers(): Promise<UserDto[]> {
 
 export async function getUserById(id: string): Promise<UserDto | null> {
   const [admin, doctor] = await Promise.all([
-    apiRequest<BackendAdminDto | null>(`/api/admins/${encodeURIComponent(id)}`).catch(() => null),
+    getAdminById(id).catch(() => null),
     apiRequest<BackendDoctorDto | null>(`/api/doctors/${encodeURIComponent(id)}`).catch(() => null),
   ]);
   if (admin) return normalizeAdmin(admin);
@@ -87,15 +122,7 @@ export async function getUserById(id: string): Promise<UserDto | null> {
 
 export async function createUser(input: CreateUserInput): Promise<UserDto> {
   if (input.role === "HOSPITAL_ADMIN") {
-    const created = await apiRequest<BackendAdminDto>("/api/admins", {
-      method: "POST",
-      body: JSON.stringify({
-        phone_number: input.phone,
-        password: input.password,
-        is_super_admin: false,
-        hospital_id: input.hospitalId || null,
-      }),
-    });
+    const created = await createAdmin(input);
     return normalizeAdmin(created);
   }
 
@@ -144,10 +171,7 @@ export async function updateUser(id: string, input: UpdateUserInput): Promise<Us
     if (input.phone) payload.phone_number = input.phone;
     if (input.password) payload.password = input.password;
     if (input.hospitalId) payload.hospital_id = input.hospitalId;
-    await apiRequest<unknown>(`/api/admins/${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    });
+    await patchAdmin(id, payload);
     return getUserById(id);
   }
 
@@ -171,7 +195,7 @@ export async function deleteUser(id: string): Promise<boolean> {
   const existing = await getUserById(id);
   if (!existing) return false;
   if (existing.role === "HOSPITAL_ADMIN") {
-    await apiRequest<null>(`/api/admins/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await removeAdmin(id);
     return true;
   }
   if (existing.role === "DOCTOR") {

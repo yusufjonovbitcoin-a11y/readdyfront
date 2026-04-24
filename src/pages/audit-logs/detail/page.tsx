@@ -130,7 +130,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
   if (status === "loading") {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <i className="ri-loader-4-line animate-spin text-3xl text-emerald-500" />
+        <i className="ri-loader-4-line always-spin text-3xl text-emerald-500" />
         <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{t("auditDetail.loading")}</p>
       </div>
     );

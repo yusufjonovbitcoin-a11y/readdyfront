@@ -19,7 +19,7 @@ function LoadingState() {
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
       <div className="text-center max-w-xs">
         <div className="w-16 h-16 flex items-center justify-center rounded-full bg-teal-50 mx-auto mb-4">
-          <i className="ri-loader-4-line text-teal-500 text-2xl animate-spin"></i>
+          <i className="ri-loader-4-line text-teal-500 text-2xl always-spin"></i>
         </div>
         <h2 className="text-lg font-bold text-gray-900 mb-2">Yuklanmoqda...</h2>
       </div>
@@ -67,7 +67,7 @@ function SubmittingState() {
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
       <div className="text-center max-w-xs">
         <div className="w-16 h-16 flex items-center justify-center rounded-full bg-teal-50 mx-auto mb-4">
-          <i className="ri-loader-4-line text-teal-500 text-2xl animate-spin" />
+          <i className="ri-loader-4-line text-teal-500 text-2xl always-spin" />
         </div>
         <h2 className="text-lg font-bold text-gray-900 mb-2">So'rov yuborilmoqda...</h2>
         <p className="text-sm text-gray-500">Iltimos, biroz kuting.</p>
