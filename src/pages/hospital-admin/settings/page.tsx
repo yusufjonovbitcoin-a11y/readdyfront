@@ -33,14 +33,16 @@ export function HASettingsPageContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const darkMode = useHospitalAdminDarkMode();
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(getHaAdminStoredAvatar);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => resolveSettingsTab(searchParams.get("tab")));
   const [lang, setLang] = useState<'uz' | 'ru'>(i18n.language === "ru" ? "ru" : "uz");
   const [notifications, setNotifications] = useState({
     newPatient: true, doctorUpdate: true, systemAlert: false, weeklyReport: true,
   });
   const [profile, setProfile] = useState({
-    name: 'Aziz Rahimov', email: 'a.rahimov@medcore.uz', phone: '+998 90 123 45 67', hospital: 'Toshkent Klinikasi',
+    name: 'Aziz Rahimov', phone: '+998 90 123 45 67', hospital: 'Toshkent Klinikasi',
   });
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
   const [saved, setSaved] = useState(false);
@@ -83,6 +85,18 @@ export function HASettingsPageContent() {
     setAvatarUrl(null);
     persistAvatar(null);
   };
+
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (avatarMenuRef.current?.contains(target)) return;
+      setAvatarMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [avatarMenuOpen]);
 
   const tabs: { key: SettingsTab; label: string; icon: string }[] = [
     { key: 'profile', label: t("settings.tabs.profile"), icon: 'ri-user-line' },
@@ -132,7 +146,7 @@ export function HASettingsPageContent() {
           <div className={cardBase}>
             <h3 className={`text-sm font-bold mb-5 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("settings.profile.title")}</h3>
             <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 relative" ref={avatarMenuRef}>
                 <input
                   ref={avatarInputRef}
                   type="file"
@@ -152,28 +166,52 @@ export function HASettingsPageContent() {
                     <span className="text-white text-xl font-bold">{haAdminInitialsFromName(profile.name)}</span>
                   )}
                 </div>
-                <div className="mt-2 flex flex-col gap-1 items-center max-w-[5.5rem]">
-                  <button
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    className={`text-xs font-medium transition-colors cursor-pointer underline-offset-2 hover:underline ${
-                      darkMode ? "text-teal-400 hover:text-teal-300" : "text-teal-600 hover:text-teal-700"
+                <button
+                  type="button"
+                  onClick={() => setAvatarMenuOpen((prev) => !prev)}
+                  className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
+                    darkMode
+                      ? "bg-[#1A2235] border-[#141824] text-teal-400 hover:text-teal-300"
+                      : "bg-white border-gray-100 text-teal-600 hover:text-teal-700"
+                  }`}
+                  aria-label={t("settings.profile.avatarInputAria")}
+                  title={t("settings.profile.avatarInputAria")}
+                >
+                  <i className="ri-camera-line text-sm" aria-hidden="true"></i>
+                </button>
+                {avatarMenuOpen && (
+                  <div
+                    className={`absolute top-[calc(100%+8px)] left-0 z-20 min-w-[11rem] rounded-lg border p-1.5 ${
+                      darkMode ? "bg-[#1A2235] border-[#1E2130]" : "bg-white border-gray-200"
                     }`}
                   >
-                    {t("settings.profile.uploadPhoto")}
-                  </button>
-                  {avatarUrl && (
                     <button
                       type="button"
-                      onClick={clearAvatar}
-                      className={`text-xs transition-colors cursor-pointer ${
-                        darkMode ? "text-gray-500 hover:text-gray-300" : "text-gray-500 hover:text-gray-700"
+                      onClick={() => {
+                        setAvatarMenuOpen(false);
+                        avatarInputRef.current?.click();
+                      }}
+                      className={`w-full text-left px-2.5 py-2 rounded-md text-xs font-medium transition-colors ${
+                        darkMode ? "text-teal-300 hover:bg-[#141824]" : "text-teal-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {t("settings.profile.uploadPhoto")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearAvatar();
+                        setAvatarMenuOpen(false);
+                      }}
+                      disabled={!avatarUrl}
+                      className={`w-full text-left px-2.5 py-2 rounded-md text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                        darkMode ? "text-gray-300 hover:bg-[#141824]" : "text-gray-700 hover:bg-gray-50"
                       }`}
                     >
                       {t("settings.profile.removePhoto")}
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
               <div className="min-w-0 pt-0.5">
                 <p className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{profile.name}</p>
@@ -194,10 +232,6 @@ export function HASettingsPageContent() {
                   <label htmlFor="ha-settings-hospital" className={labelClass}>{t("settings.profile.hospital")}</label>
                   <input id="ha-settings-hospital" type="text" className={inputClass} value={profile.hospital} disabled />
                 </div>
-              </div>
-              <div>
-                <label htmlFor="ha-settings-email" className={labelClass}>{t("settings.profile.email")}</label>
-                <input id="ha-settings-email" type="email" className={inputClass} value={profile.email} onChange={e => setProfile({...profile, email: e.target.value})} />
               </div>
               <div>
                 <label htmlFor="ha-settings-phone" className={labelClass}>{t("settings.profile.phone")}</label>
@@ -274,12 +308,28 @@ export function HASettingsPageContent() {
                       onClick={() => { const next = l.code as "uz" | "ru"; setLang(next); void i18n.changeLanguage(next); }}
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
                         lang === l.code
-                          ? 'border-teal-500 bg-teal-50'
-                          : darkMode ? 'border-[#1E2130] hover:border-teal-500/50' : 'border-gray-200 hover:border-teal-300'
+                          ? darkMode
+                            ? "border-teal-500/70 bg-teal-900/25"
+                            : "border-teal-500 bg-teal-50"
+                          : darkMode
+                            ? "border-[#1E2130] hover:border-teal-500/50"
+                            : "border-gray-200 hover:border-teal-300"
                       }`}
                     >
                       <span className="text-2xl">{l.flag}</span>
-                      <span className={`text-sm font-medium ${lang === l.code ? 'text-teal-700' : darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{l.label}</span>
+                      <span
+                        className={`text-sm font-medium ${
+                          lang === l.code
+                            ? darkMode
+                              ? "text-teal-200"
+                              : "text-teal-700"
+                            : darkMode
+                              ? "text-gray-300"
+                              : "text-gray-700"
+                        }`}
+                      >
+                        {l.label}
+                      </span>
                       {lang === l.code && <div className="ml-auto w-4 h-4 flex items-center justify-center"><i className="ri-check-line text-teal-600 text-sm"></i></div>}
                     </button>
                   ))}

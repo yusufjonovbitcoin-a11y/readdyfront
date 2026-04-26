@@ -1,8 +1,19 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { mockNotifications, type Notification } from "@/mocks/notifications";
-import { useMainLayoutDarkMode } from "@/context/LayoutThemeContext";
+import { useAnyDarkMode } from "@/context/useAnyDarkMode";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  createNotification,
+  createNotificationByIds,
+  deleteNotification,
+  getNotificationCategories,
+  getNotificationPriorities,
+  getNotifications,
+  type NotificationCategory,
+  type Notification,
+  type NotificationPriority,
+  updateNotification,
+} from "@/api/services/notifications.service";
 
 const NOTIFICATIONS_STORAGE_KEY = "medcore_notifications_v1";
 
@@ -30,19 +41,46 @@ const categoryConfig: Record<string, { label: string; icon: string; color: strin
   appointment: { label: "Navbat", icon: "ri-calendar-check-line", color: "text-sky-500 bg-sky-50" },
 };
 
+const fallbackTypeConfig = {
+  bg: "bg-gray-50",
+  icon: "ri-notification-3-line",
+  iconColor: "text-gray-500",
+  border: "border-gray-100",
+};
+
+const fallbackPriorityConfig = {
+  label: "Noma'lum",
+  color: "text-gray-500 bg-gray-100",
+  dot: "bg-gray-400",
+};
+
+const fallbackCategoryConfig = {
+  label: "Boshqa",
+  icon: "ri-folder-line",
+  color: "text-gray-500 bg-gray-100",
+};
+
+function getTodayLocalIsoDate(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function SuperAdminNotificationsPageContent() {
-  const dm = useMainLayoutDarkMode();
+  const dm = useAnyDarkMode();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>(() => {
-    if (typeof window === "undefined") return mockNotifications;
+    if (typeof window === "undefined") return [];
     try {
       const raw = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-      if (!raw) return mockNotifications;
+      if (!raw) return [];
       const parsed = JSON.parse(raw) as Notification[];
-      return Array.isArray(parsed) ? parsed : mockNotifications;
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
-      return mockNotifications;
+      return [];
     }
   });
   const persistNotifications = (next: Notification[]) => {
@@ -63,9 +101,68 @@ export function SuperAdminNotificationsPageContent() {
   const [composeType, setComposeType] = useState<Notification["type"]>("info");
   const [composePriority, setComposePriority] = useState<Notification["priority"]>("high");
   const [composeCategory, setComposeCategory] = useState<Notification["category"]>("system");
+  const [composeRecipientType, setComposeRecipientType] = useState<"doctor" | "hospital_admin">("doctor");
+  const [categoryOptions, setCategoryOptions] = useState<NotificationCategory[]>([]);
+  const [priorityOptions, setPriorityOptions] = useState<NotificationPriority[]>([]);
+  const [composeCategoryId, setComposeCategoryId] = useState("");
+  const [composePriorityId, setComposePriorityId] = useState("");
+
+  const normalizePriority = (value: string): Notification["priority"] => {
+    const v = value.toLowerCase();
+    if (v.includes("critical")) return "critical";
+    if (v.includes("high")) return "high";
+    if (v.includes("medium")) return "medium";
+    return "low";
+  };
+
+  const normalizeCategory = (value: string): Notification["category"] => {
+    const v = value.toLowerCase();
+    if (v.includes("patient")) return "patient";
+    if (v.includes("doctor")) return "doctor";
+    if (v.includes("hospital")) return "hospital";
+    if (v.includes("security")) return "security";
+    if (v.includes("appointment")) return "appointment";
+    return "system";
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const remote = await getNotifications();
+      if (cancelled || remote.length === 0) return;
+      persistNotifications(remote);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const [categories, priorities] = await Promise.all([
+        getNotificationCategories(),
+        getNotificationPriorities(),
+      ]);
+      if (cancelled) return;
+      setCategoryOptions(categories);
+      setPriorityOptions(priorities);
+      if (categories.length > 0) {
+        setComposeCategoryId((prev) => prev || categories[0].id);
+        setComposeCategory(normalizeCategory(categories[0].name));
+      }
+      if (priorities.length > 0) {
+        setComposePriorityId((prev) => prev || priorities[0].id);
+        setComposePriority(normalizePriority(priorities[0].name));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const sendBroadcastMessage = () => {
-    if (user?.role !== "SUPER_ADMIN") return;
+    if (user?.role !== "SUPER_ADMIN" && user?.role !== "HOSPITAL_ADMIN") return;
     if (!composeTitle.trim() || !composeMessage.trim()) return;
 
     const now = new Date();
@@ -74,12 +171,13 @@ export function SuperAdminNotificationsPageContent() {
     const date = now.toISOString().slice(0, 10);
     const time = `${hh}:${mm}`;
 
-    const targets: Array<"hospital_admin" | "doctor"> = ["hospital_admin", "doctor"];
-    const created: Notification[] = targets.map((target, index) => ({
-      id: `n-broadcast-${now.getTime()}-${target}-${index}`,
-      role: target,
-      senderRole: "super_admin",
-      senderName: user.name || "Super Admin",
+    const isSuperAdminSender = user.role === "SUPER_ADMIN";
+    const created: Notification = {
+      id: `n-broadcast-${now.getTime()}-${composeRecipientType}`,
+      role: composeRecipientType,
+      senderRole: isSuperAdminSender ? "super_admin" : "hospital_admin",
+      senderName: user.name || (isSuperAdminSender ? "Super Admin" : "Hospital Admin"),
+      hospitalId: isSuperAdminSender ? undefined : user.hospitalId,
       type: composeType,
       priority: composePriority,
       category: composeCategory,
@@ -88,14 +186,44 @@ export function SuperAdminNotificationsPageContent() {
       date,
       time,
       read: false,
-    }));
+    };
 
-    persistNotifications([...created, ...notifications]);
+    persistNotifications([created, ...notifications]);
+    if (composeCategoryId && composePriorityId) {
+      void createNotificationByIds({
+        hospital_id: created.hospitalId,
+        recipient_type: composeRecipientType,
+        title: created.title,
+        message: created.message,
+        category_id: composeCategoryId,
+        priority_id: composePriorityId,
+        is_read: created.read,
+      });
+    } else {
+      void createNotification({
+        role: created.role,
+        senderRole: created.senderRole,
+        senderName: created.senderName,
+        hospitalId: created.hospitalId,
+        type: created.type,
+        priority: created.priority,
+        category: created.category,
+        title: created.title,
+        message: created.message,
+        date: created.date,
+        time: created.time,
+        read: created.read,
+        actionLabel: created.actionLabel,
+        actionPath: created.actionPath,
+      });
+    }
     setComposeTitle("");
     setComposeMessage("");
     setComposeType("info");
     setComposePriority("high");
     setComposeCategory("system");
+    setComposeCategoryId((prev) => prev || categoryOptions[0]?.id || "");
+    setComposePriorityId((prev) => prev || priorityOptions[0]?.id || "");
     setComposerOpen(false);
   };
 
@@ -133,22 +261,28 @@ export function SuperAdminNotificationsPageContent() {
 
   const unreadCount = scopedNotifications.filter((n) => !n.read).length;
   const criticalCount = scopedNotifications.filter((n) => n.priority === "critical").length;
-  const todayCount = scopedNotifications.filter((n) => n.date === "2026-04-24").length;
+  const todayCount = scopedNotifications.filter((n) => n.date === getTodayLocalIsoDate()).length;
 
   const markAllRead = () => {
-    persistNotifications(notifications.map((n) => ({ ...n, read: true })));
+    const updated = notifications.map((n) => ({ ...n, read: true }));
+    persistNotifications(updated);
+    for (const item of updated) {
+      void updateNotification(item.id, { read: true });
+    }
   };
   const markRead = (id: string) => {
     persistNotifications(notifications.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    void updateNotification(id, { read: true });
   };
   const deleteNotif = (id: string) => {
     persistNotifications(notifications.filter((n) => n.id !== id));
+    void deleteNotification(id);
   };
 
   const renderCard = (n: Notification) => {
-    const tc = typeConfig[n.type];
-    const pc = priorityConfig[n.priority];
-    const cc = categoryConfig[n.category];
+    const tc = typeConfig[n.type] ?? fallbackTypeConfig;
+    const pc = priorityConfig[n.priority] ?? fallbackPriorityConfig;
+    const cc = categoryConfig[n.category] ?? fallbackCategoryConfig;
     return (
       <div
         key={n.id}
@@ -220,98 +354,69 @@ export function SuperAdminNotificationsPageContent() {
       style={dm ? undefined : { background: "linear-gradient(135deg, #f0fdf4 0%, #f9fafb 50%, #f0f9ff 100%)" }}
     >
       <div className="w-full py-8 px-6">
-        <div className="mb-8 flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center bg-emerald-500 rounded-2xl">
-              <i className="ri-notification-3-line text-white text-lg" />
-            </div>
-            <div>
-              <h1 className={`text-2xl font-bold ${dm ? "text-white" : "text-gray-900"}`}>Bildirishnomalar</h1>
-              <p className={`text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>
-                {user?.role === "SUPER_ADMIN"
-                  ? "Super Admin"
-                  : user?.role === "HOSPITAL_ADMIN"
-                    ? "Hospital Admin"
-                    : "Doctor"}{" "}
-                · MedCore tizimi
-              </p>
-            </div>
-          </div>
-          {unreadCount > 0 ? (
-            <button onClick={markAllRead} className="flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700 font-medium px-4 py-2 rounded-xl hover:bg-emerald-50 border border-emerald-100 transition-all cursor-pointer whitespace-nowrap">
-              <i className="ri-check-double-line" />
-              Hammasini o'qilgan deb belgilash
-            </button>
-          ) : null}
-        </div>
-
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          {[
-            { label: "Jami", value: scopedNotifications.length, icon: "ri-notification-3-line", bg: dm ? "bg-[#121826]" : "bg-white", iconBg: dm ? "bg-[#1A2235]" : "bg-gray-50", iconColor: dm ? "text-gray-300" : "text-gray-600", valueColor: dm ? "text-white" : "text-gray-900" },
-            { label: "O'qilmagan", value: unreadCount, icon: "ri-mail-unread-line", bg: "bg-emerald-500", iconBg: "bg-emerald-400", iconColor: "text-white", valueColor: "text-white", labelColor: "text-emerald-100" },
-            { label: "Kritik", value: criticalCount, icon: "ri-error-warning-line", bg: dm ? "bg-[#121826]" : "bg-white", iconBg: "bg-red-50", iconColor: "text-red-500", valueColor: "text-red-600" },
-            { label: "Bugun", value: todayCount, icon: "ri-calendar-line", bg: dm ? "bg-[#121826]" : "bg-white", iconBg: "bg-sky-50", iconColor: "text-sky-500", valueColor: "text-sky-600" },
-          ].map((s) => (
-            <div key={s.label} className={`${s.bg} rounded-2xl border ${dm ? "border-[#273041]" : "border-gray-100"} p-4 text-center`}>
-              <div className={`w-10 h-10 flex items-center justify-center rounded-xl mx-auto mb-2 ${s.iconBg}`}>
-                <i className={`${s.icon} text-base ${s.iconColor}`} />
+        <div className={`sticky top-0 z-20 pb-4 ${dm ? "bg-[#0F1117]" : "bg-white/90 backdrop-blur"}`}>
+          <div className="mb-8 flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 flex items-center justify-center bg-emerald-500 rounded-2xl">
+                <i className="ri-notification-3-line text-white text-lg" />
               </div>
-              <p className={`text-2xl font-bold ${s.valueColor}`}>{s.value}</p>
-              <p className={`text-xs mt-0.5 ${(s as { labelColor?: string }).labelColor || (dm ? "text-gray-500" : "text-gray-400")}`}>{s.label}</p>
+              <div>
+                <h1 className={`text-2xl font-bold ${dm ? "text-white" : "text-gray-900"}`}>Bildirishnomalar</h1>
+                <p className={`text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>
+                  {user?.role === "SUPER_ADMIN"
+                    ? "Super Admin"
+                    : user?.role === "HOSPITAL_ADMIN"
+                      ? "Hospital Admin"
+                      : "Doctor"}{" "}
+                  · MedCore tizimi
+                </p>
+              </div>
             </div>
-          ))}
-        </div>
-
-        <div className={`flex flex-wrap gap-2 mb-6 p-3 rounded-2xl border ${dm ? "bg-[#121826] border-[#273041]" : "bg-white border-gray-100"}`}>
-          <div className={`${dm ? "bg-[#1A2235]" : "bg-gray-100"} flex rounded-xl p-1`}>
-            {(["all", "unread", "read"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                  filter === f ? (dm ? "bg-[#0F1117] text-white" : "bg-white text-gray-900") : (dm ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700")
-                }`}
-              >
-                {f === "all" ? "Barchasi" : f === "unread" ? "O'qilmagan" : "O'qilgan"}
+            {unreadCount > 0 ? (
+              <button onClick={markAllRead} className="flex items-center gap-2 text-sm text-emerald-600 hover:text-emerald-700 font-medium px-4 py-2 rounded-xl hover:bg-emerald-50 border border-emerald-100 transition-all cursor-pointer whitespace-nowrap">
+                <i className="ri-check-double-line" />
+                Hammasini o'qilgan deb belgilash
               </button>
-            ))}
+            ) : null}
           </div>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={`text-sm border rounded-xl px-3 py-1.5 cursor-pointer ${dm ? "border-[#273041] text-gray-300 bg-[#0F1117]" : "border-gray-200 text-gray-600 bg-white"}`}>
-            <option value="all">Barcha turlar</option>
-            <option value="info">Ma'lumot</option>
-            <option value="warning">Ogohlantirish</option>
-            <option value="success">Muvaffaqiyat</option>
-            <option value="error">Xato</option>
-          </select>
-          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className={`text-sm border rounded-xl px-3 py-1.5 cursor-pointer ${dm ? "border-[#273041] text-gray-300 bg-[#0F1117]" : "border-gray-200 text-gray-600 bg-white"}`}>
-            <option value="all">Barcha ustuvorlik</option>
-            <option value="critical">Kritik</option>
-            <option value="high">Yuqori</option>
-            <option value="medium">O'rta</option>
-            <option value="low">Past</option>
-          </select>
-          {user?.role === "SUPER_ADMIN" ? (
-            <button
-              type="button"
-              onClick={() => setComposerOpen((v) => !v)}
-              className={`inline-flex items-center gap-1 justify-center h-9 px-3 rounded-xl border transition-colors cursor-pointer text-sm font-medium ${
-                dm
-                  ? "border-[#273041] bg-[#0F1117] text-emerald-400 hover:bg-[#1A2235]"
-                  : "border-gray-200 bg-white text-emerald-600 hover:bg-emerald-50"
-              }`}
-              title="Barcha admin va shifokorlarga xabar yuborish"
-              aria-label="Barcha admin va shifokorlarga xabar yuborish"
-            >
-              <i className="ri-send-plane-2-line text-sm" />
-              Xabar jo'natish
-            </button>
-          ) : null}
-          <div className={`ml-auto flex items-center gap-1 text-xs ${dm ? "text-gray-500" : "text-gray-400"}`}>
-            <i className="ri-filter-3-line" />
-            {filtered.length} ta natija
+
+          <div className={`flex flex-wrap gap-2 mb-2 p-3 rounded-2xl border ${dm ? "bg-[#121826] border-[#273041]" : "bg-white border-gray-100"}`}>
+            <div className={`${dm ? "bg-[#1A2235]" : "bg-gray-100"} flex rounded-xl p-1`}>
+              {(["all", "unread", "read"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    filter === f ? (dm ? "bg-[#0F1117] text-white" : "bg-white text-gray-900") : (dm ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700")
+                  }`}
+                >
+                  {f === "all" ? "Barchasi" : f === "unread" ? "O'qilmagan" : "O'qilgan"}
+                </button>
+              ))}
+            </div>
+            {user?.role === "SUPER_ADMIN" || user?.role === "HOSPITAL_ADMIN" ? (
+              <button
+                type="button"
+                onClick={() => setComposerOpen((v) => !v)}
+                className={`inline-flex items-center gap-1 justify-center h-9 px-3 rounded-xl border transition-colors cursor-pointer text-sm font-medium ${
+                  dm
+                    ? "border-[#273041] bg-[#0F1117] text-emerald-400 hover:bg-[#1A2235]"
+                    : "border-gray-200 bg-white text-emerald-600 hover:bg-emerald-50"
+                }`}
+                title={user?.role === "SUPER_ADMIN" ? "Barcha admin va shifokorlarga xabar yuborish" : "Faqat shu shifoxonadagi shifokorlarga xabar yuborish"}
+                aria-label={user?.role === "SUPER_ADMIN" ? "Barcha admin va shifokorlarga xabar yuborish" : "Faqat shu shifoxonadagi shifokorlarga xabar yuborish"}
+              >
+                <i className="ri-send-plane-2-line text-sm" />
+                Xabar jo'natish
+              </button>
+            ) : null}
+            <div className={`ml-auto flex items-center gap-1 text-xs ${dm ? "text-gray-500" : "text-gray-400"}`}>
+              <i className="ri-filter-3-line" />
+              {filtered.length} ta natija
+            </div>
           </div>
         </div>
-        {composerOpen && user?.role === "SUPER_ADMIN" ? (
+        {composerOpen && (user?.role === "SUPER_ADMIN" || user?.role === "HOSPITAL_ADMIN") ? (
           <div className={`mb-6 rounded-2xl border p-4 ${dm ? "bg-[#121826] border-[#273041]" : "bg-white border-gray-100"}`}>
             <div className="grid grid-cols-1 gap-3">
               <input
@@ -333,26 +438,58 @@ export function SuperAdminNotificationsPageContent() {
               />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <select
-                  value={composeCategory}
-                  onChange={(e) => setComposeCategory(e.target.value as Notification["category"])}
+                  value={composeRecipientType}
+                  onChange={(e) => setComposeRecipientType(e.target.value as "doctor" | "hospital_admin")}
                   className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
                 >
-                  <option value="system">Tizim</option>
-                  <option value="security">Xavfsizlik</option>
-                  <option value="hospital">Kasalxona</option>
-                  <option value="doctor">Shifokor</option>
-                  <option value="patient">Bemor</option>
-                  <option value="appointment">Navbat</option>
+                  {user?.role === "SUPER_ADMIN" ? (
+                    <>
+                      <option value="doctor">Doctor</option>
+                      <option value="hospital_admin">Hospital Admin</option>
+                    </>
+                  ) : (
+                    <option value="doctor">Doctor</option>
+                  )}
                 </select>
                 <select
-                  value={composePriority}
-                  onChange={(e) => setComposePriority(e.target.value as Notification["priority"])}
+                  value={composeCategoryId}
+                  onChange={(e) => {
+                    const nextId = e.target.value;
+                    setComposeCategoryId(nextId);
+                    const match = categoryOptions.find((item) => item.id === nextId);
+                    if (match) setComposeCategory(normalizeCategory(match.name));
+                  }}
                   className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
                 >
-                  <option value="critical">Kritik</option>
-                  <option value="high">Yuqori</option>
-                  <option value="medium">O'rta</option>
-                  <option value="low">Past</option>
+                  {categoryOptions.length === 0 ? (
+                    <option value="">Kategoriyalar yuklanmoqda...</option>
+                  ) : (
+                    categoryOptions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <select
+                  value={composePriorityId}
+                  onChange={(e) => {
+                    const nextId = e.target.value;
+                    setComposePriorityId(nextId);
+                    const match = priorityOptions.find((item) => item.id === nextId);
+                    if (match) setComposePriority(normalizePriority(match.name));
+                  }}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
+                >
+                  {priorityOptions.length === 0 ? (
+                    <option value="">Prioritetlar yuklanmoqda...</option>
+                  ) : (
+                    priorityOptions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))
+                  )}
                 </select>
                 <select
                   value={composeType}

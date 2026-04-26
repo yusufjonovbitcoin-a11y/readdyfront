@@ -1,12 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState, type RefObject } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getHaAdminStoredAvatar,
   haAdminInitialsFromName,
   HA_ADMIN_AVATAR_UPDATED_EVENT,
 } from "@/lib/haAdminProfile";
+import { prefetchCoreQueriesForPath } from "@/lib/coreQueryCache";
 
 const HA_ADMIN_DISPLAY_NAME = "Aziz Rahimov";
 
@@ -41,7 +43,11 @@ export default function HASidebar({ collapsed, onToggle, darkMode, mobileOpen, o
   ];
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const queryClient = useQueryClient();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(getHaAdminStoredAvatar);
+  const prefetchPath = (path: string) => {
+    prefetchCoreQueriesForPath(queryClient, path);
+  };
 
   useEffect(() => {
     setAvatarUrl(getHaAdminStoredAvatar());
@@ -126,6 +132,8 @@ export default function HASidebar({ collapsed, onToggle, darkMode, mobileOpen, o
                 to={item.to ?? item.path}
                 prefetch="none"
                 onClick={onCloseMobile}
+                onMouseEnter={() => prefetchPath(item.to ?? item.path)}
+                onFocus={() => prefetchPath(item.to ?? item.path)}
                 className={itemClass}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={item.label}
@@ -151,6 +159,8 @@ export default function HASidebar({ collapsed, onToggle, darkMode, mobileOpen, o
           to="/hospital-admin/support"
           prefetch="none"
           onClick={onCloseMobile}
+          onMouseEnter={() => prefetchPath("/hospital-admin/support")}
+          onFocus={() => prefetchPath("/hospital-admin/support")}
           className={`no-underline flex items-center h-11 rounded-lg transition-colors duration-150 cursor-pointer [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 ${
             showExpanded ? "px-3" : "justify-center px-2"
           } ${

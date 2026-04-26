@@ -33,6 +33,8 @@ export function DocSettingsContent() {
   /** Tanlangan rasm (faqat brauzerda; serverga yuklanmaydi) */
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -46,6 +48,17 @@ export function DocSettingsContent() {
     const fromUrl = resolveSettingsTab(searchParams.get("tab"));
     setActiveTab((prev) => (prev === fromUrl ? prev : fromUrl));
   }, [searchParams]);
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (avatarMenuRef.current?.contains(target)) return;
+      setAvatarMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [avatarMenuOpen]);
   const { darkMode, setDarkMode, patientDetailLayout, setPatientDetailLayout } = useDoctorTheme();
   const currentDoctorSession = getCurrentDoctorSession();
   const fallbackAvatar = currentDoctorSession?.avatar ?? "";
@@ -142,10 +155,9 @@ export function DocSettingsContent() {
           </p>
         </div>
 
-        <div className="flex min-w-0 gap-5">
-          {/* Sidebar Tabs */}
-          <div className="w-48 shrink-0">
-            <div className={`rounded-xl p-2 space-y-1 ${cardBase}`}>
+        <div className="min-w-0 space-y-4">
+          <div className={`rounded-xl p-2 ${cardBase}`}>
+            <div className="flex flex-wrap gap-2">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
@@ -157,14 +169,14 @@ export function DocSettingsContent() {
                       return next;
                     });
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer text-left whitespace-nowrap ${
+                  className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
                     activeTab === tab.id
                       ? darkMode
-                        ? 'bg-violet-900/40 text-violet-200'
-                        : 'bg-violet-50 text-violet-700'
+                        ? "bg-violet-900/40 text-violet-200"
+                        : "bg-violet-50 text-violet-700"
                       : darkMode
-                        ? 'text-gray-300 hover:bg-[#21262D]'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        ? "text-gray-300 hover:bg-[#21262D]"
+                        : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   <div className="w-5 h-5 flex items-center justify-center">
@@ -177,7 +189,7 @@ export function DocSettingsContent() {
           </div>
 
           {/* Content */}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className={`rounded-xl p-6 space-y-5 ${cardBase}`}>
@@ -203,31 +215,75 @@ export function DocSettingsContent() {
                     aria-hidden
                     onChange={handleAvatarFileChange}
                   />
-                  <div className="w-16 h-16 shrink-0 overflow-hidden rounded-full bg-violet-600 flex items-center justify-center">
-                    {!avatarFailed ? (
-                      <img
-                        src={localAvatarUrl ?? fallbackAvatar}
-                        alt={profile.name}
-                        width={64}
-                        height={64}
-                        className="h-full w-full object-cover"
-                        onError={() => setAvatarFailed(true)}
-                      />
-                    ) : (
-                      <span className="text-white text-xl font-bold">{fallbackInitials || "DR"}</span>
+                  <div className="relative" ref={avatarMenuRef}>
+                    <div className="w-16 h-16 shrink-0 overflow-hidden rounded-full bg-violet-600 flex items-center justify-center">
+                      {!avatarFailed ? (
+                        <img
+                          src={localAvatarUrl ?? fallbackAvatar}
+                          alt={profile.name}
+                          width={64}
+                          height={64}
+                          className="h-full w-full object-cover"
+                          onError={() => setAvatarFailed(true)}
+                        />
+                      ) : (
+                        <span className="text-white text-xl font-bold">{fallbackInitials || "DR"}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAvatarMenuOpen((prev) => !prev)}
+                      className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        darkMode
+                          ? "bg-[#21262D] border-[#161B22] text-violet-300 hover:text-violet-200"
+                          : "bg-white border-gray-100 text-violet-600 hover:text-violet-700"
+                      }`}
+                      aria-label="Profil rasmini boshqarish"
+                      title="Profil rasmini boshqarish"
+                    >
+                      <i className="ri-camera-line text-sm" aria-hidden="true"></i>
+                    </button>
+                    {avatarMenuOpen && (
+                      <div
+                        className={`absolute top-[calc(100%+8px)] left-0 z-20 min-w-[11rem] rounded-lg border p-1.5 ${
+                          darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-200"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAvatarMenuOpen(false);
+                            avatarFileInputRef.current?.click();
+                          }}
+                          className={`w-full text-left px-2.5 py-2 rounded-md text-xs font-medium transition-colors ${
+                            darkMode ? "text-violet-300 hover:bg-[#161B22]" : "text-violet-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          Rasmni o'zgartirish
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLocalAvatarUrl((prev) => {
+                              if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                              return null;
+                            });
+                            setAvatarFailed(false);
+                            setAvatarMenuOpen(false);
+                          }}
+                          disabled={!localAvatarUrl}
+                          className={`w-full text-left px-2.5 py-2 rounded-md text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            darkMode ? "text-gray-300 hover:bg-[#161B22]" : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          Suratni olib tashlash
+                        </button>
+                      </div>
                     )}
                   </div>
                   <div>
                     <p className={`text-sm font-semibold ${cardTitle}`}>{profile.name}</p>
                     <p className="text-xs text-violet-600">{profile.specialty}</p>
-                    <button
-                      type="button"
-                      aria-label="Profil rasmini tanlash"
-                      onClick={() => avatarFileInputRef.current?.click()}
-                      className={`text-xs cursor-pointer mt-1 whitespace-nowrap ${pageMuted} ${darkMode ? "hover:text-gray-200" : "hover:text-gray-700"}`}
-                    >
-                      Rasmni o'zgartirish
-                    </button>
                   </div>
                 </div>
 

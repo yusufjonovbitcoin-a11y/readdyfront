@@ -4,9 +4,13 @@ import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import {
+  createDoctorQuestionWithTemplate,
+  deleteDoctorQuestion,
+  getDoctorById,
   getDoctorQuestionCategories,
   getDoctorQuestions,
   getDoctorQuestionTemplates,
+  updateDoctorQuestion,
 } from "@/api/doctor";
 import type {
   DoctorQuestionCategoryDto,
@@ -15,11 +19,16 @@ import type {
 } from "@/api/types/doctor.types";
 import { usePageState } from "@/hooks/usePageState";
 import PageStateBoundary from "@/components/ui/PageStateBoundary";
+import { useAuth } from "@/hooks/useAuth";
+import { useAppToast } from "@/hooks/useAppToast";
+import AppToast from "@/components/ui/AppToast";
 
 interface QuestionFormData {
+  questionnaireTitle: string;
   text: string;
   category: string;
   categoryId: string;
+  answerMode: "boolean" | "text";
 }
 
 interface DoctorQuestionsPageData {
@@ -32,13 +41,14 @@ const MODAL_INERT_SELECTORS = ["header", "main", "aside"];
 
 function getDefaultQuestionFormData(categories: DoctorQuestionCategoryDto[]): QuestionFormData {
   const defaultCategory =
-    categories.find((category) => category.id === "cat-001") ??
     categories.find((category) => category.id !== "all") ??
     categories[0];
   return {
+    questionnaireTitle: "",
     text: "",
     category: defaultCategory?.name ?? "General",
     categoryId: defaultCategory?.id ?? "cat-001",
+    answerMode: "boolean",
   };
 }
 
@@ -54,7 +64,8 @@ export default function DocQuestionsPage() {
 export function DocQuestionsContent() {
   const { t } = useTranslation("doctor");
   const { darkMode } = useDoctorTheme();
-  const canMutateQuestions = false;
+  const { user } = useAuth();
+  const canMutateQuestions = true;
   const [questions, setQuestions] = useState<DocQuestion[]>([]);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -63,7 +74,19 @@ export function DocQuestionsContent() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [categories, setCategories] = useState<DoctorQuestionCategoryDto[]>([]);
   const [templates, setTemplates] = useState<DoctorQuestionTemplateDto[]>([]);
-  const [formData, setFormData] = useState<QuestionFormData>({ text: "", category: t("questions.defaultCategory"), categoryId: "cat-001" });
+  const [formData, setFormData] = useState<QuestionFormData>({
+    questionnaireTitle: "",
+    text: "",
+    category: t("questions.defaultCategory"),
+    categoryId: "cat-001",
+    answerMode: "boolean",
+  });
+  const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
+  const [doctorDepartmentId, setDoctorDepartmentId] = useState<string | null>(null);
+  const [questionAnswerModes, setQuestionAnswerModes] = useState<Record<string, "boolean" | "text">>({});
+  const [draggingQuestionId, setDraggingQuestionId] = useState<string | null>(null);
+  const [dragOverQuestionId, setDragOverQuestionId] = useState<string | null>(null);
+  const { toast, showToast } = useAppToast();
   const fetchPageData = useCallback(async (): Promise<DoctorQuestionsPageData> => {
     const [questionsData, categoriesData, templatesData] = await Promise.all([
       getDoctorQuestions(),
@@ -88,9 +111,32 @@ export function DocQuestionsContent() {
     });
   }, [pageState.data]);
 
+  useEffect(() => {
+    if (user?.role !== "DOCTOR" || !user.id || categories.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const doctor = await getDoctorById(user.id);
+        if (cancelled || !doctor?.specialty) return;
+        const matched = categories.find(
+          (category) => category.name.trim().toLowerCase() === doctor.specialty.trim().toLowerCase(),
+        );
+        if (matched) {
+          setDoctorDepartmentId(matched.id);
+        }
+      } catch {
+        // ignore, fallback to categories list
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [categories, user?.id, user?.role]);
+
   const addQuestionButtonRef = useRef<HTMLButtonElement>(null);
   const cloneButtonRef = useRef<HTMLButtonElement>(null);
   const addEditTextRef = useRef<HTMLTextAreaElement>(null);
+  const questionnaireTitleInputRef = useRef<HTMLInputElement>(null);
 
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
@@ -135,45 +181,140 @@ export function DocQuestionsContent() {
     : "bg-violet-50 text-violet-700 hover:bg-violet-100";
   const questionTextId = "doctor-question-form-text";
   const questionTextHelpId = "doctor-question-form-text-help";
+  const questionnaireTitleId = "doctor-questionnaire-form-title";
+  const questionnaireTitleHelpId = "doctor-questionnaire-form-title-help";
   const questionCategoryId = "doctor-question-form-category";
   const questionCategoryHelpId = "doctor-question-form-category-help";
+  const selectableCategories = doctorDepartmentId
+    ? categories.filter((category) => category.id === doctorDepartmentId)
+    : categories.filter((category) => category.id !== "all");
 
   const filtered = questions.filter((q) => q.text.toLowerCase().includes(search.toLowerCase()));
+  const filteredOrderIndex = new Map(filtered.map((q, index) => [q.id, index]));
 
-  const handleAdd = () => {
+  const moveQuestionBefore = (sourceId: string, targetId: string) => {
+    if (sourceId === targetId) return;
+    setQuestions((prev) => {
+      const source = prev.find((q) => q.id === sourceId);
+      const target = prev.find((q) => q.id === targetId);
+      if (!source || !target) return prev;
+
+      const sourceFilteredIndex = filteredOrderIndex.get(sourceId);
+      const targetFilteredIndex = filteredOrderIndex.get(targetId);
+      if (sourceFilteredIndex == null || targetFilteredIndex == null) return prev;
+
+      const filteredWithoutSource = filtered.filter((q) => q.id !== sourceId);
+      const insertAt = filteredWithoutSource.findIndex((q) => q.id === targetId);
+      if (insertAt < 0) return prev;
+      const reorderedFiltered = [...filteredWithoutSource];
+      reorderedFiltered.splice(insertAt, 0, source);
+      const reorderedIds = new Set(reorderedFiltered.map((q) => q.id));
+      let writeIndex = 0;
+      return prev.map((q) => {
+        if (!reorderedIds.has(q.id)) return q;
+        const nextQuestion = reorderedFiltered[writeIndex];
+        writeIndex += 1;
+        return nextQuestion;
+      });
+    });
+  };
+
+  const handleAdd = async () => {
     if (!canMutateQuestions) return;
-    if (!formData.text.trim()) return;
-    const newQ: DocQuestion = {
-      id: `dq-${Date.now()}`,
-      text: formData.text,
-      category: formData.category,
-      categoryId: formData.categoryId,
-      status: "active",
-      isCustom: true,
-      doctorId: "doc-001",
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setQuestions((prev) => [newQ, ...prev]);
-    setFormData(getDefaultQuestionFormData(categories));
-    setShowAddModal(false);
+    if (!formData.text.trim()) {
+      showToast("Savol matnini kiriting.", "error");
+      return;
+    }
+    if (!formData.questionnaireTitle.trim()) {
+      showToast("Shablon nomini kiriting.", "error");
+      return;
+    }
+    if (!formData.categoryId || formData.categoryId === "all") {
+      showToast("Bo'lim aniqlanmadi. Sahifani yangilab qayta urinib ko'ring.", "error");
+      return;
+    }
+    if (!selectableCategories.some((category) => category.id === formData.categoryId)) {
+      showToast("Tanlangan bo'lim yaroqsiz. Bo'limni qayta tanlang.", "error");
+      return;
+    }
+    setIsSubmittingQuestion(true);
+    try {
+      const createdQuestion = await createDoctorQuestionWithTemplate({
+        title: formData.questionnaireTitle,
+        text: formData.text,
+        departmentId: formData.categoryId,
+        answerMode: formData.answerMode,
+      });
+      setQuestions((prev) => [createdQuestion, ...prev]);
+      setQuestionAnswerModes((prev) => ({ ...prev, [createdQuestion.id]: formData.answerMode }));
+      setFormData(getDefaultQuestionFormData(categories));
+      setShowAddModal(false);
+    } catch (error) {
+      const errorMessage =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as { message?: unknown }).message === "string"
+          ? (error as { message: string }).message
+          : "Savolni qo'shib bo'lmadi. Bo'lim yoki API ma'lumotlarini tekshirib qayta urinib ko'ring.";
+      showToast(errorMessage, "error");
+    } finally {
+      setIsSubmittingQuestion(false);
+    }
   };
 
   const handleEdit = () => {
     if (!canMutateQuestions) return;
     if (!editingQuestion || !formData.text.trim()) return;
-    setQuestions((prev) =>
-      prev.map((q) =>
-        q.id === editingQuestion.id ? { ...q, text: formData.text, category: formData.category, categoryId: formData.categoryId } : q
-      )
-    );
-    setEditingQuestion(null);
-    setFormData(getDefaultQuestionFormData(categories));
+    void (async () => {
+      try {
+        await updateDoctorQuestion(editingQuestion.id, formData.text);
+        setQuestions((prev) =>
+          prev.map((q) =>
+            q.id === editingQuestion.id ? { ...q, text: formData.text, category: formData.category, categoryId: formData.categoryId } : q
+          )
+        );
+        setQuestionAnswerModes((prev) => ({ ...prev, [editingQuestion.id]: formData.answerMode }));
+        setEditingQuestion(null);
+        setFormData(getDefaultQuestionFormData(categories));
+        showToast("Savol muvaffaqiyatli yangilandi.", "success");
+      } catch (error) {
+        const message =
+          typeof error === "object" &&
+          error !== null &&
+          "message" in error &&
+          typeof (error as { message?: unknown }).message === "string"
+            ? (error as { message: string }).message
+            : "Savolni yangilab bo'lmadi.";
+        showToast(message, "error");
+      }
+    })();
   };
 
   const handleDelete = (id: string) => {
     if (!canMutateQuestions) return;
-    setQuestions((prev) => prev.filter((q) => q.id !== id));
-    setDeleteConfirm(null);
+    void (async () => {
+      try {
+        await deleteDoctorQuestion(id);
+        setQuestions((prev) => prev.filter((q) => q.id !== id));
+        setQuestionAnswerModes((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setDeleteConfirm(null);
+        showToast("Savol o'chirildi.", "success");
+      } catch (error) {
+        const message =
+          typeof error === "object" &&
+          error !== null &&
+          "message" in error &&
+          typeof (error as { message?: unknown }).message === "string"
+            ? (error as { message: string }).message
+            : "Savolni o'chirib bo'lmadi.";
+        showToast(message, "error");
+      }
+    })();
   };
 
   const handleToggleStatus = (id: string) => {
@@ -185,33 +326,49 @@ export function DocQuestionsContent() {
 
   const handleClone = (template: DoctorQuestionTemplateDto) => {
     if (!canMutateQuestions) return;
-    const newQ: DocQuestion = {
-      id: `dq-${Date.now()}`,
-      text: template.text,
-      category: template.category,
-      categoryId: template.categoryId,
-      status: "active",
-      isCustom: true,
-      doctorId: "doc-001",
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setQuestions((prev) => [newQ, ...prev]);
-    setShowCloneModal(false);
+    void (async () => {
+      try {
+        const created = await createDoctorQuestionWithTemplate({
+          title: template.text.slice(0, 80) || "Template question",
+          text: template.text,
+          departmentId: template.categoryId,
+          answerMode: "boolean",
+        });
+        setQuestions((prev) => [created, ...prev]);
+        setQuestionAnswerModes((prev) => ({ ...prev, [created.id]: "boolean" }));
+        setShowCloneModal(false);
+        showToast("Shablondan savol qo'shildi.", "success");
+      } catch (error) {
+        const message =
+          typeof error === "object" &&
+          error !== null &&
+          "message" in error &&
+          typeof (error as { message?: unknown }).message === "string"
+            ? (error as { message: string }).message
+            : "Shablondan savol qo'shib bo'lmadi.";
+        showToast(message, "error");
+      }
+    })();
   };
 
   const openEdit = (q: DocQuestion) => {
     setEditingQuestion(q);
-    setFormData({ text: q.text, category: q.category, categoryId: q.categoryId });
+    setFormData({
+      questionnaireTitle: q.text.slice(0, 80),
+      text: q.text,
+      category: q.category,
+      categoryId: q.categoryId,
+      answerMode: questionAnswerModes[q.id] ?? "boolean",
+    });
   };
-  const closeAddEditModal = () => {
+  const closeAddEditModal = useCallback(() => {
     setShowAddModal(false);
     setEditingQuestion(null);
-  };
+  }, []);
   const addEditModalRef = useModalA11y({
     isOpen: showAddModal || Boolean(editingQuestion),
     onClose: closeAddEditModal,
     returnFocusRef: addQuestionButtonRef,
-    initialFocusRef: addEditTextRef,
     inertSelectors: MODAL_INERT_SELECTORS,
   });
   const cloneModalRef = useModalA11y({
@@ -227,9 +384,11 @@ export function DocQuestionsContent() {
   });
 
   return (
-    <PageStateBoundary state={pageState}>
-      {() => (
-        <div className="space-y-5">
+    <>
+      <AppToast toast={toast} />
+      <PageStateBoundary state={pageState}>
+        {() => (
+          <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -253,7 +412,18 @@ export function DocQuestionsContent() {
             disabled={!canMutateQuestions}
             onClick={() => {
               setShowAddModal(true);
-              setFormData(getDefaultQuestionFormData(categories));
+              setFormData(() => {
+                const next = getDefaultQuestionFormData(categories);
+                if (!doctorDepartmentId) return next;
+                const matched = categories.find((category) => category.id === doctorDepartmentId);
+                if (!matched) return next;
+                return {
+                  ...next,
+                  categoryId: matched.id,
+                  category: matched.name,
+                  answerMode: "boolean",
+                };
+              });
             }}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -306,8 +476,39 @@ export function DocQuestionsContent() {
           {filtered.map((q, i) => (
             <div
               key={q.id}
+              draggable
+              onDragStart={() => {
+                setDraggingQuestionId(q.id);
+                setDragOverQuestionId(q.id);
+              }}
+              onDragEnter={() => {
+                if (!draggingQuestionId || draggingQuestionId === q.id) return;
+                setDragOverQuestionId(q.id);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                if (!draggingQuestionId || draggingQuestionId === q.id) return;
+                moveQuestionBefore(draggingQuestionId, q.id);
+                setDraggingQuestionId(null);
+                setDragOverQuestionId(null);
+              }}
+              onDragEnd={() => {
+                setDraggingQuestionId(null);
+                setDragOverQuestionId(null);
+              }}
               className={`rounded-xl p-4 transition-all ${cardBase} ${
                 q.status === "inactive" ? `opacity-60 ${darkMode ? "border-[#30363D]" : "border-gray-100"}` : cardHover
+              } ${
+                draggingQuestionId === q.id ? "opacity-60 scale-[0.98]" : ""
+              } ${
+                dragOverQuestionId === q.id && draggingQuestionId !== q.id
+                  ? darkMode
+                    ? "ring-2 ring-violet-500/50"
+                    : "ring-2 ring-violet-300"
+                  : ""
               }`}
             >
               <div className="flex items-start justify-between mb-3">
@@ -322,6 +523,9 @@ export function DocQuestionsContent() {
                   </span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCat}`}>{q.category}</span>
                   {q.isCustom && <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCustom}`}>{t("questions.stats.custom")}</span>}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${darkMode ? "bg-[#21262D] text-gray-300" : "bg-gray-100 text-gray-700"}`}>
+                    {questionAnswerModes[q.id] === "text" ? "Ixtiyoriy" : "HA / YO'Q"}
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -404,9 +608,64 @@ export function DocQuestionsContent() {
 
             <div className="space-y-4">
               <div>
+                <label htmlFor={questionnaireTitleId} className={`block text-sm font-medium mb-1.5 ${labelCls}`}>
+                  Shablon nomi
+                </label>
+                <input
+                  ref={questionnaireTitleInputRef}
+                  autoFocus={showAddModal && !editingQuestion}
+                  id={questionnaireTitleId}
+                  value={formData.questionnaireTitle}
+                  onChange={(e) => setFormData({ ...formData, questionnaireTitle: e.target.value })}
+                  placeholder="Masalan: Patient satisfaction survey"
+                  maxLength={120}
+                  aria-describedby={questionnaireTitleHelpId}
+                  className={fieldBase}
+                />
+                <p id={questionnaireTitleHelpId} className={`text-xs mt-1 ${textMuted}`}>
+                  120 belgigacha
+                </p>
+              </div>
+              <div>
+                <p className={`block text-sm font-medium mb-1.5 ${labelCls}`}>Javob shakli</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, answerMode: "boolean" })}
+                    className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                      formData.answerMode === "boolean"
+                        ? darkMode
+                          ? "border-violet-500 bg-violet-900/30 text-violet-200"
+                          : "border-violet-500 bg-violet-50 text-violet-700"
+                        : darkMode
+                          ? "border-[#30363D] text-gray-300 hover:bg-[#21262D]"
+                          : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    HA / YO'Q
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, answerMode: "text" })}
+                    className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                      formData.answerMode === "text"
+                        ? darkMode
+                          ? "border-violet-500 bg-violet-900/30 text-violet-200"
+                          : "border-violet-500 bg-violet-50 text-violet-700"
+                        : darkMode
+                          ? "border-[#30363D] text-gray-300 hover:bg-[#21262D]"
+                          : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    Ixtiyoriy
+                  </button>
+                </div>
+              </div>
+              <div>
                 <label htmlFor={questionTextId} className={`block text-sm font-medium mb-1.5 ${labelCls}`}>{t("questions.questionText")}</label>
                 <textarea
                   ref={addEditTextRef}
+                  autoFocus={Boolean(editingQuestion)}
                   id={questionTextId}
                   value={formData.text}
                   onChange={(e) => setFormData({ ...formData, text: e.target.value })}
@@ -418,30 +677,6 @@ export function DocQuestionsContent() {
                 />
                 <p id={questionTextHelpId} className={`text-xs mt-1 ${textMuted}`}>{formData.text.length}/500</p>
               </div>
-              <div>
-                <label htmlFor={questionCategoryId} className={`block text-sm font-medium mb-1.5 ${labelCls}`}>{t("questions.category")}</label>
-                <select
-                  id={questionCategoryId}
-                  value={formData.categoryId}
-                  onChange={(e) => {
-                    const cat = categories.find((c) => c.id === e.target.value);
-                    setFormData({ ...formData, categoryId: e.target.value, category: cat?.name || t("questions.defaultCategory") });
-                  }}
-                  aria-describedby={questionCategoryHelpId}
-                  className={`${fieldBase} cursor-pointer`}
-                >
-                  {categories
-                    .filter((c) => c.id !== "all")
-                    .map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                </select>
-                <p id={questionCategoryHelpId} className={`text-xs mt-1 ${textMuted}`}>
-                  {t("questions.category")}
-                </p>
-              </div>
             </div>
 
             <div className="flex gap-2 mt-5">
@@ -452,11 +687,20 @@ export function DocQuestionsContent() {
                 {t("common:buttons.cancel")}
               </button>
               <button
-                onClick={editingQuestion ? handleEdit : handleAdd}
-                disabled={!formData.text.trim()}
+                onClick={() => {
+                  if (editingQuestion) {
+                    handleEdit();
+                    return;
+                  }
+                  void handleAdd();
+                }}
+                disabled={
+                  !formData.text.trim() ||
+                  (!editingQuestion && (!formData.questionnaireTitle.trim() || isSubmittingQuestion))
+                }
                 className="flex-1 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors disabled:opacity-50 whitespace-nowrap"
               >
-                {editingQuestion ? t("questions.save") : t("questions.add")}
+                {editingQuestion ? t("questions.save") : isSubmittingQuestion ? "Yaratilmoqda..." : t("questions.add")}
               </button>
             </div>
           </div>
@@ -542,8 +786,9 @@ export function DocQuestionsContent() {
               </div>
             </div>
           )}
-        </div>
-      )}
-    </PageStateBoundary>
+          </div>
+        )}
+      </PageStateBoundary>
+    </>
   );
 }

@@ -2,12 +2,11 @@ import { useTranslation } from "react-i18next";
 import { useId, useMemo, useState } from "react";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
-import {
-  getHaAnalyticsBundle,
-} from "@/api/services/haAnalytics.service";
-import { getHADoctors, getHAPatients } from "@/api/services/hospitalAdminData.service";
+import { getHAPatients } from "@/api/services/hospitalAdminData.service";
 import { usePageState } from "@/hooks/usePageState";
 import { layoutSystem } from "@/styles/layoutSystem";
+import { useQuery } from "@tanstack/react-query";
+import { doctorsQueryOptions, haAnalyticsBundleQueryOptions } from "@/lib/coreQueryCache";
 
 type FlowPeriod = "daily" | "weekly" | "monthly";
 
@@ -222,15 +221,16 @@ export default function HADashboardPage() {
 export function HADashboardContent() {
   const { t } = useTranslation("hospital");
   const darkMode = useHospitalAdminDarkMode();
-  const doctorsState = usePageState(getHADoctors);
+  const doctorsState = useQuery(doctorsQueryOptions());
   const patientsState = usePageState(getHAPatients);
-  const analyticsState = usePageState(getHaAnalyticsBundle);
-  const haDoctors = doctorsState.data ?? [];
-  const haPatients = patientsState.data ?? [];
-  const haAnalyticsDailyData = analyticsState.data?.daily ?? [];
-  const haAnalyticsWeeklyData = analyticsState.data?.weekly ?? [];
-  const haAnalyticsMonthlyData = analyticsState.data?.monthly ?? [];
-  const haDoctorPerformance = analyticsState.data?.doctorPerformance ?? [];
+  const analyticsState = useQuery(haAnalyticsBundleQueryOptions());
+  const haDoctors = useMemo(() => doctorsState.data ?? [], [doctorsState.data]);
+  const haPatients = useMemo(() => patientsState.data ?? [], [patientsState.data]);
+  const analyticsData = analyticsState.data ?? null;
+  const haAnalyticsDailyData = useMemo(() => analyticsData?.daily ?? [], [analyticsData]);
+  const haAnalyticsWeeklyData = useMemo(() => analyticsData?.weekly ?? [], [analyticsData]);
+  const haAnalyticsMonthlyData = useMemo(() => analyticsData?.monthly ?? [], [analyticsData]);
+  const haDoctorPerformance = useMemo(() => analyticsData?.doctorPerformance ?? [], [analyticsData]);
   const [flowPeriod, setFlowPeriod] = useState<FlowPeriod>("daily");
 
   const flowChartData = useMemo(() => {
@@ -268,9 +268,9 @@ export function HADashboardContent() {
   ];
 
   if (
-    doctorsState.status === "loading" ||
+    doctorsState.isLoading ||
     patientsState.status === "loading" ||
-    analyticsState.status === "loading"
+    analyticsState.isLoading
   ) {
     return (
       <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-400" : "bg-white border border-gray-100 text-gray-500"}`}>
@@ -280,23 +280,23 @@ export function HADashboardContent() {
   }
 
   if (
-    doctorsState.status === "error" ||
+    doctorsState.isError ||
     patientsState.status === "error" ||
-    analyticsState.status === "error"
+    analyticsState.isError
   ) {
     return (
       <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-300" : "bg-white border border-gray-100 text-gray-700"}`}>
         <p className="mb-4">
-          {doctorsState.error ??
+          {(doctorsState.error instanceof Error ? doctorsState.error.message : null) ??
             patientsState.error ??
-            analyticsState.error}
+            (analyticsState.error instanceof Error ? analyticsState.error.message : null)}
         </p>
         <button
           type="button"
           onClick={() => {
-            void doctorsState.reload();
+            void doctorsState.refetch();
             void patientsState.reload();
-            void analyticsState.reload();
+            void analyticsState.refetch();
           }}
           className="min-h-[44px] px-4 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium"
         >

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutTheme } from "@/context/LayoutThemeContext";
@@ -32,8 +32,12 @@ export function SettingsPageContent() {
   const { t, i18n } = useTranslation("admin");
   const [searchParams, setSearchParams] = useSearchParams();
   const { darkMode: dm, setDarkMode } = useMainLayoutTheme();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => resolveSettingsTab(searchParams.get("tab")));
   const [lang, setLang] = useState<"uz" | "ru">(i18n.language === "ru" ? "ru" : "uz");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationPreferences>(() => {
     if (typeof window === "undefined") {
       return { email: true, system: true, reports: false, security: true };
@@ -65,6 +69,40 @@ export function SettingsPageContent() {
     const fromUrl = resolveSettingsTab(searchParams.get("tab"));
     setActiveTab((prev) => (prev === fromUrl ? prev : fromUrl));
   }, [searchParams]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarUrl);
+      }
+    };
+  }, [avatarUrl]);
+
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (avatarMenuRef.current?.contains(target)) return;
+      setAvatarMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [avatarMenuOpen]);
+
+  const handleAvatarFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) {
+      e.target.value = "";
+      return;
+    }
+    const next = URL.createObjectURL(file);
+    setAvatarUrl((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return next;
+    });
+    e.target.value = "";
+  };
 
   const saveNotificationPreferences = () => {
     try {
@@ -129,20 +167,76 @@ export function SettingsPageContent() {
 
               {/* Avatar */}
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center">
-                  <span className="text-white text-xl font-bold">SA</span>
+                <div className="relative" ref={avatarMenuRef}>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden
+                    onChange={handleAvatarFile}
+                  />
+                  <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center overflow-hidden">
+                    {avatarUrl ? (
+                      <img src={avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white text-xl font-bold">SA</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAvatarMenuOpen((prev) => !prev)}
+                    className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      dm
+                        ? "bg-[#1A2235] border-[#0F1117] text-emerald-400 hover:text-emerald-300"
+                        : "bg-white border-gray-100 text-emerald-600 hover:text-emerald-700"
+                    }`}
+                    aria-label={t("settings.profile.changePhoto")}
+                    title={t("settings.profile.changePhoto")}
+                  >
+                    <i className="ri-camera-line text-sm" aria-hidden="true"></i>
+                  </button>
+                  {avatarMenuOpen && (
+                    <div
+                      className={`absolute top-[calc(100%+8px)] left-0 z-20 min-w-[11rem] rounded-lg border p-1.5 ${
+                        dm ? "bg-[#1A2235] border-[#1E2130]" : "bg-white border-gray-200"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAvatarMenuOpen(false);
+                          avatarInputRef.current?.click();
+                        }}
+                        className={`w-full text-left px-2.5 py-2 rounded-md text-xs font-medium transition-colors ${
+                          dm ? "text-emerald-300 hover:bg-[#0F1117]" : "text-emerald-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {t("settings.profile.changePhoto")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAvatarUrl((prev) => {
+                            if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                            return null;
+                          });
+                          setAvatarMenuOpen(false);
+                        }}
+                        disabled={!avatarUrl}
+                        className={`w-full text-left px-2.5 py-2 rounded-md text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                          dm ? "text-gray-300 hover:bg-[#0F1117]" : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {t("settings.profile.removePhoto", { defaultValue: "Suratni olib tashlash" })}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className={`text-sm font-medium ${dm ? "text-white" : "text-gray-900"}`}>{profile.name}</p>
                   <p className="text-xs text-emerald-400 mt-0.5">{profile.role}</p>
-                  <button
-                    type="button"
-                    disabled
-                    title="Tez orada"
-                    className={`text-xs mt-1.5 whitespace-nowrap opacity-60 cursor-not-allowed ${dm ? "text-gray-400" : "text-gray-500"}`}
-                  >
-                    {t("settings.profile.changePhoto")}
-                  </button>
                 </div>
               </div>
 

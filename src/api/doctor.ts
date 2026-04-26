@@ -45,3 +45,20 @@ export function getDoctorQuestionTemplates(): Promise<DoctorQuestionTemplateDto[
 export function getDoctorAnalyticsPresets(): Promise<DoctorAnalyticsPresetsDto> {
   return doctorAdapter.getDoctorAnalyticsPresets();
 }
+
+export function createDoctorQuestionWithTemplate(input: {
+  title: string;
+  text: string;
+  departmentId: string;
+  answerMode?: "boolean" | "text";
+}): Promise<DoctorQuestionDto> {
+  return doctorAdapter.createDoctorQuestionWithTemplate(input);
+}
+
+export function updateDoctorQuestion(id: string, text: string): Promise<DoctorQuestionDto> {
+  return doctorAdapter.updateDoctorQuestion(id, text);
+}
+
+export function deleteDoctorQuestion(id: string): Promise<void> {
+  return doctorAdapter.deleteDoctorQuestion(id);
+}

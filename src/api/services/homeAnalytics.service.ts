@@ -1,6 +1,10 @@
 import { homeAdapter } from "@/api";
 import { apiRequest } from "@/api/client";
-import type { AnalyticsPeriodPointDto, TopHospitalPointDto } from "@/api/types/analytics.types";
+import type {
+  AnalyticsPeriodPointDto,
+  DoctorPerformancePointDto,
+  TopHospitalPointDto,
+} from "@/api/types/analytics.types";
 import type { Hospital } from "@/types/hospital";
 import type { HomeAuditLog } from "@/api/adapters/home.adapter";
 import {
@@ -38,6 +42,7 @@ export type HomeDashboardBundle = {
   daily: AnalyticsPeriodPointDto[];
   weekly: AnalyticsPeriodPointDto[];
   monthly: AnalyticsPeriodPointDto[];
+  doctorPerformance: DoctorPerformancePointDto[];
   topHospitals: TopHospitalPointDto[];
   hospitals: Hospital[];
   logs: HomeAuditLog[];
@@ -56,6 +61,7 @@ export async function getHomeDashboardBundle(): Promise<HomeDashboardBundle> {
     daily: dashboard.daily,
     weekly: dashboard.weekly,
     monthly: dashboard.monthly,
+    doctorPerformance: dashboard.doctorPerformance,
     topHospitals: dashboard.topHospitals,
     hospitals,
     logs: auditLogs.map((log) => ({

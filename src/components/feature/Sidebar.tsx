@@ -1,9 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState, type RefObject } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import medcoreLogoImage from "@/assets/medcore-logo.png";
 import { getSupportUnreadCount, SUPPORT_UNREAD_EVENT } from "@/lib/supportUnread";
+import { prefetchCoreQueriesForPath, prefetchSidebarWarmup } from "@/lib/coreQueryCache";
 
 interface NavItem {
   path: string;
@@ -31,6 +33,7 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
     { path: "/hospitals", icon: "ri-hospital-line", label: t("admin:sidebar.hospitals") },
     { path: "/analytics", icon: "ri-bar-chart-2-line", label: t("admin:sidebar.analytics") },
     { path: "/users", icon: "ri-team-line", label: t("admin:sidebar.users") },
+    { path: "/questions", icon: "ri-questionnaire-line", label: t("admin:sidebar.questions", { defaultValue: "Savollar" }) },
     { path: "/audit-logs", icon: "ri-shield-check-line", label: t("admin:sidebar.auditLogs") },
     { path: "/notifications", icon: "ri-notification-3-line", label: t("admin:sidebar.notifications") },
     { path: "/settings", icon: "ri-settings-3-line", label: t("admin:sidebar.settings") },
@@ -38,7 +41,11 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
 
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const queryClient = useQueryClient();
   const isSupportActive = location.pathname.startsWith("/support") || location.pathname.includes("/support");
+  const prefetchPath = (path: string) => {
+    prefetchCoreQueriesForPath(queryClient, path);
+  };
 
   useEffect(() => {
     const syncUnread = () => setSupportUnread(getSupportUnreadCount());
@@ -52,6 +59,10 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
       window.removeEventListener(SUPPORT_UNREAD_EVENT, syncUnread);
     };
   }, []);
+
+  useEffect(() => {
+    prefetchSidebarWarmup(queryClient, location.pathname);
+  }, [location.pathname, queryClient]);
 
   const handleProfileClick = async () => {
     onCloseMobile();
@@ -125,6 +136,8 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
                 to={item.to ?? item.path}
                 prefetch="none"
                 onClick={onCloseMobile}
+                onMouseEnter={() => prefetchPath(item.to ?? item.path)}
+                onFocus={() => prefetchPath(item.to ?? item.path)}
                 className={itemClass}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={item.label}
@@ -155,6 +168,8 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
           to="/support"
           prefetch="none"
           onClick={onCloseMobile}
+          onMouseEnter={() => prefetchPath("/support")}
+          onFocus={() => prefetchPath("/support")}
           className={`no-underline flex items-center h-11 rounded-lg transition-colors duration-150 cursor-pointer [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 ${
             showExpanded ? "px-3" : "justify-center px-2"
           } ${

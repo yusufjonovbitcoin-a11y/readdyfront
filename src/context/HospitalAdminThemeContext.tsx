@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from "react";
 
-export const HospitalAdminThemeContext = createContext<boolean | null>(null);
+const HospitalAdminThemeContext = createContext<boolean | null>(null);
 
 export function HospitalAdminThemeProvider({
   darkMode,
@@ -12,6 +12,11 @@ export function HospitalAdminThemeProvider({
   return (
     <HospitalAdminThemeContext.Provider value={darkMode}>{children}</HospitalAdminThemeContext.Provider>
   );
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useOptionalHospitalAdminDarkMode(): boolean | null {
+  return useContext(HospitalAdminThemeContext);
 }
 
 /** HALayout ichidagi sahifalar — header/sidebar bilan bir xil qorong‘u/yorug‘ */

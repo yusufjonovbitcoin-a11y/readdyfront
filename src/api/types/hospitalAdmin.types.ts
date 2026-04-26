@@ -46,4 +46,6 @@ export interface HAQuestionDto {
   text: string;
   templateId: string;
   order: number;
+  type?: "SELECT" | "TEXT";
+  isRequired?: boolean;
 }

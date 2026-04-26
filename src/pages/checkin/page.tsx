@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import PhoneStep from './components/PhoneStep';
 import LanguageStep from './components/LanguageStep';
 import type { CheckinLang } from './components/LanguageStep';
@@ -108,14 +108,74 @@ function SubmitErrorState({ onRetry, onBack }: { onRetry: () => void; onBack: ()
 
 export default function CheckInPage() {
   const { t } = useTranslation("checkin");
+  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const doctorId = searchParams.get('doctor_id')?.trim() ?? '';
+  const doctorId =
+    searchParams.get("doctor_id")?.trim() ??
+    searchParams.get("doctorId")?.trim() ??
+    searchParams.get("id")?.trim() ??
+    "";
   const hasValidDoctorParam = doctorId.length > 0;
   const [doctors, setDoctors] = useState<DoctorDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
-  const doctor = doctors.find(d => d.id === doctorId);
+  const currentPathWithQuery = `${location.pathname}${location.search}`;
+  const normalizeRouteToUrl = (value: string): URL | null => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+      if (/^https?:\/\//i.test(trimmed)) {
+        return new URL(trimmed);
+      }
+      const withLeadingSlash = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+      return new URL(withLeadingSlash, "https://local.checkin");
+    } catch {
+      return null;
+    }
+  };
+  const normalizeRouteLike = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed)) {
+      try {
+        const parsed = new URL(trimmed);
+        return `${parsed.pathname}${parsed.search}`;
+      } catch {
+        return trimmed;
+      }
+    }
+    return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  };
+  const routeMatchesCurrent = (candidateRoute: string): boolean => {
+    const candidateUrl = normalizeRouteToUrl(candidateRoute);
+    const currentUrl = normalizeRouteToUrl(currentPathWithQuery);
+    if (!candidateUrl || !currentUrl) return false;
+    if (candidateUrl.pathname !== currentUrl.pathname) return false;
+
+    const candidateDoctorId =
+      candidateUrl.searchParams.get("doctor_id") ??
+      candidateUrl.searchParams.get("doctorId") ??
+      candidateUrl.searchParams.get("id");
+    const currentDoctorId =
+      currentUrl.searchParams.get("doctor_id") ??
+      currentUrl.searchParams.get("doctorId") ??
+      currentUrl.searchParams.get("id");
+
+    if (candidateDoctorId) {
+      return currentDoctorId === candidateDoctorId;
+    }
+    return true;
+  };
+  const doctorByRoute = doctors.find((candidate) => {
+    const candidatePath = normalizeRouteLike(candidate.qrCode);
+    return candidatePath.length > 0 && routeMatchesCurrent(candidatePath);
+  });
+  const doctor = hasValidDoctorParam
+    ? doctors.find((d) => d.id === doctorId)
+    : doctorByRoute;
+  const resolvedDoctorId = doctor?.id ?? doctorId;
+  const hasValidDoctorIdentifier = resolvedDoctorId.length > 0;
 
   useEffect(() => {
     let active = true;
@@ -148,9 +208,13 @@ export default function CheckInPage() {
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
 
   const submitFlow = async () => {
+    if (!resolvedDoctorId) {
+      setSubmissionState("error");
+      return;
+    }
     setSubmissionState("submitting");
     try {
-      await submitCheckin({ phone, doctorId, answers });
+      await submitCheckin({ phone, doctorId: resolvedDoctorId, answers });
       try {
         await clearCheckinDraft(phone);
       } catch {
@@ -165,7 +229,7 @@ export default function CheckInPage() {
 
   if (isLoading) return <LoadingState />;
   if (loadError) return <ErrorState onRetry={() => setLoadAttempt((prev) => prev + 1)} />;
-  if (!hasValidDoctorParam) {
+  if (!hasValidDoctorIdentifier) {
     return (
       <NotFoundState
         title={t("notFound.title")}
@@ -240,7 +304,7 @@ export default function CheckInPage() {
       {step === 'questions' && (
         <QuestionsFlow
           phone={phone}
-          doctorId={doctorId}
+          doctorId={resolvedDoctorId}
           resumeDraft={resumeDraft}
           onComplete={handleQuestionsComplete}
         />

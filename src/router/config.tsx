@@ -25,6 +25,9 @@ const AnalyticsPageContent = lazy(() =>
 const UsersPageContent = lazy(() =>
   import("../pages/users/page").then((m) => ({ default: m.UsersPageContent })),
 );
+const SuperAdminQuestionsPageContent = lazy(() =>
+  import("../pages/questions/page").then((m) => ({ default: m.SuperAdminQuestionsPageContent })),
+);
 const SuperAdminNotificationsPageContent = lazy(() =>
   import("../pages/notifications/page").then((m) => ({ default: m.SuperAdminNotificationsPageContent })),
 );
@@ -154,6 +157,14 @@ const routes: RouteObject[] = [
         element: (
           <WithSuspense>
             <UsersPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "/questions",
+        element: (
+          <WithSuspense>
+            <SuperAdminQuestionsPageContent />
           </WithSuspense>
         ),
       },

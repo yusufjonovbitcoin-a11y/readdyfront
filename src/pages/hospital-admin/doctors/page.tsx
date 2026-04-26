@@ -1,18 +1,20 @@
 import { useTranslation } from "react-i18next";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
 import DoctorCard from "./components/DoctorCard";
 import DoctorFormModal from "./components/DoctorFormModal";
 import { getDoctors, updateDoctorStatus } from "@/api/doctor";
 import type { DoctorDto as HADoctor } from "@/api/types/doctor.types";
+import { createHADoctor } from "@/api/services/hospitalAdminData.service";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import StatusChip from "@/components/ui/StatusChip";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
-import { usePageState } from "@/hooks/usePageState";
 import AppToast from "@/components/ui/AppToast";
 import { useAppToast } from "@/hooks/useAppToast";
+import { doctorsQueryOptions } from "@/lib/coreQueryCache";
 
 export default function HADoctorsPage() {
   const { t } = useTranslation("hospital");
@@ -29,8 +31,10 @@ export function HADoctorsPageContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const qParam = searchParams.get("q") ?? "";
   const [doctors, setDoctors] = useState<HADoctor[]>([]);
-  const fetchDoctors = useCallback(async () => getDoctors(), []);
-  const pageState = usePageState(fetchDoctors);
+  const pageState = useQuery({
+    ...doctorsQueryOptions(),
+    queryFn: getDoctors,
+  });
   const [view, setView] = useState<'card' | 'table'>('card');
   const [search, setSearch] = useState(qParam);
   useEffect(() => {
@@ -69,7 +73,7 @@ export function HADoctorsPageContent() {
     return matchSearch && matchStatus;
   });
 
-  const handleSave = (data: Partial<HADoctor>) => {
+  const handleSave = (data: Partial<HADoctor> & { password?: string }) => {
     if (isSaving) return;
     setIsSaving(true);
     void (async () => {
@@ -116,23 +120,17 @@ export function HADoctorsPageContent() {
             showToast("Shifokor tahriri hozircha faqat interfeysda aks etdi.", "info");
           }
         } else {
-          const newDoc: HADoctor = {
-            id: `doc-${Date.now()}`,
-            name: data.name || '',
-            specialty: data.specialty || '',
-            phone: data.phone || '',
-            email: data.email || '',
-            avatar: `https://readdy.ai/api/search-image?query=professional%20doctor%20portrait%20white%20coat%20clean%20background%20high%20quality&width=200&height=200&seq=newdoc${Date.now()}&orientation=squarish`,
-            todayPatients: 0,
-            totalPatients: 0,
-            rating: 5.0,
-            status: data.status || 'active',
-            joinDate: new Date().toISOString().split('T')[0],
-            hospitalId: 'hosp-001',
-            qrCode: `doc-${Date.now()}`,
-          };
-          setDoctors((prev) => [...prev, newDoc]);
-          showToast("Yangi shifokor hozircha faqat interfeys ro'yxatiga qo'shildi.", "info");
+          if (!data.password) {
+            throw new Error("Password is required");
+          }
+          await createHADoctor({
+            name: data.name ?? "",
+            specialty: data.specialty ?? "",
+            phone: data.phone ?? "",
+            password: data.password,
+          });
+          await pageState.refetch();
+          showToast("Yangi shifokor serverga muvaffaqiyatli qo'shildi.", "success");
         }
         setShowModal(false);
         setEditingDoctor(null);
@@ -161,26 +159,26 @@ export function HADoctorsPageContent() {
   return (
     <>
       <AppToast toast={toast} />
-      {pageState.status === "loading" ? (
+      {pageState.isLoading ? (
         <div className={`rounded-xl border py-16 text-center ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
           <i className="ri-loader-4-line always-spin text-2xl text-teal-500" />
           <p className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Shifokorlar yuklanmoqda...</p>
         </div>
       ) : null}
-      {pageState.status === "error" ? (
+      {pageState.isError ? (
         <div className={`rounded-xl border py-14 text-center ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
           <i className="ri-error-warning-line text-2xl text-red-500" />
-          <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{pageState.error}</p>
+          <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{pageState.error instanceof Error ? pageState.error.message : "Shifokorlarni yuklashda xatolik yuz berdi."}</p>
           <button
             type="button"
-            onClick={pageState.reload}
+            onClick={() => { void pageState.refetch(); }}
             className="mt-4 px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium"
           >
             Qayta yuklash
           </button>
         </div>
       ) : null}
-      {pageState.status === "success" && doctors.length === 0 && !showModal ? (
+      {pageState.isSuccess && doctors.length === 0 && !showModal ? (
         <div className={`rounded-xl border py-14 text-center ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
           <i className={`ri-stethoscope-line text-3xl ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
           <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{t("doctors.empty")}</p>
@@ -194,7 +192,7 @@ export function HADoctorsPageContent() {
             </button>
             <button
               type="button"
-              onClick={pageState.reload}
+              onClick={() => { void pageState.refetch(); }}
               className={`px-4 py-2 rounded-lg text-sm font-medium ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}
             >
               Qayta tekshirish

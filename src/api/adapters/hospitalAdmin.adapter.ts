@@ -39,8 +39,57 @@ type BackendQuestionnaireDto = {
 type BackendQuestionDto = {
   id: string;
   questionnaire_id: string;
-  question_text: string;
+  question_text?: string;
+  text?: string;
+  type?: "SELECT" | "TEXT";
+  is_required?: boolean;
 };
+
+type CreateDoctorInput = {
+  name: string;
+  specialty: string;
+  phone: string;
+  password: string;
+};
+
+function isCheckinPathLike(value: string): boolean {
+  return /\/h\/[^/]+\/[^/]+\/d\/[^/\s"]+/i.test(value) || /\/checkin/i.test(value);
+}
+
+function normalizeUrlLike(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+function extractCheckinUrl(dto: BackendDoctorDto): string {
+  const dtoWithExtra = dto as BackendDoctorDto & Record<string, unknown>;
+  const knownCandidates = [
+    dtoWithExtra.checkin_url,
+    dtoWithExtra.checkinUrl,
+    dtoWithExtra.queue_url,
+    dtoWithExtra.queueUrl,
+    dtoWithExtra.registration_url,
+    dtoWithExtra.registrationUrl,
+    dtoWithExtra.link,
+    dtoWithExtra.url,
+  ];
+
+  for (const candidate of knownCandidates) {
+    if (typeof candidate === "string" && isCheckinPathLike(candidate)) {
+      return normalizeUrlLike(candidate);
+    }
+  }
+
+  for (const value of Object.values(dtoWithExtra)) {
+    if (typeof value === "string" && isCheckinPathLike(value)) {
+      return normalizeUrlLike(value);
+    }
+  }
+
+  return `/checkin?doctor_id=${encodeURIComponent(dto.id)}`;
+}
 
 function normalizeDoctor(dto: BackendDoctorDto): DoctorDto {
   return {
@@ -56,7 +105,7 @@ function normalizeDoctor(dto: BackendDoctorDto): DoctorDto {
     status: "active",
     joinDate: dto.created_at ?? new Date().toISOString(),
     hospitalId: dto.hospital_id,
-    qrCode: dto.id,
+    qrCode: extractCheckinUrl(dto),
   };
 }
 
@@ -145,10 +194,43 @@ export const hospitalAdminAdapter = {
     const questions = await apiRequest<BackendQuestionDto[]>("/api/questions");
     return questions.map((question, index) => ({
       id: question.id,
-      text: question.question_text,
+      text: question.text ?? question.question_text ?? "",
       templateId: question.questionnaire_id,
       order: index + 1,
+      type: question.type,
+      isRequired: question.is_required,
     }));
+  },
+  createDoctor: async (input: CreateDoctorInput): Promise<DoctorDto> => {
+    const departments = await apiRequest<BackendDepartmentDto[]>("/api/departments");
+    const normalizedSpecialty = input.specialty.trim().toLowerCase();
+    const matchedDepartment = departments.find((department) => department.name.trim().toLowerCase() === normalizedSpecialty);
+    const fallbackDepartment = matchedDepartment ?? departments[0];
+    if (!fallbackDepartment) {
+      throw {
+        status: 400,
+        message: "Doctor yaratish uchun avval department kerak.",
+        data: { specialty: input.specialty },
+      };
+    }
+
+    const created = await apiRequest<BackendDoctorDto>("/api/doctors", {
+      method: "POST",
+      body: JSON.stringify({
+        hospital_id: fallbackDepartment.hospital_id,
+        department_id: fallbackDepartment.id,
+        phone_number: input.phone,
+        password: input.password,
+        specialization: input.specialty,
+      }),
+    });
+
+    const normalized = normalizeDoctor(created);
+    return {
+      ...normalized,
+      name: input.name || normalized.name,
+      specialty: input.specialty || normalized.specialty,
+    };
   },
   createPatient: async (
     input: Omit<HAPatientDto, "id" | "doctorName" | "lastVisit" | "hospitalId" | "visitCount" | "dischargeRecord">,
@@ -242,33 +324,47 @@ export const hospitalAdminAdapter = {
   deleteTemplate: async (id: string): Promise<void> => {
     await apiRequest<null>(`/api/questionnaires/${encodeURIComponent(id)}`, { method: "DELETE" });
   },
-  createQuestion: async (input: Pick<HAQuestionDto, "text" | "templateId" | "order">): Promise<HAQuestionDto> => {
+  createQuestion: async (
+    input: Pick<HAQuestionDto, "text" | "templateId" | "order"> & { type?: "SELECT" | "TEXT"; isRequired?: boolean },
+  ): Promise<HAQuestionDto> => {
     const created = await apiRequest<BackendQuestionDto>("/api/questions", {
       method: "POST",
       body: JSON.stringify({
         questionnaire_id: input.templateId,
-        question_text: input.text,
+        text: input.text,
+        type: input.type ?? "SELECT",
+        is_required: input.isRequired ?? true,
+        order: input.order,
       }),
     });
     return {
       id: created.id,
-      text: created.question_text,
-      templateId: created.questionnaire_id,
+      text: created.text ?? created.question_text ?? input.text,
+      templateId: created.questionnaire_id ?? input.templateId,
       order: input.order,
+      type: created.type ?? input.type ?? "SELECT",
+      isRequired: created.is_required ?? input.isRequired ?? true,
     };
   },
-  updateQuestion: async (id: string, input: Pick<HAQuestionDto, "text">): Promise<HAQuestionDto> => {
+  updateQuestion: async (
+    id: string,
+    input: Pick<HAQuestionDto, "text"> & { type?: "SELECT" | "TEXT"; isRequired?: boolean },
+  ): Promise<HAQuestionDto> => {
     const updated = await apiRequest<BackendQuestionDto>(`/api/questions/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: JSON.stringify({
-        question_text: input.text,
+        text: input.text,
+        ...(input.type ? { type: input.type } : {}),
+        ...(typeof input.isRequired === "boolean" ? { is_required: input.isRequired } : {}),
       }),
     });
     return {
       id: updated.id,
-      text: updated.question_text,
+      text: updated.text ?? updated.question_text ?? input.text,
       templateId: updated.questionnaire_id,
       order: 1,
+      type: updated.type ?? input.type,
+      isRequired: updated.is_required ?? input.isRequired,
     };
   },
   deleteQuestion: async (id: string): Promise<void> => {

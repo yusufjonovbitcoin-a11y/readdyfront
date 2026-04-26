@@ -110,14 +110,22 @@ export function DocProfileContent() {
                 <p className="text-violet-500 font-medium">{doctor?.specialty ?? "General"}</p>
                 <p className={`text-sm mt-1 ${pageMuted}`}>{user?.hospitalName ?? "MedCore"}</p>
                 <div className="flex items-center gap-1 mt-2">
+                  {/** doctor hali yuklanmagan holatda null-safe rating */}
+                  {(() => {
+                    const safeRating = doctor?.rating ?? 0;
+                    return (
+                      <>
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="w-4 h-4 flex items-center justify-center">
                       <i
-                        className={`ri-star-fill text-sm ${i < Math.floor(doctor.rating) ? "text-amber-400" : starEmpty}`}
+                        className={`ri-star-fill text-sm ${i < Math.floor(safeRating) ? "text-amber-400" : starEmpty}`}
                       ></i>
                     </div>
                   ))}
-                    <span className={`text-sm font-semibold ml-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{doctor?.rating ?? 0}</span>
+                    <span className={`text-sm font-semibold ml-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{safeRating}</span>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               <button onClick={() => navigate("/doctor/settings")} className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${editBtn}`}>
@@ -130,7 +138,6 @@ export function DocProfileContent() {
             <div className="grid grid-cols-2 gap-4 mt-5">
               {[
                 { icon: "ri-phone-line", label: "Telefon", value: doctor?.phone ?? "-" },
-                { icon: "ri-mail-line", label: "Email", value: user?.email || "-" },
                 { icon: "ri-time-line", label: "Tajriba", value: "-" },
                 { icon: "ri-calendar-line", label: "Qo'shilgan", value: doctor?.joinDate?.slice(0, 10) ?? "-" },
               ].map((item, i) => (

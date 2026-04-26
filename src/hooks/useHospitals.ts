@@ -1,14 +1,15 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getHospitals } from "@/api/hospitals";
 import type { Hospital } from "@/types";
+import { coreQueryKeys, CORE_QUERY_STALE_MS } from "@/lib/coreQueryCache";
 
-const HOSPITALS_QUERY_KEY = ["hospitals"] as const;
+const HOSPITALS_QUERY_KEY = coreQueryKeys.hospitals;
 
 export function useHospitals() {
   const query = useQuery<Hospital[], Error>({
     queryKey: HOSPITALS_QUERY_KEY,
     queryFn: getHospitals,
-    staleTime: 60_000,
+    staleTime: CORE_QUERY_STALE_MS,
     gcTime: 5 * 60_000,
     placeholderData: keepPreviousData,
   });

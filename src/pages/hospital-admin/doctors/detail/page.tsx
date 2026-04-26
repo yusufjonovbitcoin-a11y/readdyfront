@@ -22,16 +22,21 @@ function isValidTab(value: string | null): value is TabType {
   return value !== null && (VALID_TABS as readonly string[]).includes(value);
 }
 
-function QRCodeDisplay({ doctorId, doctorName, darkMode }: { doctorId: string; doctorName: string; darkMode: boolean }) {
-  const qrUrl = useMemo(
-    () =>
-      typeof window !== "undefined"
-        ? `${window.location.origin}/checkin?doctor_id=${encodeURIComponent(doctorId)}`
-        : "",
-    [doctorId],
+function toAbsoluteCheckinUrl(rawUrl: string): string {
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return "";
+  if (typeof window === "undefined") return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `${window.location.origin}${trimmed.startsWith("/") ? trimmed : `/${trimmed}`}`;
+}
+
+function QRCodeDisplay({ doctorId, doctorName, qrUrl, darkMode }: { doctorId: string; doctorName: string; qrUrl: string; darkMode: boolean }) {
+  const resolvedQrUrl = useMemo(
+    () => toAbsoluteCheckinUrl(qrUrl),
+    [qrUrl],
   );
   const qrSize = 180;
-  const { dataUrl, loading } = useQrPngDataUrl(qrUrl, qrSize);
+  const { dataUrl, loading } = useQrPngDataUrl(resolvedQrUrl, qrSize);
   const [copyToast, setCopyToast] = useState<{ message: string; isError: boolean } | null>(null);
 
   const showCopyToast = (message: string, isError = false) => {
@@ -48,9 +53,9 @@ function QRCodeDisplay({ doctorId, doctorName, darkMode }: { doctorId: string; d
   };
 
   const handleCopy = () => {
-    if (!qrUrl) return;
+    if (!resolvedQrUrl) return;
     void (async () => {
-      const copied = await copyTextWithFallback(qrUrl);
+      const copied = await copyTextWithFallback(resolvedQrUrl);
       showCopyToast(copied ? "Nusxalandi" : "Nusxalab bo'lmadi", !copied);
     })();
   };
@@ -91,7 +96,7 @@ function QRCodeDisplay({ doctorId, doctorName, darkMode }: { doctorId: string; d
       </div>
       <div className="text-center">
         <p className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{doctorName}</p>
-        <p className={`text-xs mb-4 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{qrUrl}</p>
+        <p className={`text-xs mb-4 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{resolvedQrUrl}</p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={handleDownload}
@@ -150,10 +155,13 @@ export function HADoctorDetailContent() {
       try {
         setLoading(true);
         setLoadError(null);
-        const [doctorResponse, patientsResponse, analyticsResponse] = await Promise.all([
-          getDoctorById(id),
-          getDoctorPatients(),
-          getDoctorAnalytics(),
+        const doctorResponse = await getDoctorById(id);
+        if (!doctorResponse) {
+          throw new Error("Doctor not found");
+        }
+        const [patientsResponse, analyticsResponse] = await Promise.all([
+          getDoctorPatients().catch(() => [] as DoctorPatientDto[]),
+          getDoctorAnalytics().catch(() => [] as DoctorAnalyticsDto[]),
         ]);
         if (!mounted) return;
         setDoctor(doctorResponse);
@@ -470,7 +478,7 @@ export function HADoctorDetailContent() {
 
         {activeTab === 'qr' && (
           <div className={`rounded-xl p-8 flex justify-center ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
-            <QRCodeDisplay doctorId={doctor.id} doctorName={doctor.name} darkMode={darkMode} />
+            <QRCodeDisplay doctorId={doctor.id} doctorName={doctor.name} qrUrl={doctor.qrCode} darkMode={darkMode} />
           </div>
         )}
       </div>

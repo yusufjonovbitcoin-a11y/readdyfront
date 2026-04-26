@@ -34,6 +34,29 @@ type BackendDoctorDto = {
   } | null;
 } & Record<string, unknown>;
 
+type BackendDepartmentDto = {
+  id: string;
+  name: string;
+  hospital_id: string;
+};
+
+type BackendQuestionnaireDto = {
+  id: string;
+  title: string;
+  department_id: string;
+  hospital_id: string;
+  is_active?: boolean;
+  created_at?: string;
+};
+
+type BackendQuestionDto = {
+  id: string;
+  questionnaire_id: string;
+  question_text?: string;
+  text?: string;
+  created_at?: string;
+};
+
 function isCheckinPathLike(value: string): boolean {
   return /\/h\/[^/]+\/[^/]+\/d\/[^/\s"]+/i.test(value) || /\/checkin/i.test(value);
 }
@@ -109,20 +132,59 @@ export async function updateDoctorStatus(id: string, input: UpdateDoctorStatusIn
 }
 
 export async function getDoctorPatients(): Promise<DoctorPatientDto[]> {
-  return apiRequest<DoctorPatientDto[]>("/api/doctor/patients");
+  try {
+    return await apiRequest<DoctorPatientDto[]>("/api/doctor/patients");
+  } catch {
+    return [];
+  }
 }
 
 export async function getDoctorQuestions(): Promise<DoctorQuestionDto[]> {
-  return apiRequest<DoctorQuestionDto[]>("/api/doctor/questions");
+  try {
+    const [questions, questionnaires, departments] = await Promise.all([
+      apiRequest<BackendQuestionDto[]>("/api/questions"),
+      apiRequest<BackendQuestionnaireDto[]>("/api/questionnaires"),
+      apiRequest<BackendDepartmentDto[]>("/api/departments"),
+    ]);
+    const questionnaireMap = new Map(questionnaires.map((q) => [q.id, q]));
+    const departmentMap = new Map(departments.map((d) => [d.id, d]));
+    return questions.map((question, index) => {
+      const questionnaire = questionnaireMap.get(question.questionnaire_id);
+      const department = questionnaire ? departmentMap.get(questionnaire.department_id) : null;
+      return {
+        id: question.id,
+        text: question.text ?? question.question_text ?? "",
+        category: department?.name ?? "General",
+        categoryId: department?.id ?? "",
+        status: "active",
+        isCustom: true,
+        doctorId: "doc-001",
+        createdAt: question.created_at ?? new Date().toISOString().split("T")[0],
+      };
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function getDoctorAnalytics(): Promise<DoctorAnalyticsDto[]> {
-  return apiRequest<DoctorAnalyticsDto[]>("/api/doctor/analytics");
+  try {
+    return await apiRequest<DoctorAnalyticsDto[]>("/api/doctor/analytics");
+  } catch {
+    return [];
+  }
 }
 
 export async function getDoctorQuestionCategories(): Promise<DoctorQuestionCategoryDto[]> {
   try {
-    return await apiRequest<DoctorQuestionCategoryDto[]>("/api/doctor/questions/categories");
+    const departments = await apiRequest<BackendDepartmentDto[]>("/api/departments");
+    if (!Array.isArray(departments) || departments.length === 0) {
+      return getDefaultDoctorQuestionCategories();
+    }
+    return departments.map((department) => ({
+      id: department.id,
+      name: department.name,
+    }));
   } catch {
     return getDefaultDoctorQuestionCategories();
   }
@@ -130,7 +192,17 @@ export async function getDoctorQuestionCategories(): Promise<DoctorQuestionCateg
 
 export async function getDoctorQuestionTemplates(): Promise<DoctorQuestionTemplateDto[]> {
   try {
-    return await apiRequest<DoctorQuestionTemplateDto[]>("/api/doctor/questions/templates");
+    const [questionnaires, departments] = await Promise.all([
+      apiRequest<BackendQuestionnaireDto[]>("/api/questionnaires"),
+      apiRequest<BackendDepartmentDto[]>("/api/departments"),
+    ]);
+    const departmentMap = new Map(departments.map((d) => [d.id, d]));
+    return questionnaires.map((questionnaire) => ({
+      id: questionnaire.id,
+      text: questionnaire.title,
+      category: departmentMap.get(questionnaire.department_id)?.name ?? "General",
+      categoryId: questionnaire.department_id,
+    }));
   } catch {
     return getDefaultDoctorQuestionTemplates();
   }
@@ -142,4 +214,74 @@ export async function getDoctorAnalyticsPresets(): Promise<DoctorAnalyticsPreset
   } catch {
     return getDefaultDoctorAnalyticsPresets();
   }
+}
+
+export async function createDoctorQuestionWithTemplate(input: {
+  title: string;
+  text: string;
+  departmentId: string;
+  answerMode?: "boolean" | "text";
+}): Promise<DoctorQuestionDto> {
+  const departments = await apiRequest<BackendDepartmentDto[]>("/api/departments");
+  const selectedDepartment = departments.find((department) => department.id === input.departmentId);
+  if (!selectedDepartment) {
+    throw {
+      status: 400,
+      message: "Tanlangan bo'lim topilmadi.",
+      data: { departmentId: input.departmentId },
+    };
+  }
+
+  const questionnaire = await apiRequest<BackendQuestionnaireDto>("/api/questionnaires", {
+    method: "POST",
+    body: JSON.stringify({
+      hospital_id: selectedDepartment.hospital_id,
+      department_id: selectedDepartment.id,
+      title: input.title.trim(),
+      is_active: true,
+    }),
+  });
+
+  const createdQuestion = await apiRequest<BackendQuestionDto>("/api/questions", {
+    method: "POST",
+    body: JSON.stringify({
+      questionnaire_id: questionnaire.id,
+      text: input.text.trim(),
+      type: input.answerMode === "text" ? "TEXT" : "SELECT",
+      is_required: true,
+      order: 1,
+    }),
+  });
+
+  return {
+    id: createdQuestion.id,
+    text: createdQuestion.text ?? createdQuestion.question_text ?? input.text.trim(),
+    category: selectedDepartment.name,
+    categoryId: selectedDepartment.id,
+    status: "active",
+    isCustom: true,
+    doctorId: "doc-001",
+    createdAt: createdQuestion.created_at ?? new Date().toISOString().split("T")[0],
+  };
+}
+
+export async function updateDoctorQuestion(id: string, text: string): Promise<DoctorQuestionDto> {
+  const updated = await apiRequest<BackendQuestionDto>(`/api/questions/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ text: text.trim() }),
+  });
+  return {
+    id: updated.id,
+    text: updated.text ?? updated.question_text ?? text.trim(),
+    category: "General",
+    categoryId: "",
+    status: "active",
+    isCustom: true,
+    doctorId: "doc-001",
+    createdAt: updated.created_at ?? new Date().toISOString().split("T")[0],
+  };
+}
+
+export async function deleteDoctorQuestion(id: string): Promise<void> {
+  await apiRequest<null>(`/api/questions/${encodeURIComponent(id)}`, { method: "DELETE" });
 }

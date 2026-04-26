@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import HASidebar from "./HASidebar";
 import HAHeader from "./HAHeader";
 import { usePersistedHospitalAdminTheme } from "@/hooks/usePersistedHospitalAdminTheme";
@@ -12,10 +13,12 @@ interface HALayoutProps {
 }
 
 export default function HALayout({ children, title }: HALayoutProps) {
+  const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode] = usePersistedHospitalAdminTheme();
   const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
+  const isFullBleedRoute = pathname.includes("/support") || pathname.includes("/notifications");
 
   return (
     <HospitalAdminThemeProvider darkMode={darkMode}>
@@ -54,9 +57,9 @@ export default function HALayout({ children, title }: HALayoutProps) {
           tabIndex={-1}
           className={`transition-[margin-left] duration-300 ease-out pt-16 min-h-screen ${
             collapsed ? "md:ml-16" : "md:ml-64"
-          }`}
+          } ${isFullBleedRoute ? "h-screen overflow-hidden" : ""}`}
         >
-          <div className={layoutSystem.pagePadding}>{children}</div>
+          <div className={isFullBleedRoute ? "" : layoutSystem.pagePadding}>{children}</div>
         </main>
       </div>
     </HospitalAdminThemeProvider>

@@ -9,7 +9,7 @@ interface DoctorThemeContextValue {
   setPatientDetailLayout: (next: PatientDetailLayoutMode) => void;
 }
 
-export const DoctorThemeContext = createContext<DoctorThemeContextValue | null>(null);
+const DoctorThemeContext = createContext<DoctorThemeContextValue | null>(null);
 
 interface DoctorThemeProviderProps extends DoctorThemeContextValue {
   children: ReactNode;
@@ -35,6 +35,11 @@ export function DoctorThemeProvider({
   );
 
   return <DoctorThemeContext.Provider value={value}>{children}</DoctorThemeContext.Provider>;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useOptionalDoctorTheme(): DoctorThemeContextValue | null {
+  return useContext(DoctorThemeContext);
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

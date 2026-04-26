@@ -26,8 +26,6 @@ const RETRY_BASE_DELAY_MS = 350;
 const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
 
-let refreshFailureNotified = false;
-
 function buildUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${API_BASE_URL}${normalizedPath}`;
@@ -41,11 +39,7 @@ function normalizeError<T = unknown>(
   return { status, message, data };
 }
 
-function notifySessionFailureOnce() {
-  if (refreshFailureNotified) return;
-
-  refreshFailureNotified = true;
-
+function notifySessionFailure() {
   emitSessionFailure({
     reason: "unauthorized",
     status: 401,
@@ -83,6 +77,7 @@ export async function apiRequest<TResponse>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
+  const requestInternal = async (allowRefreshRetry: boolean): Promise<TResponse> => {
   const method = (options.method ?? "GET").toUpperCase();
   const canRetry = IDEMPOTENT_METHODS.has(method);
 
@@ -91,86 +86,100 @@ export async function apiRequest<TResponse>(
     ...options.headers,
   };
 
-  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
-    const controller = new AbortController();
-    const timeoutId = globalThis.setTimeout(
-      () => controller.abort(),
-      REQUEST_TIMEOUT_MS,
-    );
+    for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
+      const controller = new AbortController();
+      const timeoutId = globalThis.setTimeout(
+        () => controller.abort(),
+        REQUEST_TIMEOUT_MS,
+      );
 
-    const onAbort = () => controller.abort();
-    options.signal?.addEventListener("abort", onAbort, { once: true });
+      const onAbort = () => controller.abort();
+      options.signal?.addEventListener("abort", onAbort, { once: true });
 
-    try {
-      const response = await fetch(buildUrl(path), {
-        ...options,
-        method,
-        signal: controller.signal,
-        headers,
-        credentials: "include",
-      });
+      try {
+        const response = await fetch(buildUrl(path), {
+          ...options,
+          method,
+          signal: controller.signal,
+          headers,
+          credentials: "include",
+        });
 
-      const responseData = await parseResponse(response);
+        const responseData = await parseResponse(response);
 
-      if (!response.ok) {
-        const shouldRetryStatus =
-          canRetry &&
-          RETRYABLE_STATUS_CODES.has(response.status) &&
-          attempt < MAX_RETRY_ATTEMPTS;
+        if (!response.ok) {
+          const shouldRetryStatus =
+            canRetry &&
+            RETRYABLE_STATUS_CODES.has(response.status) &&
+            attempt < MAX_RETRY_ATTEMPTS;
 
-        if (shouldRetryStatus) {
-          await sleep(RETRY_BASE_DELAY_MS * (attempt + 1));
-          continue;
+          if (shouldRetryStatus) {
+            await sleep(RETRY_BASE_DELAY_MS * (attempt + 1));
+            continue;
+          }
+
+          const message =
+            typeof responseData === "object" &&
+            responseData !== null &&
+            "message" in responseData &&
+            typeof (responseData as { message?: unknown }).message === "string"
+              ? (responseData as { message: string }).message
+              : response.statusText || "Request failed";
+
+          if (response.status === 401) {
+            if (allowRefreshRetry && path !== "/api/auth/refresh") {
+              const refreshResponse = await fetch(buildUrl("/api/auth/refresh"), {
+                method: "POST",
+                credentials: "include",
+                signal: controller.signal,
+                headers,
+              });
+              if (refreshResponse.ok) {
+                return requestInternal(false);
+              }
+            }
+            notifySessionFailure();
+            throw new AuthError();
+          }
+
+          throw normalizeError(response.status, message, responseData);
         }
 
-        const message =
-          typeof responseData === "object" &&
-          responseData !== null &&
-          "message" in responseData &&
-          typeof (responseData as { message?: unknown }).message === "string"
-            ? (responseData as { message: string }).message
-            : response.statusText || "Request failed";
-
-        if (response.status === 401) {
-          notifySessionFailureOnce();
-          throw new AuthError();
+        return responseData as TResponse;
+      } catch (error) {
+        if (error instanceof AuthError) {
+          throw error;
         }
 
-        throw normalizeError(response.status, message, responseData);
-      }
 
-      return responseData as TResponse;
-    } catch (error) {
-      if (error instanceof AuthError) {
-        throw error;
-      }
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "status" in error &&
+          "message" in error
+        ) {
+          throw error;
+        }
 
+        if (isAbortError(error)) {
+          throw normalizeError(
+            0,
+            "So'rov vaqti tugadi (timeout). Internet ulanishini tekshirib qayta urinib ko'ring.",
+          );
+        }
 
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "status" in error &&
-        "message" in error
-      ) {
-        throw error;
-      }
-
-      if (isAbortError(error)) {
         throw normalizeError(
           0,
-          "So'rov vaqti tugadi (timeout). Internet ulanishini tekshirib qayta urinib ko'ring.",
+          "Tarmoq ulanishida xatolik yuz berdi. Backend bilan aloqa o'rnatilmadi.",
         );
+      } finally {
+        globalThis.clearTimeout(timeoutId);
+        options.signal?.removeEventListener("abort", onAbort);
       }
-
-      throw normalizeError(
-        0,
-        "Tarmoq ulanishida xatolik yuz berdi. Backend bilan aloqa o'rnatilmadi.",
-      );
-    } finally {
-      globalThis.clearTimeout(timeoutId);
-      options.signal?.removeEventListener("abort", onAbort);
     }
-  }
 
-  throw normalizeError(0, "So'rovni qayta yuborishda noma'lum xatolik yuz berdi.");
+    throw normalizeError(0, "So'rovni qayta yuborishda noma'lum xatolik yuz berdi.");
+  };
+
+  return requestInternal(true);
 }

@@ -4,6 +4,7 @@
     "hospitals": "Клиники",
     "analytics": "Аналитика",
     "users": "Пользователи",
+    "questions": "Вопросы",
     "auditLogs": "Аудит-логи",
     "settings": "Настройки"
   },
@@ -12,6 +13,7 @@
     "hospitals": "Клиники",
     "analytics": "Аналитика",
     "users": "Пользователи",
+    "questions": "Вопросы",
     "auditLogs": "Аудит-логи",
     "notifications": "Notifications",
     "support": "Support",

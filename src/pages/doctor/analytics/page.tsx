@@ -2,20 +2,76 @@ import { useTranslation } from "react-i18next";
 import { useCallback, useMemo, useState } from "react";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
-import { getDoctorAnalytics, getDoctorAnalyticsPresets } from "@/api/doctor";
-import type {
-  DoctorAnalyticsDto,
-  DoctorAnalyticsPeriod,
-  DoctorAnalyticsPresetsDto,
-} from "@/api/types/doctor.types";
+import { getDoctorAnalytics } from "@/api/doctor";
+import type { DoctorAnalyticsDto, DoctorAnalyticsPeriod } from "@/api/types/doctor.types";
 import { usePageState } from "@/hooks/usePageState";
 import PageStateBoundary from "@/components/ui/PageStateBoundary";
+import { useAuth } from "@/hooks/useAuth";
 
 type Period = DoctorAnalyticsPeriod;
 
 interface DoctorAnalyticsPageData {
   analytics: DoctorAnalyticsDto[];
-  presets: DoctorAnalyticsPresetsDto;
+}
+
+type ChartPoint = { label: string; patients: number; diagnoses: number; avgDuration: number };
+type PeakPoint = { hour: string; count: number };
+
+function formatPercentTrend(current: number, previous: number): string {
+  if (previous <= 0) return current > 0 ? "+100%" : "0%";
+  const delta = Math.round(((current - previous) / previous) * 100);
+  return `${delta > 0 ? "+" : ""}${delta}%`;
+}
+
+function formatMinutesTrend(current: number, previous: number): string {
+  const delta = current - previous;
+  if (delta === 0) return "0 daq";
+  return `${delta > 0 ? "+" : ""}${delta} daq`;
+}
+
+function bucketByPeriod(rows: DoctorAnalyticsDto[], period: Period): ChartPoint[] {
+  if (period === "daily") {
+    return rows.map((d) => ({
+      label: d.date.slice(5),
+      patients: d.patients,
+      diagnoses: d.diagnoses,
+      avgDuration: d.avgDuration,
+    }));
+  }
+
+  const bucketMap = new Map<string, { label: string; patients: number; diagnoses: number; totalDuration: number; count: number }>();
+  for (const row of rows) {
+    const d = new Date(row.date);
+    if (Number.isNaN(d.getTime())) continue;
+
+    let key = "";
+    let label = "";
+    if (period === "weekly") {
+      const day = d.getDay();
+      const diffToMonday = day === 0 ? 6 : day - 1;
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - diffToMonday);
+      key = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+      label = `${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+    } else {
+      key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      label = key;
+    }
+
+    const current = bucketMap.get(key) ?? { label, patients: 0, diagnoses: 0, totalDuration: 0, count: 0 };
+    current.patients += row.patients;
+    current.diagnoses += row.diagnoses;
+    current.totalDuration += row.avgDuration;
+    current.count += 1;
+    bucketMap.set(key, current);
+  }
+
+  return Array.from(bucketMap.values()).map((item) => ({
+    label: item.label,
+    patients: item.patients,
+    diagnoses: item.diagnoses,
+    avgDuration: item.count > 0 ? Math.round(item.totalDuration / item.count) : 0,
+  }));
 }
 
 export default function DocAnalyticsPage() {
@@ -31,70 +87,63 @@ export function DocAnalyticsContent() {
   const { t } = useTranslation("doctor");
   const [period, setPeriod] = useState<Period>("weekly");
   const { darkMode } = useDoctorTheme();
+  const { user } = useAuth();
   const fetchAnalyticsPageData = useCallback(async (): Promise<DoctorAnalyticsPageData> => {
-    const [analytics, presets] = await Promise.all([getDoctorAnalytics(), getDoctorAnalyticsPresets()]);
-    return { analytics, presets };
+    const analytics = await getDoctorAnalytics();
+    return { analytics };
   }, []);
   const pageState = usePageState<DoctorAnalyticsPageData>(fetchAnalyticsPageData);
 
   const analytics = useMemo(() => {
     const docAnalytics = pageState.data?.analytics ?? [];
-    const presets = pageState.data?.presets;
-    let chartData: { label: string; patients: number; diagnoses: number; avgDuration?: number }[];
-
-    if (period === "daily") {
-      chartData = docAnalytics.map((d) => ({
-        label: d.date.slice(5),
-        patients: d.patients,
-        diagnoses: d.diagnoses,
-        avgDuration: d.avgDuration,
-      }));
-    } else if (period === "weekly") {
-      chartData = presets?.weekly ?? [];
-    } else {
-      chartData = presets?.monthly ?? [];
-    }
+    const chartData = bucketByPeriod(docAnalytics, period);
+    const previousPeriodData =
+      period === "daily" ? bucketByPeriod(docAnalytics, "weekly") : bucketByPeriod(docAnalytics, "daily");
 
     const totalPatients = chartData.reduce((s, d) => s + d.patients, 0);
     const totalDiagnoses = chartData.reduce((s, d) => s + d.diagnoses, 0);
-
-    let avgMinutes: number;
-    if (period === "daily") {
-      const withAvg = chartData.filter((d): d is typeof d & { avgDuration: number } => d.avgDuration != null);
-      avgMinutes =
-        withAvg.length > 0
-          ? Math.round(withAvg.reduce((s, d) => s + d.avgDuration, 0) / withAvg.length)
-          : 0;
-    } else {
-      const withAvg = chartData as { avgDuration: number }[];
-      avgMinutes =
-        withAvg.length > 0
-          ? Math.round(withAvg.reduce((s, d) => s + (d as { avgDuration: number }).avgDuration, 0) / withAvg.length)
-          : 0;
-    }
+    const avgMinutes =
+      chartData.length > 0
+        ? Math.round(chartData.reduce((s, d) => s + d.avgDuration, 0) / chartData.length)
+        : 0;
 
     const efficiencyPct =
       totalPatients > 0 ? Math.round((totalDiagnoses / totalPatients) * 100) : 0;
 
     const maxVal = Math.max(...chartData.map((d) => d.patients), 1);
 
-    const peakHours = presets?.peakHours[period] ?? [];
+    const peakHours: PeakPoint[] = chartData.map((d) => ({ hour: d.label, count: d.patients }));
     const maxPeak = Math.max(...peakHours.map((h) => h.count), 1);
     const peakSlot =
       peakHours.length > 0
         ? peakHours.reduce((best, current) => (current.count > best.count ? current : best), peakHours[0])
         : { hour: "--:--", count: 0 };
 
-    const shares = presets?.diagnosisShares[period] ?? [];
-    const diagnosisList = shares.map((row) => ({
-      name: row.name,
-      color: row.color,
-      count: totalDiagnoses > 0 ? Math.max(1, Math.round((row.share / 100) * totalDiagnoses)) : 0,
-    }));
+    const diagnosisList = chartData
+      .filter((row) => row.diagnoses > 0)
+      .slice(0, 6)
+      .map((row, idx) => ({
+        name: row.label,
+        color: idx % 2 === 0 ? "bg-violet-500" : "bg-green-400",
+        count: row.diagnoses,
+      }));
     const totalDiagListed = diagnosisList.reduce((s, d) => s + d.count, 0);
 
-    const trends =
-      presets?.trends[period] ?? { patients: "0%", diagnoses: "0%", avgTime: "0 daq", efficiency: "0%" };
+    const previousPatients = previousPeriodData.reduce((sum, row) => sum + row.patients, 0);
+    const previousDiagnoses = previousPeriodData.reduce((sum, row) => sum + row.diagnoses, 0);
+    const previousAvgMinutes =
+      previousPeriodData.length > 0
+        ? Math.round(previousPeriodData.reduce((s, d) => s + d.avgDuration, 0) / previousPeriodData.length)
+        : 0;
+    const previousEfficiency =
+      previousPatients > 0 ? Math.round((previousDiagnoses / previousPatients) * 100) : 0;
+
+    const trends = {
+      patients: formatPercentTrend(totalPatients, previousPatients),
+      diagnoses: formatPercentTrend(totalDiagnoses, previousDiagnoses),
+      avgTime: formatMinutesTrend(avgMinutes, previousAvgMinutes),
+      efficiency: formatPercentTrend(efficiencyPct, previousEfficiency),
+    };
 
     return {
       chartData,
@@ -151,7 +200,7 @@ export function DocAnalyticsContent() {
       <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className={`text-xl font-bold ${titleText}`}>{t("analytics.title")}</h2>
-          <p className={`text-sm mt-0.5 ${mutedText}`}>Dr. Alisher Karimov — Kardiologiya</p>
+          <p className={`text-sm mt-0.5 ${mutedText}`}>{user?.name ?? "Doctor"}</p>
         </div>
         <div className={`flex items-center rounded-xl p-1 ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
           {(["daily", "weekly", "monthly"] as Period[]).map((p) => (
@@ -270,7 +319,7 @@ export function DocAnalyticsContent() {
                 }`}
                 style={{ height: `${(h.count / maxPeak) * 80}px` }}
               ></div>
-              <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{h.hour.slice(0, 2)}</span>
+              <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{h.hour}</span>
             </div>
           ))}
         </div>

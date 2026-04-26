@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { PageState } from "@/hooks/usePageState";
+import { useAnyDarkMode } from "@/context/useAnyDarkMode";
 
 type PageStateBoundaryProps<T> = {
   state: Pick<PageState<T>, "status" | "data" | "error" | "reload">;
@@ -11,7 +12,7 @@ type PageStateBoundaryProps<T> = {
   className?: string;
 };
 
-const defaultCardClassName = "rounded-xl border py-14 text-center bg-white dark:bg-[#141824]";
+const defaultCardClassName = "rounded-xl border py-14 text-center";
 
 function DefaultLoadingFallback({ className }: { className: string }) {
   return (
@@ -64,8 +65,14 @@ export default function PageStateBoundary<T>({
   emptyFallback,
   className = defaultCardClassName,
 }: PageStateBoundaryProps<T>) {
+  const darkMode = useAnyDarkMode();
+  const resolvedClassName =
+    className === defaultCardClassName
+      ? `${defaultCardClassName} ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`
+      : className;
+
   if (state.status === "loading") {
-    return <>{loadingFallback ?? <DefaultLoadingFallback className={className} />}</>;
+    return <>{loadingFallback ?? <DefaultLoadingFallback className={resolvedClassName} />}</>;
   }
 
   if (state.status === "error") {
@@ -77,17 +84,17 @@ export default function PageStateBoundary<T>({
       <>
         {errorFallback
           ? errorFallback(errorMessage, retry)
-          : <DefaultErrorFallback className={className} error={errorMessage} retry={retry} />}
+          : <DefaultErrorFallback className={resolvedClassName} error={errorMessage} retry={retry} />}
       </>
     );
   }
 
   if (state.data === null) {
-    return <>{emptyFallback ?? <DefaultEmptyFallback className={className} />}</>;
+    return <>{emptyFallback ?? <DefaultEmptyFallback className={resolvedClassName} />}</>;
   }
 
   if (isEmpty?.(state.data)) {
-    return <>{emptyFallback ?? <DefaultEmptyFallback className={className} />}</>;
+    return <>{emptyFallback ?? <DefaultEmptyFallback className={resolvedClassName} />}</>;
   }
 
   return <>{children(state.data)}</>;

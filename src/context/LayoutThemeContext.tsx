@@ -5,7 +5,7 @@ export type LayoutThemeValue = {
   setDarkMode: (dark: boolean) => void;
 };
 
-export const LayoutThemeContext = createContext<LayoutThemeValue | null>(null);
+const LayoutThemeContext = createContext<LayoutThemeValue | null>(null);
 
 export function LayoutThemeProvider({
   darkMode,
@@ -21,6 +21,11 @@ export function LayoutThemeProvider({
       {children}
     </LayoutThemeContext.Provider>
   );
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useOptionalMainLayoutTheme(): LayoutThemeValue | null {
+  return useContext(LayoutThemeContext);
 }
 
 /** MainLayout ichidagi kontentda — header/sidebar bilan bir xil tema */

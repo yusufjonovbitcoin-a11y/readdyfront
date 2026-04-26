@@ -4,6 +4,7 @@
     "hospitals": "Kasalxonalar",
     "analytics": "Tahlil",
     "users": "Foydalanuvchilar",
+    "questions": "Savollar",
     "auditLogs": "Audit Logs",
     "settings": "Sozlamalar"
   },
@@ -12,6 +13,7 @@
     "hospitals": "Kasalxonalar",
     "analytics": "Tahlil",
     "users": "Foydalanuvchilar",
+    "questions": "Savollar",
     "auditLogs": "Audit Logs",
     "notifications": "Notifications",
     "support": "Support",

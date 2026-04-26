@@ -9,11 +9,22 @@ import type { DoctorDto } from "@/api/types/doctor.types";
 
 export type HAPatient = HAPatientDto;
 export type HACategory = HACategoryDto;
+export type HADepartment = HACategoryDto;
 export type HAQuestionTemplate = HAQuestionTemplateDto;
 export type HAQuestion = HAQuestionDto;
+export type CreateHADoctorInput = {
+  name: string;
+  specialty: string;
+  phone: string;
+  password: string;
+};
 
 export async function getHADoctors(): Promise<DoctorDto[]> {
   return hospitalAdminAdapter.getDoctors();
+}
+
+export async function createHADoctor(input: CreateHADoctorInput): Promise<DoctorDto> {
+  return hospitalAdminAdapter.createDoctor(input);
 }
 
 export async function getHAPatients(): Promise<HAPatientDto[]> {
@@ -21,6 +32,10 @@ export async function getHAPatients(): Promise<HAPatientDto[]> {
 }
 
 export async function getHAQuestionCategories(): Promise<HACategoryDto[]> {
+  return hospitalAdminAdapter.getCategories();
+}
+
+export async function getHADepartments(): Promise<HADepartment[]> {
   return hospitalAdminAdapter.getCategories();
 }
 
@@ -81,12 +96,21 @@ export async function deleteHAQuestionTemplate(id: string): Promise<void> {
   return hospitalAdminAdapter.deleteTemplate(id);
 }
 
-export async function createHAQuestion(data: { text: string; templateId: string; order: number }): Promise<HAQuestionDto> {
+export async function createHAQuestion(data: {
+  text: string;
+  templateId: string;
+  order: number;
+  type?: "SELECT" | "TEXT";
+  isRequired?: boolean;
+}): Promise<HAQuestionDto> {
   return hospitalAdminAdapter.createQuestion(data);
 }
 
-export async function updateHAQuestion(id: string, text: string): Promise<HAQuestionDto> {
-  return hospitalAdminAdapter.updateQuestion(id, { text });
+export async function updateHAQuestion(
+  id: string,
+  data: { text: string; type?: "SELECT" | "TEXT"; isRequired?: boolean },
+): Promise<HAQuestionDto> {
+  return hospitalAdminAdapter.updateQuestion(id, data);
 }
 
 export async function deleteHAQuestion(id: string): Promise<void> {

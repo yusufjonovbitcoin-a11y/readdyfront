@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import DocSidebar from "./DocSidebar";
 import DocHeader from "./DocHeader";
 import { usePersistedDoctorTheme } from "@/hooks/usePersistedDoctorTheme";
@@ -13,11 +14,15 @@ interface DocLayoutProps {
 }
 
 export default function DocLayout({ children, title }: DocLayoutProps) {
+  const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode, setDarkMode] = usePersistedDoctorTheme();
   const [patientDetailLayout, setPatientDetailLayout] = usePersistedPatientDetailLayout();
   const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
+  const isFullBleedRoute =
+    pathname.startsWith("/doctor/support") ||
+    pathname.startsWith("/doctor/notifications");
 
   return (
     <DoctorThemeProvider
@@ -63,7 +68,7 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
             collapsed ? "md:ml-16" : "md:ml-64"
           }`}
         >
-          <div className={`min-w-0 ${layoutSystem.pagePadding}`}>{children}</div>
+          <div className={`min-w-0 ${isFullBleedRoute ? "" : layoutSystem.pagePadding}`}>{children}</div>
         </main>
       </div>
     </DoctorThemeProvider>

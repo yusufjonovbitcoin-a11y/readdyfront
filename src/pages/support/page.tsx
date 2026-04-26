@@ -1,8 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { mockSupportTickets, type SupportTicket, type SupportMessage } from "@/mocks/support";
 import { useAnyDarkMode } from "@/context/useAnyDarkMode";
 import { readSupportTicketsState, writeSupportTicketsState } from "@/lib/supportUnread";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  createSupportMessage,
+  createSupportTicket,
+  getSupportTickets,
+  type SupportMessage,
+  type SupportTicket,
+  updateSupportTicketStatus,
+} from "@/api/services/support.service";
 
 const statusConfig: Record<string, { label: string; color: string; dot: string }> = {
   open: { label: "Ochiq", color: "text-sky-600 bg-sky-50 border-sky-100", dot: "bg-sky-500" },
@@ -59,6 +66,22 @@ export function SupportPageContent() {
   }, [tickets]);
 
   useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const remoteTickets = await getSupportTickets();
+      if (cancelled || remoteTickets.length === 0) return;
+      setTickets(remoteTickets);
+      setActiveTicket((prev) => {
+        if (!prev) return remoteTickets[0] ?? null;
+        return remoteTickets.find((ticket) => ticket.id === prev.id) ?? remoteTickets[0] ?? null;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!user || isSuperAdmin) return;
     const roleForChat = user.role === "DOCTOR" ? "doctor" : "hospital_admin";
     const existing = tickets.find((ticket) => ticket.id === `chat-${user.id}`);
@@ -81,8 +104,21 @@ export function SupportPageContent() {
       updatedAt: new Date().toISOString(),
       messages: [],
     };
-    setTickets((prev) => [...prev, personalTicket]);
-    setActiveTicket(personalTicket);
+    void (async () => {
+      const createdRemote = await createSupportTicket({
+        subject: personalTicket.subject,
+        fromRole: personalTicket.fromRole,
+        fromName: personalTicket.fromName,
+        fromAvatar: personalTicket.fromAvatar,
+        fromHospital: personalTicket.fromHospital,
+        status: personalTicket.status,
+        priority: personalTicket.priority,
+        category: personalTicket.category,
+      });
+      const ticketToUse = createdRemote ?? personalTicket;
+      setTickets((prev) => [...prev, ticketToUse]);
+      setActiveTicket(ticketToUse);
+    })();
   }, [isSuperAdmin, tickets, user]);
 
   const filtered = tickets.filter((t) => {
@@ -134,6 +170,16 @@ export function SupportPageContent() {
     setActiveTicket((prev) =>
       prev ? { ...prev, messages: [...prev.messages, msg], status: "in_progress" } : prev
     );
+    void createSupportMessage(activeTicket.id, {
+      ticketId: activeTicket.id,
+      senderRole: msg.senderRole,
+      senderName: msg.senderName,
+      senderAvatar: msg.senderAvatar,
+      content: msg.content,
+      time: msg.time,
+      date: msg.date,
+      read: msg.read,
+    });
     setReply("");
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   };
@@ -141,6 +187,7 @@ export function SupportPageContent() {
   const changeStatus = (ticketId: string, status: SupportTicket["status"]) => {
     setTickets((prev) => prev.map((t) => t.id === ticketId ? { ...t, status } : t));
     setActiveTicket((prev) => prev && prev.id === ticketId ? { ...prev, status } : prev);
+    void updateSupportTicketStatus(ticketId, status);
   };
 
   const userChatTicket = !isSuperAdmin && user
@@ -149,9 +196,9 @@ export function SupportPageContent() {
 
   if (!isSuperAdmin) {
     return (
-      <div className={`flex h-[calc(100vh-4rem)] w-full overflow-hidden ${darkMode ? "bg-[#0F1117]" : "bg-white"}`}>
+      <>
         {userChatTicket ? (
-          <div className={`h-full flex-1 flex flex-col min-w-0 ${darkMode ? "bg-[#0F1117]" : ""}`}>
+          <div className={`h-[calc(100vh-4rem)] w-full flex flex-col min-w-0 ${darkMode ? "bg-[#0F1117]" : "bg-white"}`}>
             <div className={`px-6 py-4 border-b flex items-center gap-4 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 bg-emerald-500">
                 SA
@@ -251,11 +298,11 @@ export function SupportPageContent() {
             </div>
           </div>
         ) : (
-          <div className={`flex-1 flex items-center justify-center ${darkMode ? "bg-[#0F1117]" : "bg-gray-50"}`}>
+          <div className={`h-[calc(100vh-4rem)] w-full flex items-center justify-center ${darkMode ? "bg-[#0F1117]" : "bg-gray-50"}`}>
             <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Chat yuklanmoqda...</p>
           </div>
         )}
-      </div>
+      </>
     );
   }
 
