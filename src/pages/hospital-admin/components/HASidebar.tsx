@@ -36,7 +36,6 @@ export default function HASidebar({ collapsed, onToggle, darkMode, mobileOpen, o
     { path: "/hospital-admin", icon: "ri-dashboard-line", label: t("sidebar.dashboard") },
     { path: "/hospital-admin/doctors", icon: "ri-stethoscope-line", label: t("sidebar.doctors") },
     { path: "/hospital-admin/patients", icon: "ri-user-heart-line", label: t("sidebar.patients") },
-    { path: "/hospital-admin/questions", icon: "ri-questionnaire-line", label: t("sidebar.questions") },
     { path: "/hospital-admin/analytics", icon: "ri-bar-chart-2-line", label: t("sidebar.analytics") },
     { path: "/hospital-admin/notifications", icon: "ri-notification-3-line", label: t("sidebar.notifications") },
     { path: "/hospital-admin/settings", icon: "ri-settings-3-line", label: t("sidebar.settings") },
@@ -153,35 +152,6 @@ export default function HASidebar({ collapsed, onToggle, darkMode, mobileOpen, o
           })}
         </div>
       </nav>
-
-      <div className={`px-2 pb-2 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
-        <Link
-          to="/hospital-admin/support"
-          prefetch="none"
-          onClick={onCloseMobile}
-          onMouseEnter={() => prefetchPath("/hospital-admin/support")}
-          onFocus={() => prefetchPath("/hospital-admin/support")}
-          className={`no-underline flex items-center h-11 rounded-lg transition-colors duration-150 cursor-pointer [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 ${
-            showExpanded ? "px-3" : "justify-center px-2"
-          } ${
-            location.pathname.startsWith("/hospital-admin/support")
-              ? darkMode
-                ? "bg-teal-900/40 text-teal-400 active:bg-teal-900/60 active:text-teal-300"
-                : "bg-teal-50 text-teal-600 active:bg-teal-100 active:text-teal-700"
-              : darkMode
-                ? "text-gray-400 hover:bg-[#1A2235] hover:text-white active:bg-[#243044] active:text-white"
-                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100 active:text-gray-900"
-          }`}
-          aria-current={location.pathname.startsWith("/hospital-admin/support") ? "page" : undefined}
-          aria-label={t("sidebar.support")}
-          title={t("sidebar.support")}
-        >
-          <div className="w-5 h-5 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-            <i className="ri-customer-service-2-line text-base"></i>
-          </div>
-          {showExpanded && <span className="ml-3 text-sm font-medium whitespace-nowrap">{t("sidebar.support")}</span>}
-        </Link>
-      </div>
 
       {/* Chiqish (Super Admin sidebar bilan bir xil: pastki blok → login) */}
       <div className={`p-3 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>

@@ -7,8 +7,8 @@ import ProtectedRoute from "./ProtectedRoute";
 import { RouteFallback, RootIndexRedirect, WithSuspense } from "./helpers";
 
 const LoginPage = lazy(() => import("../pages/login/page"));
-const NotFoundPage = lazy(() => import("../pages/NotFound"));
 const CheckInPage = lazy(() => import("../pages/checkin/page"));
+const NotFoundPage = lazy(() => import("../pages/NotFound"));
 
 const DashboardContent = lazy(() =>
   import("../pages/home/page").then((m) => ({ default: m.DashboardContent })),
@@ -25,11 +25,11 @@ const AnalyticsPageContent = lazy(() =>
 const UsersPageContent = lazy(() =>
   import("../pages/users/page").then((m) => ({ default: m.UsersPageContent })),
 );
-const SuperAdminQuestionsPageContent = lazy(() =>
-  import("../pages/questions/page").then((m) => ({ default: m.SuperAdminQuestionsPageContent })),
-);
 const SuperAdminNotificationsPageContent = lazy(() =>
   import("../pages/notifications/page").then((m) => ({ default: m.SuperAdminNotificationsPageContent })),
+);
+const SuperAdminQuestionsPageContent = lazy(() =>
+  import("../pages/questions/page").then((m) => ({ default: m.SuperAdminQuestionsPageContent })),
 );
 const SettingsPageContent = lazy(() =>
   import("../pages/settings/page").then((m) => ({ default: m.SettingsPageContent })),
@@ -53,9 +53,6 @@ const HADoctorDetailContent = lazy(() =>
 const HAPatientsPageContent = lazy(() =>
   import("../pages/hospital-admin/patients/page").then((m) => ({ default: m.HAPatientsPageContent })),
 );
-const HAQuestionsPageContent = lazy(() =>
-  import("../pages/hospital-admin/questions/page").then((m) => ({ default: m.HAQuestionsPageContent })),
-);
 const HAAnalyticsPageContent = lazy(() =>
   import("../pages/hospital-admin/analytics/page").then((m) => ({ default: m.HAAnalyticsPageContent })),
 );
@@ -72,20 +69,17 @@ const DocPatientDetailRouteContent = lazy(() =>
 const DocHistoryContent = lazy(() =>
   import("../pages/doctor/history/page").then((m) => ({ default: m.DocHistoryContent })),
 );
-const DocQuestionsContent = lazy(() =>
-  import("../pages/doctor/questions/page").then((m) => ({ default: m.DocQuestionsContent })),
-);
 const DocAnalyticsContent = lazy(() =>
   import("../pages/doctor/analytics/page").then((m) => ({ default: m.DocAnalyticsContent })),
 );
 const DocSettingsContent = lazy(() =>
   import("../pages/doctor/settings/page").then((m) => ({ default: m.DocSettingsContent })),
 );
+const DocQuestionsContent = lazy(() =>
+  import("../pages/doctor/questions/page").then((m) => ({ default: m.DocQuestionsContent })),
+);
 const DocProfileContent = lazy(() =>
   import("../pages/doctor/profile/page").then((m) => ({ default: m.DocProfileContent })),
-);
-const SupportPageContent = lazy(() =>
-  import("../pages/support/page").then((m) => ({ default: m.SupportPageContent })),
 );
 const NotificationsPageContent = lazy(() =>
   import("../pages/notifications/page").then((m) => ({ default: m.SuperAdminNotificationsPageContent })),
@@ -104,6 +98,22 @@ const routes: RouteObject[] = [
   {
     path: "/",
     element: <RootIndexRedirect />,
+  },
+  {
+    path: "/checkin",
+    element: (
+      <WithSuspense>
+        <CheckInPage />
+      </WithSuspense>
+    ),
+  },
+  {
+    path: "/h/:hospitalId/:departmentSlug/d/:doctorId",
+    element: (
+      <WithSuspense>
+        <CheckInPage />
+      </WithSuspense>
+    ),
   },
   {
     element: (
@@ -161,18 +171,18 @@ const routes: RouteObject[] = [
         ),
       },
       {
-        path: "/questions",
-        element: (
-          <WithSuspense>
-            <SuperAdminQuestionsPageContent />
-          </WithSuspense>
-        ),
-      },
-      {
         path: "/notifications",
         element: (
           <WithSuspense>
             <SuperAdminNotificationsPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "/questions",
+        element: (
+          <WithSuspense>
+            <SuperAdminQuestionsPageContent />
           </WithSuspense>
         ),
       },
@@ -197,14 +207,6 @@ const routes: RouteObject[] = [
         element: (
           <WithSuspense>
             <SettingsPageContent />
-          </WithSuspense>
-        ),
-      },
-      {
-        path: "/support",
-        element: (
-          <WithSuspense>
-            <SupportPageContent />
           </WithSuspense>
         ),
       },
@@ -250,14 +252,6 @@ const routes: RouteObject[] = [
         ),
       },
       {
-        path: "/hospital-admin/questions",
-        element: (
-          <WithSuspense>
-            <HAQuestionsPageContent />
-          </WithSuspense>
-        ),
-      },
-      {
         path: "/hospital-admin/analytics",
         element: (
           <WithSuspense>
@@ -270,14 +264,6 @@ const routes: RouteObject[] = [
         element: (
           <WithSuspense>
             <HASettingsPageContent />
-          </WithSuspense>
-        ),
-      },
-      {
-        path: "/hospital-admin/support",
-        element: (
-          <WithSuspense>
-            <SupportPageContent />
           </WithSuspense>
         ),
       },
@@ -324,14 +310,6 @@ const routes: RouteObject[] = [
         ),
       },
       {
-        path: "questions",
-        element: (
-          <WithSuspense>
-            <DocQuestionsContent />
-          </WithSuspense>
-        ),
-      },
-      {
         path: "analytics",
         element: (
           <WithSuspense>
@@ -356,14 +334,6 @@ const routes: RouteObject[] = [
         ),
       },
       {
-        path: "support",
-        element: (
-          <WithSuspense>
-            <SupportPageContent />
-          </WithSuspense>
-        ),
-      },
-      {
         path: "notifications",
         element: (
           <WithSuspense>
@@ -371,15 +341,15 @@ const routes: RouteObject[] = [
           </WithSuspense>
         ),
       },
+      {
+        path: "questions",
+        element: (
+          <WithSuspense>
+            <DocQuestionsContent />
+          </WithSuspense>
+        ),
+      },
     ],
-  },
-  {
-    path: "/checkin",
-    element: (
-      <WithSuspense>
-        <CheckInPage />
-      </WithSuspense>
-    ),
   },
   {
     path: "*",

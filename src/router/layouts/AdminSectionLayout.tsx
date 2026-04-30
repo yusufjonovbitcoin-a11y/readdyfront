@@ -10,7 +10,6 @@ function getAdminTitle(pathname: string, t: (key: string) => string): string {
   if (pathname.startsWith("/notifications")) return t("sidebar.notifications");
   if (pathname.startsWith("/audit-logs")) return t("titles.auditLogs");
   if (pathname.startsWith("/settings")) return t("titles.settings");
-  if (pathname.startsWith("/support")) return t("sidebar.support");
   return t("titles.dashboard");
 }
 

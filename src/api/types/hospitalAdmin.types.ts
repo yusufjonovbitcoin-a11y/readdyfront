@@ -41,11 +41,17 @@ export interface HAQuestionTemplateDto {
   createdAt: string;
 }
 
+export type QuestionTypeDto = "TEXT" | "TEXTAREA" | "NUMBER" | "SELECT" | "RADIO" | "CHECKBOX" | "DATE";
+export type QuestionScopeDto = "TEMPLATE" | "DOCTOR";
+export type QuestionAnswerModeDto = "YES_NO" | "FREE_TEXT";
+
 export interface HAQuestionDto {
   id: string;
   text: string;
   templateId: string;
   order: number;
-  type?: "SELECT" | "TEXT";
+  type?: QuestionTypeDto;
+  scope?: QuestionScopeDto;
+  answerMode?: QuestionAnswerModeDto;
   isRequired?: boolean;
 }

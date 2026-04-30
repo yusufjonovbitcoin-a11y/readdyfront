@@ -5,6 +5,7 @@ import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutTheme } from "@/context/LayoutThemeContext";
 import AppToast from "@/components/ui/AppToast";
 import { useAppToast } from "@/hooks/useAppToast";
+import { changePassword } from "@/api/auth";
 
 type SettingsTab = "profile" | "security" | "language" | "appearance" | "notifications";
 type NotificationPreferences = {
@@ -63,6 +64,7 @@ export function SettingsPageContent() {
     role: "SUPER_ADMIN",
   });
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const { toast, showToast } = useAppToast();
 
   useEffect(() => {
@@ -123,6 +125,42 @@ export function SettingsPageContent() {
 
   const inputClass = `w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors ${dm ? "bg-[#0F1117] border border-[#1E2A3A] text-white placeholder-gray-600 focus:border-emerald-500" : "bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-emerald-500"}`;
   const labelClass = `block text-xs font-medium mb-1.5 ${dm ? "text-gray-400" : "text-gray-600"}`;
+
+  const handleChangePassword = async () => {
+    if (!passwords.current || !passwords.newPass || !passwords.confirm) {
+      showToast("Barcha maydonlarni to'ldiring.", "error");
+      return;
+    }
+    if (passwords.newPass !== passwords.confirm) {
+      showToast("Yangi parollar mos kelmaydi.", "error");
+      return;
+    }
+    if (passwords.newPass.length < 6) {
+      showToast("Yangi parol kamida 6 ta belgidan iborat bo'lishi kerak.", "error");
+      return;
+    }
+    try {
+      setIsChangingPassword(true);
+      await changePassword({
+        oldPassword: passwords.current,
+        newPassword: passwords.newPass,
+        confirmPassword: passwords.confirm,
+      });
+      setPasswords({ current: "", newPass: "", confirm: "" });
+      showToast("Parol muvaffaqiyatli yangilandi.", "success");
+    } catch (error) {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as { message?: unknown }).message === "string"
+          ? (error as { message: string }).message
+          : "Parolni yangilashda xatolik yuz berdi.";
+      showToast(message, "error");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   return (
     <>
@@ -321,15 +359,12 @@ export function SettingsPageContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    setPasswords({ current: "", newPass: "", confirm: "" });
-                    showToast(
-                      "Backend password endpointi ulanmaguncha bu amal vaqtincha o'chirilgan.",
-                      "info",
-                    );
+                    void handleChangePassword();
                   }}
+                  disabled={isChangingPassword}
                   className="px-5 py-2.5 bg-emerald-500 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-emerald-600 whitespace-nowrap"
                 >
-                  {t("settings.security.changePasswordButton")}
+                  {isChangingPassword ? "Yuborilmoqda..." : t("settings.security.changePasswordButton")}
                 </button>
               </div>
 

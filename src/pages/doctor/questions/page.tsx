@@ -9,13 +9,11 @@ import {
   getDoctorById,
   getDoctorQuestionCategories,
   getDoctorQuestions,
-  getDoctorQuestionTemplates,
   updateDoctorQuestion,
 } from "@/api/doctor";
 import type {
   DoctorQuestionCategoryDto,
   DoctorQuestionDto as DocQuestion,
-  DoctorQuestionTemplateDto,
 } from "@/api/types/doctor.types";
 import { usePageState } from "@/hooks/usePageState";
 import PageStateBoundary from "@/components/ui/PageStateBoundary";
@@ -34,7 +32,6 @@ interface QuestionFormData {
 interface DoctorQuestionsPageData {
   questions: DocQuestion[];
   categories: DoctorQuestionCategoryDto[];
-  templates: DoctorQuestionTemplateDto[];
 }
 
 const MODAL_INERT_SELECTORS = ["header", "main", "aside"];
@@ -69,11 +66,9 @@ export function DocQuestionsContent() {
   const [questions, setQuestions] = useState<DocQuestion[]>([]);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showCloneModal, setShowCloneModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<DocQuestion | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [categories, setCategories] = useState<DoctorQuestionCategoryDto[]>([]);
-  const [templates, setTemplates] = useState<DoctorQuestionTemplateDto[]>([]);
   const [formData, setFormData] = useState<QuestionFormData>({
     questionnaireTitle: "",
     text: "",
@@ -91,9 +86,8 @@ export function DocQuestionsContent() {
     const [questionsData, categoriesData, templatesData] = await Promise.all([
       getDoctorQuestions(),
       getDoctorQuestionCategories(),
-      getDoctorQuestionTemplates(),
     ]);
-    return { questions: questionsData, categories: categoriesData, templates: templatesData };
+    return { questions: questionsData, categories: categoriesData };
   }, []);
   const pageState = usePageState(fetchPageData);
   useEffect(() => {
@@ -101,7 +95,6 @@ export function DocQuestionsContent() {
     const loadedData = pageState.data;
     setQuestions(loadedData.questions);
     setCategories(loadedData.categories);
-    setTemplates(loadedData.templates);
     setFormData((prev) => {
       if (prev.text.trim().length > 0) return prev;
       if (loadedData.categories.some((category) => category.id === prev.categoryId)) {
@@ -134,7 +127,6 @@ export function DocQuestionsContent() {
   }, [categories, user?.id, user?.role]);
 
   const addQuestionButtonRef = useRef<HTMLButtonElement>(null);
-  const cloneButtonRef = useRef<HTMLButtonElement>(null);
   const addEditTextRef = useRef<HTMLTextAreaElement>(null);
   const questionnaireTitleInputRef = useRef<HTMLInputElement>(null);
 
@@ -171,14 +163,6 @@ export function DocQuestionsContent() {
     ? "border border-[#30363D] text-gray-200 hover:bg-[#21262D]"
     : "border border-gray-200 text-gray-600 hover:bg-gray-50";
   const closeBtn = darkMode ? "hover:bg-[#21262D] text-gray-400" : "hover:bg-gray-100 text-gray-400";
-  const cloneRow = darkMode
-    ? "border border-[#30363D] hover:border-violet-500/40"
-    : "border border-gray-100 hover:border-violet-200";
-  const cloneText = darkMode ? "text-gray-200" : "text-gray-800";
-  const cloneCat = darkMode ? "text-violet-400" : "text-violet-600";
-  const cloneBtn = darkMode
-    ? "bg-violet-900/40 text-violet-200 hover:bg-violet-900/60"
-    : "bg-violet-50 text-violet-700 hover:bg-violet-100";
   const questionTextId = "doctor-question-form-text";
   const questionTextHelpId = "doctor-question-form-text-help";
   const questionnaireTitleId = "doctor-questionnaire-form-title";
@@ -324,33 +308,6 @@ export function DocQuestionsContent() {
     );
   };
 
-  const handleClone = (template: DoctorQuestionTemplateDto) => {
-    if (!canMutateQuestions) return;
-    void (async () => {
-      try {
-        const created = await createDoctorQuestionWithTemplate({
-          title: template.text.slice(0, 80) || "Template question",
-          text: template.text,
-          departmentId: template.categoryId,
-          answerMode: "boolean",
-        });
-        setQuestions((prev) => [created, ...prev]);
-        setQuestionAnswerModes((prev) => ({ ...prev, [created.id]: "boolean" }));
-        setShowCloneModal(false);
-        showToast("Shablondan savol qo'shildi.", "success");
-      } catch (error) {
-        const message =
-          typeof error === "object" &&
-          error !== null &&
-          "message" in error &&
-          typeof (error as { message?: unknown }).message === "string"
-            ? (error as { message: string }).message
-            : "Shablondan savol qo'shib bo'lmadi.";
-        showToast(message, "error");
-      }
-    })();
-  };
-
   const openEdit = (q: DocQuestion) => {
     setEditingQuestion(q);
     setFormData({
@@ -369,12 +326,6 @@ export function DocQuestionsContent() {
     isOpen: showAddModal || Boolean(editingQuestion),
     onClose: closeAddEditModal,
     returnFocusRef: addQuestionButtonRef,
-    inertSelectors: MODAL_INERT_SELECTORS,
-  });
-  const cloneModalRef = useModalA11y({
-    isOpen: showCloneModal,
-    onClose: () => setShowCloneModal(false),
-    returnFocusRef: cloneButtonRef,
     inertSelectors: MODAL_INERT_SELECTORS,
   });
   const deleteModalRef = useModalA11y({
@@ -396,16 +347,6 @@ export function DocQuestionsContent() {
           <p className={`text-sm mt-0.5 ${pageMuted}`}>{t("questions.subtitle")} {questions.length}</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            ref={cloneButtonRef}
-            type="button"
-            disabled={!canMutateQuestions}
-            onClick={() => setShowCloneModal(true)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed ${btnGhost}`}
-          >
-            <i className="ri-file-copy-line text-sm"></i>
-            {t("questions.cloneTemplate")}
-          </button>
           <button
             ref={addQuestionButtonRef}
             type="button"
@@ -702,48 +643,6 @@ export function DocQuestionsContent() {
               >
                 {editingQuestion ? t("questions.save") : isSubmittingQuestion ? "Yaratilmoqda..." : t("questions.add")}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Clone Modal */}
-      {showCloneModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div
-            ref={cloneModalRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="doctor-question-clone-title"
-            tabIndex={-1}
-            className={`rounded-2xl p-6 w-full max-w-md mx-4 ${modalPanel}`}
-          >
-            <div className="flex items-center justify-between mb-5">
-              <h3 id="doctor-question-clone-title" className={`text-base font-semibold ${modalTitle}`}>{t("questions.globalTemplates")}</h3>
-              <button
-                onClick={() => setShowCloneModal(false)}
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg cursor-pointer ${closeBtn}`}
-                aria-label={t("questions.aria.closeTemplateModal")}
-              >
-                <i className="ri-close-line text-base" aria-hidden="true"></i>
-              </button>
-            </div>
-            <p className={`text-sm mb-4 ${pageMuted}`}>{t("questions.chooseTemplate")}</p>
-            <div className="space-y-2 max-h-72 overflow-y-auto">
-              {templates.map((tpl) => (
-                <div key={tpl.id} className={`flex items-center justify-between p-3 rounded-lg transition-colors ${cloneRow}`}>
-                  <div>
-                    <p className={`text-sm ${cloneText}`}>{tpl.text}</p>
-                    <span className={`text-xs ${cloneCat}`}>{tpl.category}</span>
-                  </div>
-                  <button
-                    onClick={() => handleClone(tpl)}
-                    className={`ml-3 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors whitespace-nowrap ${cloneBtn}`}
-                  >
-                    {t("questions.clone")}
-                  </button>
-                </div>
-              ))}
             </div>
           </div>
         </div>

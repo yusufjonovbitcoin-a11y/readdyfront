@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { getCurrentDoctorSession } from "@/api/services/doctorSession.service";
+import { changePassword } from "@/api/auth";
+import { updateDoctorAvatar } from "@/api/doctor";
 
 type SettingsTab = 'profile' | 'security' | 'language' | 'notifications';
 
@@ -30,19 +32,12 @@ export function DocSettingsContent() {
   const [language, setLanguage] = useState<'uz' | 'ru'>(i18n.language === "ru" ? "ru" : "uz");
   const [saved, setSaved] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
-  /** Tanlangan rasm (faqat brauzerda; serverga yuklanmaydi) */
   const [localAvatarUrl, setLocalAvatarUrl] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarUploadError, setAvatarUploadError] = useState("");
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
   const avatarMenuRef = useRef<HTMLDivElement>(null);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (localAvatarUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(localAvatarUrl);
-      }
-    };
-  }, [localAvatarUrl]);
 
   useEffect(() => {
     const fromUrl = resolveSettingsTab(searchParams.get("tab"));
@@ -91,6 +86,7 @@ export function DocSettingsContent() {
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
   const [passError, setPassError] = useState('');
   const [passSaved, setPassSaved] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const [notifs, setNotifs] = useState({
     newPatient: true,
@@ -105,12 +101,40 @@ export function DocSettingsContent() {
       e.target.value = "";
       return;
     }
-    const next = URL.createObjectURL(file);
-    setLocalAvatarUrl((prev) => {
-      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
-      return next;
-    });
-    setAvatarFailed(false);
+    setAvatarUploadError("");
+    setIsUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = typeof reader.result === "string" ? reader.result : "";
+      if (!dataUrl) {
+        setAvatarUploadError("Suratni o'qib bo'lmadi");
+        setIsUploadingAvatar(false);
+        return;
+      }
+      void (async () => {
+        try {
+          const uploadedAvatar = await updateDoctorAvatar(dataUrl);
+          setLocalAvatarUrl(uploadedAvatar || dataUrl);
+          setAvatarFailed(false);
+        } catch (error) {
+          const message =
+            typeof error === "object" &&
+            error !== null &&
+            "message" in error &&
+            typeof (error as { message?: unknown }).message === "string"
+              ? (error as { message: string }).message
+              : "Suratni serverga saqlab bo'lmadi";
+          setAvatarUploadError(message);
+        } finally {
+          setIsUploadingAvatar(false);
+        }
+      })();
+    };
+    reader.onerror = () => {
+      setAvatarUploadError("Suratni o'qishda xatolik");
+      setIsUploadingAvatar(false);
+    };
+    reader.readAsDataURL(file);
     e.target.value = "";
   };
 
@@ -119,7 +143,7 @@ export function DocSettingsContent() {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!passwords.current || !passwords.newPass || !passwords.confirm) {
       setPassError('Barcha maydonlarni to\'ldiring');
       return;
@@ -133,9 +157,28 @@ export function DocSettingsContent() {
       return;
     }
     setPassError('');
-    setPassSaved(true);
-    setPasswords({ current: '', newPass: '', confirm: '' });
-    setTimeout(() => setPassSaved(false), 2500);
+    try {
+      setIsChangingPassword(true);
+      await changePassword({
+        oldPassword: passwords.current,
+        newPassword: passwords.newPass,
+        confirmPassword: passwords.confirm,
+      });
+      setPassSaved(true);
+      setPasswords({ current: '', newPass: '', confirm: '' });
+      setTimeout(() => setPassSaved(false), 2500);
+    } catch (error) {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as { message?: unknown }).message === "string"
+          ? (error as { message: string }).message
+          : "Parolni yangilashda xatolik yuz berdi";
+      setPassError(message);
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const tabs: { id: SettingsTab; label: string; icon: string }[] = [
@@ -150,9 +193,6 @@ export function DocSettingsContent() {
         <div>
           <h2 className={`text-xl font-bold ${pageTitle}`}>{t("settings.title")}</h2>
           <p className={`text-sm mt-0.5 ${pageMuted}`}>{t("settings.subtitle")}</p>
-          <p className={`text-xs mt-2 ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
-            Eslatma: profile/password sozlamalari uchun backend endpointlar hali ulanmagan.
-          </p>
         </div>
 
         <div className="min-w-0 space-y-4">
@@ -284,6 +324,9 @@ export function DocSettingsContent() {
                   <div>
                     <p className={`text-sm font-semibold ${cardTitle}`}>{profile.name}</p>
                     <p className="text-xs text-violet-600">{profile.specialty}</p>
+                    <p className={`text-xs mt-0.5 ${cardTextMuted}`}>{profile.phone}</p>
+                    {isUploadingAvatar && <p className={`text-xs mt-1 ${cardTextMuted}`}>Surat yuklanmoqda...</p>}
+                    {avatarUploadError && <p className="text-xs mt-1 text-red-500">{avatarUploadError}</p>}
                   </div>
                 </div>
 
@@ -295,26 +338,6 @@ export function DocSettingsContent() {
                       type="text"
                       value={profile.name}
                       onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="doctor-settings-specialty" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Mutaxassislik</label>
-                    <input
-                      id="doctor-settings-specialty"
-                      type="text"
-                      value={profile.specialty}
-                      onChange={(e) => setProfile({ ...profile, specialty: e.target.value })}
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="doctor-settings-phone" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Telefon</label>
-                    <input
-                      id="doctor-settings-phone"
-                      type="text"
-                      value={profile.phone}
-                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                       className={inputBase}
                     />
                   </div>
@@ -413,10 +436,13 @@ export function DocSettingsContent() {
                 </div>
 
                 <button
-                  onClick={handleChangePassword}
+                  onClick={() => {
+                    void handleChangePassword();
+                  }}
+                  disabled={isChangingPassword}
                   className="px-6 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors whitespace-nowrap"
                 >
-                  Parolni o'zgartirish
+                  {isChangingPassword ? "Yuborilmoqda..." : "Parolni o'zgartirish"}
                 </button>
               </div>
             )}

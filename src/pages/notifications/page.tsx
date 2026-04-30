@@ -101,7 +101,7 @@ export function SuperAdminNotificationsPageContent() {
   const [composeType, setComposeType] = useState<Notification["type"]>("info");
   const [composePriority, setComposePriority] = useState<Notification["priority"]>("high");
   const [composeCategory, setComposeCategory] = useState<Notification["category"]>("system");
-  const [composeRecipientType, setComposeRecipientType] = useState<"doctor" | "hospital_admin">("doctor");
+  const [composeRecipientType, setComposeRecipientType] = useState<"doctor" | "admin">("doctor");
   const [categoryOptions, setCategoryOptions] = useState<NotificationCategory[]>([]);
   const [priorityOptions, setPriorityOptions] = useState<NotificationPriority[]>([]);
   const [composeCategoryId, setComposeCategoryId] = useState("");
@@ -109,19 +109,19 @@ export function SuperAdminNotificationsPageContent() {
 
   const normalizePriority = (value: string): Notification["priority"] => {
     const v = value.toLowerCase();
-    if (v.includes("critical")) return "critical";
-    if (v.includes("high")) return "high";
-    if (v.includes("medium")) return "medium";
+    if (v.includes("kritik") || v.includes("critical")) return "critical";
+    if (v.includes("yuqori") || v.includes("high")) return "high";
+    if (v.includes("o'rta") || v.includes("orta") || v.includes("medium") || v.includes("oddiy") || v.includes("normal")) return "medium";
     return "low";
   };
 
   const normalizeCategory = (value: string): Notification["category"] => {
     const v = value.toLowerCase();
-    if (v.includes("patient")) return "patient";
-    if (v.includes("doctor")) return "doctor";
-    if (v.includes("hospital")) return "hospital";
-    if (v.includes("security")) return "security";
-    if (v.includes("appointment")) return "appointment";
+    if (v.includes("bemor") || v.includes("patient")) return "patient";
+    if (v.includes("shifokor") || v.includes("doctor")) return "doctor";
+    if (v.includes("kasalxona") || v.includes("hospital")) return "hospital";
+    if (v.includes("xavfsizlik") || v.includes("security")) return "security";
+    if (v.includes("navbat") || v.includes("appointment")) return "appointment";
     return "system";
   };
 
@@ -174,7 +174,7 @@ export function SuperAdminNotificationsPageContent() {
     const isSuperAdminSender = user.role === "SUPER_ADMIN";
     const created: Notification = {
       id: `n-broadcast-${now.getTime()}-${composeRecipientType}`,
-      role: composeRecipientType,
+      role: composeRecipientType === "admin" ? "hospital_admin" : "doctor",
       senderRole: isSuperAdminSender ? "super_admin" : "hospital_admin",
       senderName: user.name || (isSuperAdminSender ? "Super Admin" : "Hospital Admin"),
       hospitalId: isSuperAdminSender ? undefined : user.hospitalId,
@@ -292,7 +292,7 @@ export function SuperAdminNotificationsPageContent() {
             ? dm
               ? "bg-[#121826] border-[#273041] hover:border-[#334155]"
               : "bg-white border-gray-100 hover:border-gray-200"
-            : `${tc.bg} ${tc.border} hover:border-opacity-80`
+            : `${dm ? "bg-red-500/10 border-red-500/40 hover:border-red-500/60" : "bg-red-50 border-red-200 hover:border-red-300"}`
         }`}
       >
         <div className={`w-11 h-11 flex items-center justify-center rounded-2xl flex-shrink-0 ${tc.bg} border ${tc.border}`}>
@@ -305,7 +305,7 @@ export function SuperAdminNotificationsPageContent() {
               <span className={`text-sm font-semibold ${n.read ? (dm ? "text-gray-200" : "text-gray-700") : "text-gray-900"}`}>{n.title}</span>
               {!n.read && <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />}
             </div>
-            <span className={`text-xs whitespace-nowrap flex-shrink-0 font-medium ${dm ? "text-gray-500" : "text-gray-400"}`}>{n.time}</span>
+            <span className={`text-xs whitespace-nowrap flex-shrink-0 font-medium px-[25px] ${dm ? "text-gray-500" : "text-gray-400"}`}>{n.time}</span>
           </div>
 
           <p className={`text-sm leading-relaxed mb-3 ${dm ? "text-gray-400" : "text-gray-500"}`}>{n.message}</p>
@@ -439,13 +439,13 @@ export function SuperAdminNotificationsPageContent() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <select
                   value={composeRecipientType}
-                  onChange={(e) => setComposeRecipientType(e.target.value as "doctor" | "hospital_admin")}
+                  onChange={(e) => setComposeRecipientType(e.target.value as "doctor" | "admin")}
                   className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
                 >
                   {user?.role === "SUPER_ADMIN" ? (
                     <>
                       <option value="doctor">Doctor</option>
-                      <option value="hospital_admin">Hospital Admin</option>
+                      <option value="admin">Hospital Admin</option>
                     </>
                   ) : (
                     <option value="doctor">Doctor</option>
@@ -490,17 +490,6 @@ export function SuperAdminNotificationsPageContent() {
                       </option>
                     ))
                   )}
-                </select>
-                <select
-                  value={composeType}
-                  onChange={(e) => setComposeType(e.target.value as Notification["type"])}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
-                >
-                  <option value="info">Ma'lumot</option>
-                  <option value="warning">Ogohlantirish</option>
-                  <option value="success">Muvaffaqiyat</option>
-                  <option value="error">Xato</option>
-                  <option value="system">Tizim</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">

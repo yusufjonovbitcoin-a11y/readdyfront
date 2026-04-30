@@ -1,6 +1,7 @@
 import { apiRequest } from "@/api/client";
 import type { TFunction } from "i18next";
 import type {
+  CheckinDoctorProfileDto,
   CheckinDraft,
   CheckinQuestionDto,
   SubmitCheckinInput,
@@ -13,9 +14,9 @@ type BackendQuestionDto = {
   question_text: string;
 };
 
-export async function getQuestions(_t?: TFunction<"checkin">): Promise<CheckinQuestionDto[]> {
+export async function getQuestions(doctorId: string, _t?: TFunction<"checkin">): Promise<CheckinQuestionDto[]> {
   try {
-    return await apiRequest<CheckinQuestionDto[]>("/api/checkin/questions");
+    return await apiRequest<CheckinQuestionDto[]>(`/api/checkin/questions/${encodeURIComponent(doctorId)}`);
   } catch {
     const questions = await apiRequest<BackendQuestionDto[]>("/api/questions");
     return questions.map((question) => ({
@@ -55,6 +56,16 @@ export async function submitCheckin(input: SubmitCheckinInput): Promise<SubmitCh
     return {
       checkinId: `local-${Date.now()}`,
       acceptedAt: new Date().toISOString(),
+      queueNumber: 1,
+      waitMinutes: 12,
     };
+  }
+}
+
+export async function getCheckinDoctorProfile(doctorId: string): Promise<CheckinDoctorProfileDto | null> {
+  try {
+    return await apiRequest<CheckinDoctorProfileDto>(`/api/checkin/doctor/${encodeURIComponent(doctorId)}`);
+  } catch {
+    return null;
   }
 }

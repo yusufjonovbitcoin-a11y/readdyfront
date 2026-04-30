@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
+import { changePassword } from "@/api/auth";
 import {
   HA_ADMIN_AVATAR_KEY,
   getHaAdminStoredAvatar,
@@ -46,6 +47,8 @@ export function HASettingsPageContent() {
   });
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
   const [saved, setSaved] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     const fromUrl = resolveSettingsTab(searchParams.get("tab"));
@@ -53,6 +56,43 @@ export function HASettingsPageContent() {
   }, [searchParams]);
 
   const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+  const handlePasswordChange = async () => {
+    if (!passwords.current || !passwords.newPass || !passwords.confirm) {
+      setPasswordError("Barcha maydonlarni to'ldiring");
+      return;
+    }
+    if (passwords.newPass !== passwords.confirm) {
+      setPasswordError(t("settings.security.passwordMismatch"));
+      return;
+    }
+    if (passwords.newPass.length < 6) {
+      setPasswordError("Parol kamida 6 ta belgidan iborat bo'lishi kerak");
+      return;
+    }
+    try {
+      setIsChangingPassword(true);
+      setPasswordError(null);
+      await changePassword({
+        oldPassword: passwords.current,
+        newPassword: passwords.newPass,
+        confirmPassword: passwords.confirm,
+      });
+      setPasswords({ current: "", newPass: "", confirm: "" });
+      showSaved();
+    } catch (error) {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as { message?: unknown }).message === "string"
+          ? (error as { message: string }).message
+          : "Parolni yangilashda xatolik yuz berdi";
+      setPasswordError(message);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const persistAvatar = (dataUrl: string | null) => {
     try {
@@ -113,9 +153,6 @@ export function HASettingsPageContent() {
 
   return (
       <div className="max-w-3xl space-y-5">
-        <p className={`text-xs ${darkMode ? "text-amber-400" : "text-amber-700"}`}>
-          {t("settings.notice.backendNotConnected")}
-        </p>
         {/* Tabs */}
         <div className={`flex gap-1 p-1 rounded-xl flex-wrap ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
           {tabs.map(tab => (
@@ -264,12 +301,26 @@ export function HASettingsPageContent() {
               {passwords.newPass && passwords.confirm && passwords.newPass !== passwords.confirm && (
                 <p className="text-xs text-red-500">{t("settings.security.passwordMismatch")}</p>
               )}
+              {passwordError && (
+                <p className="text-xs text-red-500">{passwordError}</p>
+              )}
               <button
-                onClick={showSaved}
-                disabled={!passwords.current || !passwords.newPass || passwords.newPass !== passwords.confirm}
+                onClick={() => {
+                  void handlePasswordChange();
+                }}
+                disabled={
+                  isChangingPassword ||
+                  !passwords.current ||
+                  !passwords.newPass ||
+                  passwords.newPass !== passwords.confirm
+                }
                 className="min-h-[44px] px-6 rounded-lg bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
               >
-                {saved ? t("settings.saved.notSent") : t("settings.security.updatePassword")}
+                {isChangingPassword
+                  ? "Yuborilmoqda..."
+                  : saved
+                    ? t("settings.saved.notSent")
+                    : t("settings.security.updatePassword")}
               </button>
             </div>
 

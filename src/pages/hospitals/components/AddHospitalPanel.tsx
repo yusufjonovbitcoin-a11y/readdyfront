@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/react";
 import { useModalA11y } from "@/hooks/useModalA11y";
 
 const PANEL_INERT_SELECTORS = ["header", "main", "aside"];
+const UZ_PHONE_REGEX = /^\+998\d{9}$/;
 
 interface AddHospitalPanelProps {
   open: boolean;
@@ -36,13 +37,24 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
     inertSelectors: PANEL_INERT_SELECTORS,
   });
 
+  const normalizePhone = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.startsWith("998")) return `+${digits}`;
+    if (digits.length === 9) return `+998${digits}`;
+    return value.trim();
+  };
+
   const validate = () => {
     const e: Record<string, string> = {};
+    const normalizedHospitalPhone = normalizePhone(form.phone);
+    const normalizedAdminPhone = normalizePhone(form.adminPhone);
     if (!form.name.trim()) e.name = "Kasalxona nomi kiritilishi shart";
     if (!form.address.trim()) e.address = "Manzil kiritilishi shart";
     if (!form.phone.trim()) e.phone = "Telefon raqami kiritilishi shart";
+    else if (!UZ_PHONE_REGEX.test(normalizedHospitalPhone)) e.phone = "Telefon formati: +998XXXXXXXXX";
     if (!form.adminName.trim()) e.adminName = "Admin ismi kiritilishi shart";
     if (!form.adminPhone.trim()) e.adminPhone = "Admin telefoni kiritilishi shart";
+    else if (!UZ_PHONE_REGEX.test(normalizedAdminPhone)) e.adminPhone = "Telefon formati: +998XXXXXXXXX";
     if (!form.adminPassword.trim() || form.adminPassword.length < 6) e.adminPassword = "Parol kamida 6 ta belgi bo'lishi kerak";
     return e;
   };
@@ -54,12 +66,27 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     setLoading(true);
     try {
-      await Promise.resolve(onAdd(form));
+      const payload = {
+        ...form,
+        phone: normalizePhone(form.phone),
+        adminPhone: normalizePhone(form.adminPhone),
+      };
+      await Promise.resolve(onAdd(payload));
       setForm({ name: "", address: "", phone: "", adminName: "", adminPhone: "", adminPassword: "" });
       setErrors({});
       onClose();
     } catch (err) {
-      setSubmitError(t("addHospital.errors.submitFailed", { defaultValue: "Saqlashda xatolik yuz berdi." }));
+      const backendMessage =
+        typeof err === "object" &&
+        err !== null &&
+        "message" in err &&
+        typeof (err as { message?: unknown }).message === "string"
+          ? (err as { message: string }).message
+          : null;
+      setSubmitError(
+        backendMessage ??
+          t("addHospital.errors.submitFailed", { defaultValue: "Saqlashda xatolik yuz berdi." }),
+      );
       Sentry.captureException(err, {
         tags: { area: "hospitals", op: "create" },
       });

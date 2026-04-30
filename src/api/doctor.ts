@@ -62,3 +62,7 @@ export function updateDoctorQuestion(id: string, text: string): Promise<DoctorQu
 export function deleteDoctorQuestion(id: string): Promise<void> {
   return doctorAdapter.deleteDoctorQuestion(id);
 }
+
+export function updateDoctorAvatar(avatarUrl: string): Promise<string> {
+  return doctorAdapter.updateDoctorAvatar(avatarUrl);
+}

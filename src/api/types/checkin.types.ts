@@ -30,4 +30,14 @@ export interface SubmitCheckinInput {
 export interface SubmitCheckinResult {
   checkinId: string;
   acceptedAt: string;
+  queueNumber?: number;
+  waitMinutes?: number;
+}
+
+export interface CheckinDoctorProfileDto {
+  id: string;
+  full_name: string;
+  avatar: string;
+  department_name: string;
+  specialization: string;
 }

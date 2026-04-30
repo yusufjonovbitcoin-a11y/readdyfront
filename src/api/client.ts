@@ -8,6 +8,8 @@ export interface ApiError<T = unknown> {
 
 export interface RequestOptions extends Omit<globalThis.RequestInit, "headers"> {
   headers?: Record<string, string>;
+  skipRefreshOn401?: boolean;
+  suppressSessionFailureOn401?: boolean;
 }
 
 export class AuthError extends Error {
@@ -17,7 +19,10 @@ export class AuthError extends Error {
   }
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
+const configuredApiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/$/, "");
+const API_BASE_URL = configuredApiBaseUrl || "";
+const API_FALLBACK_BASE_URL = "http://localhost:4000";
+const ACCESS_TOKEN_STORAGE_KEY = "medcore_access_token";
 
 const REQUEST_TIMEOUT_MS = 5000;
 const MAX_RETRY_ATTEMPTS = 2;
@@ -25,10 +30,48 @@ const RETRY_BASE_DELAY_MS = 350;
 
 const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
+const AUTH_ENDPOINTS = new Set(["/api/auth/login", "/api/auth/refresh", "/api/auth/logout"]);
+let authRecoverySuppressed = false;
+let sessionFailureNotified = false;
+
+function getStoredAccessToken(): string | null {
+  try {
+    return globalThis.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredAccessToken(token: string) {
+  try {
+    globalThis.localStorage.setItem(ACCESS_TOKEN_STORAGE_KEY, token);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function clearStoredAccessToken() {
+  try {
+    globalThis.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function resetApiClientAuthStateForTests() {
+  authRecoverySuppressed = false;
+  sessionFailureNotified = false;
+}
 
 function buildUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${API_BASE_URL}${normalizedPath}`;
+}
+
+function buildUrlWithBase(path: string, baseUrl: string) {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const normalizedBase = baseUrl.replace(/\/$/, "");
+  return `${normalizedBase}${normalizedPath}`;
 }
 
 function normalizeError<T = unknown>(
@@ -39,7 +82,29 @@ function normalizeError<T = unknown>(
   return { status, message, data };
 }
 
+function resolveErrorMessage(responseData: unknown, fallback: string): string {
+  if (
+    typeof responseData === "object" &&
+    responseData !== null &&
+    "message" in responseData
+  ) {
+    const rawMessage = (responseData as { message?: unknown }).message;
+    if (typeof rawMessage === "string" && rawMessage.trim()) {
+      return rawMessage;
+    }
+    if (Array.isArray(rawMessage)) {
+      const firstText = rawMessage.find((entry) => typeof entry === "string" && entry.trim());
+      if (typeof firstText === "string") {
+        return firstText;
+      }
+    }
+  }
+  return fallback;
+}
+
 function notifySessionFailure() {
+  if (sessionFailureNotified) return;
+  sessionFailureNotified = true;
   emitSessionFailure({
     reason: "unauthorized",
     status: 401,
@@ -77,14 +142,23 @@ export async function apiRequest<TResponse>(
   path: string,
   options: RequestOptions = {},
 ): Promise<TResponse> {
+  const {
+    skipRefreshOn401 = false,
+    suppressSessionFailureOn401 = false,
+    ...fetchOptions
+  } = options;
   const requestInternal = async (allowRefreshRetry: boolean): Promise<TResponse> => {
-  const method = (options.method ?? "GET").toUpperCase();
+  const method = (fetchOptions.method ?? "GET").toUpperCase();
   const canRetry = IDEMPOTENT_METHODS.has(method);
+  const accessToken = getStoredAccessToken();
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...options.headers,
+    ...fetchOptions.headers,
   };
+  if (accessToken && !headers.Authorization) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
 
     for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
       const controller = new AbortController();
@@ -94,16 +168,32 @@ export async function apiRequest<TResponse>(
       );
 
       const onAbort = () => controller.abort();
-      options.signal?.addEventListener("abort", onAbort, { once: true });
+      fetchOptions.signal?.addEventListener("abort", onAbort, { once: true });
 
       try {
-        const response = await fetch(buildUrl(path), {
-          ...options,
+        const requestUrl = buildUrl(path);
+        let response = await fetch(requestUrl, {
+          ...fetchOptions,
           method,
           signal: controller.signal,
           headers,
           credentials: "include",
         });
+
+        if (
+          !response.ok &&
+          response.status === 404 &&
+          !configuredApiBaseUrl &&
+          path.startsWith("/api")
+        ) {
+          response = await fetch(buildUrlWithBase(path, API_FALLBACK_BASE_URL), {
+            ...fetchOptions,
+            method,
+            signal: controller.signal,
+            headers,
+            credentials: "include",
+          });
+        }
 
         const responseData = await parseResponse(response);
 
@@ -118,16 +208,21 @@ export async function apiRequest<TResponse>(
             continue;
           }
 
-          const message =
-            typeof responseData === "object" &&
-            responseData !== null &&
-            "message" in responseData &&
-            typeof (responseData as { message?: unknown }).message === "string"
-              ? (responseData as { message: string }).message
-              : response.statusText || "Request failed";
+          const message = resolveErrorMessage(responseData, response.statusText || "Request failed");
 
           if (response.status === 401) {
-            if (allowRefreshRetry && path !== "/api/auth/refresh") {
+            const isAuthSessionProbe = path === "/api/auth/me" || path === "/api/auth/refresh";
+            if (suppressSessionFailureOn401) {
+              throw normalizeError(401, message, responseData);
+            }
+            const canTryRefresh =
+              allowRefreshRetry &&
+              !skipRefreshOn401 &&
+              !authRecoverySuppressed &&
+              !AUTH_ENDPOINTS.has(path) &&
+              path !== "/api/auth/refresh";
+
+            if (canTryRefresh) {
               const refreshResponse = await fetch(buildUrl("/api/auth/refresh"), {
                 method: "POST",
                 credentials: "include",
@@ -135,14 +230,33 @@ export async function apiRequest<TResponse>(
                 headers,
               });
               if (refreshResponse.ok) {
+                const refreshPayload = (await parseResponse(refreshResponse)) as
+                  | { accessToken?: string; access_token?: string }
+                  | null;
+                const refreshedAccessToken =
+                  refreshPayload?.accessToken ?? refreshPayload?.access_token;
+                if (refreshedAccessToken) {
+                  setStoredAccessToken(refreshedAccessToken);
+                }
+                authRecoverySuppressed = false;
+                sessionFailureNotified = false;
                 return requestInternal(false);
               }
             }
+            if (!isAuthSessionProbe) {
+              throw normalizeError(401, message, responseData);
+            }
+            authRecoverySuppressed = true;
+            clearStoredAccessToken();
             notifySessionFailure();
             throw new AuthError();
           }
 
           throw normalizeError(response.status, message, responseData);
+        }
+
+        if (path === "/api/auth/logout") {
+          clearStoredAccessToken();
         }
 
         return responseData as TResponse;
@@ -174,12 +288,17 @@ export async function apiRequest<TResponse>(
         );
       } finally {
         globalThis.clearTimeout(timeoutId);
-        options.signal?.removeEventListener("abort", onAbort);
+        fetchOptions.signal?.removeEventListener("abort", onAbort);
       }
     }
 
     throw normalizeError(0, "So'rovni qayta yuborishda noma'lum xatolik yuz berdi.");
   };
+
+  if (path === "/api/auth/login" || path === "/api/auth/refresh") {
+    authRecoverySuppressed = false;
+    sessionFailureNotified = false;
+  }
 
   return requestInternal(true);
 }

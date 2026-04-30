@@ -24,9 +24,18 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
   const { t } = useTranslation("doctor");
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { darkMode } = useDoctorTheme();
   const showExpanded = mobileOpen || !collapsed;
+  const doctorName = user?.name?.trim() || t("sidebar.doctorName");
+  const doctorAvatar = user?.avatar?.trim() || "";
+  const doctorInitials = doctorName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
   const handleLogout = async () => {
     await logout();
     onCloseMobile();
@@ -35,8 +44,8 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
   const navItems: NavItem[] = [
     { path: "/doctor/patients", icon: "ri-user-add-line", label: t("sidebar.newPatients") },
     { path: "/doctor/history", icon: "ri-history-line", label: t("sidebar.history") },
-    { path: "/doctor/questions", icon: "ri-questionnaire-line", label: t("sidebar.questions") },
     { path: "/doctor/analytics", icon: "ri-bar-chart-2-line", label: t("sidebar.analytics") },
+    { path: "/doctor/questions", icon: "ri-questionnaire-line", label: t("sidebar.questions") },
     { path: "/doctor/notifications", icon: "ri-notification-3-line", label: t("sidebar.notifications") },
     { path: "/doctor/settings", icon: "ri-settings-3-line", label: t("sidebar.settings") },
   ];
@@ -142,36 +151,6 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
           </div>
         </div>
       )}
-      {showExpanded && (
-        <div className="px-2 pb-2">
-          <Link
-            to="/doctor/support"
-            prefetch="none"
-            onClick={onCloseMobile}
-            className={`no-underline flex items-center h-11 rounded-lg transition-colors duration-150 cursor-pointer px-3 outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 ${
-              location.pathname.startsWith("/doctor/support")
-                ? darkMode
-                  ? "bg-violet-900/40 text-violet-300 active:bg-violet-900/60"
-                  : "bg-violet-50 text-violet-600 active:bg-violet-100"
-                : darkMode
-                  ? "text-gray-300 hover:bg-[#21262D] hover:text-white active:bg-[#30363D]/80"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100"
-            }`}
-            aria-current={location.pathname.startsWith("/doctor/support") ? "page" : undefined}
-            aria-label={t("sidebar.support")}
-            title={t("sidebar.support")}
-          >
-            <div className="w-5 h-5 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-              <i className="ri-customer-service-2-line text-base"></i>
-            </div>
-            <span className="ml-3 text-sm font-medium whitespace-nowrap">{t("sidebar.support")}</span>
-            {location.pathname.startsWith("/doctor/support") && (
-              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" aria-hidden="true" />
-            )}
-          </Link>
-        </div>
-      )}
-
       {/* User Profile */}
       <div className={`p-3 border-t ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
         <button
@@ -182,12 +161,20 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
             darkMode ? "hover:bg-[#21262D] active:bg-[#30363D]/80" : "hover:bg-gray-50 active:bg-gray-100"
           } cursor-pointer transition-colors`}
         >
-          <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xs font-bold">AK</span>
+          <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {doctorAvatar ? (
+              <img
+                src={doctorAvatar}
+                alt={doctorName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-white text-xs font-bold">{doctorInitials || "DR"}</span>
+            )}
           </div>
           {showExpanded && (
             <div className="ml-2 flex-1 min-w-0">
-              <p className={`text-sm font-medium truncate ${darkMode ? "text-white" : "text-gray-900"}`}>{t("sidebar.doctorName")}</p>
+              <p className={`text-sm font-medium truncate ${darkMode ? "text-white" : "text-gray-900"}`}>{doctorName}</p>
               <p className="text-xs text-violet-500 truncate">DOCTOR</p>
             </div>
           )}

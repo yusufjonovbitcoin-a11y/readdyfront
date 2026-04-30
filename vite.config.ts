@@ -84,12 +84,9 @@ export default defineConfig({
     host: "0.0.0.0",
     proxy: {
       "/api": {
-        target: "https://transmental-luteotropic-kaydence.ngrok-free.dev",
+        target: "http://localhost:4000",
         changeOrigin: true,
-        secure: true,
-        headers: {
-          "ngrok-skip-browser-warning": "1",
-        },
+        secure: false,
       },
     },
   },

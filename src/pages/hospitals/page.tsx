@@ -67,8 +67,9 @@ export function HospitalsPageContent() {
   const handleAdd = async (data: Record<string, string>) => {
     if (isAddingHospital) return;
     setIsAddingHospital(true);
+    let createdHospital: Hospital | null = null;
     try {
-      const created = await createHospital({
+      const hospital = await createHospital({
         name: data.name,
         viloyat: "Boshqa",
         address: data.address,
@@ -76,25 +77,42 @@ export function HospitalsPageContent() {
         adminName: data.adminName,
         adminPhone: data.adminPhone,
       });
-      await createUser({
-        name: data.adminName,
-        phone: data.adminPhone,
-        email: "",
-        role: "HOSPITAL_ADMIN",
-        hospitalId: created.id,
-        password: data.adminPassword,
-      });
+      createdHospital = hospital;
+      try {
+        await createUser({
+          name: data.adminName,
+          phone: data.adminPhone,
+          email: "",
+          role: "HOSPITAL_ADMIN",
+          hospitalId: hospital.id,
+          password: data.adminPassword,
+        });
+      } catch (adminError) {
+        // Prevent partial state: hospital created but admin failed.
+        await deleteHospital(hospital.id).catch(() => undefined);
+        throw adminError;
+      }
       updateHospitalsCache((prev) => [
         {
-          ...created,
+          ...hospital,
           adminName: data.adminName,
           adminPhone: data.adminPhone,
         },
         ...prev,
       ]);
       showToast(t("hospitals.toast.added"));
-    } catch (error) {
-      showToast("Kasalxona yoki admin yaratishda xatolik yuz berdi", "error");
+    } catch (error: unknown) {
+      const apiError =
+        typeof error === "object" && error !== null && "status" in error
+          ? (error as { status?: number; message?: string })
+          : null;
+      if (apiError?.status === 409) {
+        showToast("Bu telefon raqami bilan kasalxona yoki foydalanuvchi allaqachon mavjud.", "error");
+      } else if (apiError?.status === 400) {
+        showToast(apiError.message || "Kiritilgan ma'lumotlar noto'g'ri.", "error");
+      } else {
+        showToast("Kasalxona yoki admin yaratishda xatolik yuz berdi", "error");
+      }
       throw error;
     } finally {
       setIsAddingHospital(false);

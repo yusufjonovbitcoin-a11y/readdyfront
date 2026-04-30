@@ -33,7 +33,7 @@ export type NotificationPriorityDto = {
 
 export type CreateNotificationRequestDto = {
   hospital_id?: string;
-  recipient_type: "doctor" | "hospital_admin";
+  recipient_type: "doctor" | "admin";
   recipient_id?: string;
   title: string;
   message: string;

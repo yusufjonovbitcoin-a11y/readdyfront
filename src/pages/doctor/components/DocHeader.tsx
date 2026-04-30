@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { getCurrentDoctorSession } from "@/api/services/doctorSession.service";
 import { useModalA11y } from "@/hooks/useModalA11y";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DocHeaderProps {
   title: string;
@@ -19,6 +20,7 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
   const notifTriggerRef = useRef<HTMLButtonElement>(null);
   const previousNotificationsOpenRef = useRef(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { darkMode, toggleDarkMode } = useDoctorTheme();
   const notifPopoverRef = useModalA11y({
     isOpen: showNotif,
@@ -29,8 +31,8 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
     lockScroll: false,
   });
   const currentDoctorSession = getCurrentDoctorSession();
-  const profileName = currentDoctorSession?.name ?? "Doctor";
-  const profileAvatar = currentDoctorSession?.avatar ?? "";
+  const profileName = currentDoctorSession?.name ?? user?.name ?? "Doctor";
+  const profileAvatar = currentDoctorSession?.avatar ?? user?.avatar ?? "";
   const profileInitials = profileName
     .split(" ")
     .filter(Boolean)

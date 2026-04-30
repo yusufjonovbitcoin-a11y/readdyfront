@@ -14,7 +14,9 @@ export interface AuthUser {
   role: UserRole;
   hospitalId?: string;
   hospitalName?: string;
+  phone?: string;
   avatar: string;
+  checkinUrl?: string;
 }
 
 /**
@@ -72,14 +74,16 @@ function normalizeAuthCandidate(value: unknown): AuthUser | null {
   const normalized: AuthUser = {
     id: raw.id.trim(),
     name: raw.name.trim(),
-    email: raw.email.trim(),
+    email: typeof raw.email === "string" && raw.email.trim() ? raw.email.trim() : `${raw.id.trim()}@local.medcore`,
     role: raw.role,
     avatar: raw.avatar.trim(),
     hospitalId: typeof raw.hospitalId === "string" ? raw.hospitalId.trim() : undefined,
     hospitalName: typeof raw.hospitalName === "string" ? raw.hospitalName.trim() : undefined,
+    phone: typeof raw.phone === "string" ? raw.phone.trim() : undefined,
+    checkinUrl: typeof raw.checkinUrl === "string" ? raw.checkinUrl.trim() : undefined,
   };
 
-  if (!normalized.id || !normalized.name || !normalized.email || !normalized.avatar) {
+  if (!normalized.id || !normalized.name || !normalized.avatar) {
     return null;
   }
 
@@ -121,12 +125,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       : "anonymous";
 
   const logout = useCallback(async () => {
+    setUser(null);
     try {
       await logoutWithService();
     } catch {
       // Session might already be invalid/expired; clear local auth state regardless.
     }
-    setUser(null);
   }, []);
 
   useEffect(() => {

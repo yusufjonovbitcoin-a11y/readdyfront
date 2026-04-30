@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getInitialDocPatients, type DocPatient } from "@/api/services/docPatients.service";
+import { getDoctorPatients } from "@/api/doctor";
 import { formatLocalYMD } from "@/utils/date";
 
 /** Navbatdagi bemorlar uchun reorder: to‘liq yoki ko‘rinayotgan subset id ro‘yxatini qabul qiladi */
@@ -49,6 +50,24 @@ const DocPatientsContext = createContext<DocPatientsContextValue | null>(null);
 
 export function DocPatientsProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<DocPatient[]>(() => getInitialDocPatients());
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const serverPatients = await getDoctorPatients();
+        if (cancelled) return;
+        if (Array.isArray(serverPatients) && serverPatients.length > 0) {
+          setPatients(serverPatients);
+        }
+      } catch {
+        if (cancelled) return;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /** Kun almashganda bugundan oldingi kunlar bo'yicha faol bemorlarni tarixga */
   useEffect(() => {

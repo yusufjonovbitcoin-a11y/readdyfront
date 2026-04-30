@@ -144,7 +144,7 @@ export function useModalA11y({
         previousActive.focus();
       }
     };
-  }, [isOpen, onClose, triggerRef, returnFocusRef, initialFocusRef, inertSelectors, isolateBackground, trapFocus, lockScroll]);
+  }, [isOpen, onClose, triggerRef, returnFocusRef, initialFocusRef, isolateBackground, trapFocus, lockScroll]);
 
   return containerRef;
 }

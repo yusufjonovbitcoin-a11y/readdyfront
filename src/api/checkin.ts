@@ -1,14 +1,15 @@
 import { checkinAdapter } from "@/api";
 import type { TFunction } from "i18next";
 import type {
+  CheckinDoctorProfileDto,
   CheckinDraft,
   CheckinQuestionDto,
   SubmitCheckinInput,
   SubmitCheckinResult,
 } from "@/api/types/checkin.types";
 
-export function getCheckinQuestions(t?: TFunction<"checkin">): Promise<CheckinQuestionDto[]> {
-  return checkinAdapter.getQuestions(t);
+export function getCheckinQuestions(doctorId: string, t?: TFunction<"checkin">): Promise<CheckinQuestionDto[]> {
+  return checkinAdapter.getQuestions(doctorId, t);
 }
 
 export function getCheckinDraft(phone: string): Promise<CheckinDraft | null> {
@@ -25,4 +26,8 @@ export function clearCheckinDraft(phone: string): Promise<void> {
 
 export function submitCheckin(input: SubmitCheckinInput): Promise<SubmitCheckinResult> {
   return checkinAdapter.submitCheckin(input);
+}
+
+export function getCheckinDoctorProfile(doctorId: string): Promise<CheckinDoctorProfileDto | null> {
+  return checkinAdapter.getCheckinDoctorProfile(doctorId);
 }

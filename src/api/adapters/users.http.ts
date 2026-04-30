@@ -10,7 +10,7 @@ type BackendHospitalDto = {
 type BackendAdminDto = {
   id: string;
   phone_number: string;
-  is_super_admin: boolean;
+  is_super: boolean;
   hospital_id: string | null;
   created_at?: string;
   hospital?: BackendHospitalDto | null;
@@ -41,15 +41,15 @@ async function getAdminById(id: string): Promise<BackendAdminDto | null> {
 }
 
 async function createAdmin(input: CreateUserInput): Promise<BackendAdminDto> {
-  const payload = {
-    phone_number: input.phone,
-    password: input.password,
-    is_super_admin: false,
-    hospital_id: input.hospitalId || null,
-  };
-  return apiRequest<BackendAdminDto>("/api/admins", {
+  return apiRequest<BackendAdminDto>("/api/users", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      phone_number: input.phone,
+      password: input.password,
+      role: "admin",
+      is_super: false,
+      hospital_id: input.hospitalId || null,
+    }),
   });
 }
 
@@ -73,7 +73,7 @@ function toIsoOrNow(value?: string) {
 function normalizeAdmin(admin: BackendAdminDto): UserDto {
   return {
     id: admin.id,
-    name: admin.is_super_admin ? "Super Admin" : "Hospital Admin",
+    name: admin.is_super ? "Super Admin" : "Hospital Admin",
     phone: admin.phone_number,
     email: "",
     role: "HOSPITAL_ADMIN",

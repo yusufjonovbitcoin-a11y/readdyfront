@@ -6,7 +6,6 @@ import { getHADoctors } from "@/api/services/hospitalAdminData.service";
 import { getHaAnalyticsBundle, type HaAnalyticsBundle } from "@/api/services/haAnalytics.service";
 import { getHomeDashboardBundle, type HomeDashboardBundle } from "@/api/services/homeAnalytics.service";
 import { getNotifications, type Notification } from "@/api/services/notifications.service";
-import { getSupportTickets, type SupportTicket } from "@/api/services/support.service";
 
 export const CORE_QUERY_STALE_MS = 5 * 60 * 1000;
 const CORE_QUERY_GC_MS = 15 * 60 * 1000;
@@ -17,7 +16,6 @@ export const queryKeys = {
   haAnalyticsBundle: ["core", "analytics-dashboard", "ha-bundle"] as const,
   homeDashboardBundle: ["core", "analytics-dashboard", "home-bundle"] as const,
   notifications: ["notifications", "unread"] as const,
-  supportTickets: ["support", "tickets"] as const,
 };
 export const coreQueryKeys = queryKeys;
 
@@ -52,6 +50,7 @@ export function homeDashboardBundleQueryOptions() {
   return queryOptions<HomeDashboardBundle>({
     queryKey: coreQueryKeys.homeDashboardBundle,
     queryFn: getHomeDashboardBundle,
+    retry: 1,
     staleTime: CORE_QUERY_STALE_MS,
     gcTime: CORE_QUERY_GC_MS,
   });
@@ -61,15 +60,6 @@ export function notificationsQueryOptions() {
   return queryOptions<Notification[]>({
     queryKey: coreQueryKeys.notifications,
     queryFn: getNotifications,
-    staleTime: CORE_QUERY_STALE_MS,
-    gcTime: CORE_QUERY_GC_MS,
-  });
-}
-
-export function supportTicketsQueryOptions() {
-  return queryOptions<SupportTicket[]>({
-    queryKey: coreQueryKeys.supportTickets,
-    queryFn: getSupportTickets,
     staleTime: CORE_QUERY_STALE_MS,
     gcTime: CORE_QUERY_GC_MS,
   });
@@ -98,6 +88,5 @@ export function prefetchSidebarWarmup(queryClient: QueryClient, path: string) {
   // Dashboardda bo'lgan paytda keyingi ehtimoliy o'tishlarni fon rejimida isitib qo'yamiz.
   if (path === "/dashboard" || path === "/home") {
     void queryClient.prefetchQuery(notificationsQueryOptions());
-    void queryClient.prefetchQuery(supportTicketsQueryOptions());
   }
 }

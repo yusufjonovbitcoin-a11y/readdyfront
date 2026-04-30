@@ -266,10 +266,6 @@ export function HADoctorsPageContent() {
             {filtered.filter(d => d.status === 'active').length} {t("common:status.active")}
           </span>
         </div>
-        <p className={`text-xs ${darkMode ? "text-amber-400" : "text-amber-600"}`}>
-          Create/delete va profil tahrirlari endpoint tayyor bo'lguncha faqat interfeysda qo'llanadi. Status o'zgarishi serverga yuboriladi.
-        </p>
-
         {/* Card View */}
         {view === 'card' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

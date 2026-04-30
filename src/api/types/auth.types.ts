@@ -7,7 +7,9 @@ export interface AuthUserDto {
   role: ApiUserRole;
   hospitalId?: string;
   hospitalName?: string;
+  phone?: string;
   avatar: string;
+  checkinUrl?: string;
 }
 
 export interface LoginInput {
@@ -18,4 +20,10 @@ export interface LoginInput {
 
 export interface LoginResult {
   user: AuthUserDto;
+}
+
+export interface ChangePasswordInput {
+  oldPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }

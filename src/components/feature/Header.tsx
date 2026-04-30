@@ -3,6 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import { useNavigate } from "react-router-dom";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useHospitals } from "@/hooks/useHospitals";
+import {
+  getNotifications as fetchNotifications,
+  type Notification as AppNotification,
+  updateNotification,
+} from "@/api/services/notifications.service";
 
 interface HeaderProps {
   title: string;
@@ -21,9 +26,25 @@ type SearchHit = {
 };
 
 const MODAL_INERT_SELECTORS = ["header", "main", "aside"];
+const NOTIFICATIONS_STORAGE_KEY = "medcore_notifications_v1";
 
 function normalize(s: string) {
   return s.toLowerCase().trim();
+}
+
+function getNotificationRoute(item: AppNotification): string {
+  if (item.category === "hospital") return "/hospitals";
+  if (item.category === "doctor") return "/users";
+  if (item.category === "security") return "/audit-logs";
+  return "/notifications";
+}
+
+function isSuperAdminSender(item: AppNotification): boolean {
+  return item.senderRole?.toLowerCase() === "super_admin";
+}
+
+function getHeaderNotifications(items: AppNotification[]): AppNotification[] {
+  return items.filter(isSuperAdminSender).slice(0, 10);
 }
 
 export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed, onToggleMobile }: HeaderProps) {
@@ -38,6 +59,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
   const notificationsTriggerRef = useRef<HTMLButtonElement>(null);
   const previousNotificationsOpenRef = useRef(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   const modShortcut = useMemo(() => {
     if (typeof navigator === "undefined") return "Ctrl+K";
@@ -192,16 +214,36 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
     }
   };
 
-  const notifications = [
-    { id: 1, text: t("admin:header.notifications.items.deactivated"), time: t("admin:header.notifications.times.fiveMin"), type: "warning", to: "/users" },
-    { id: 2, text: t("admin:header.notifications.items.newDoctor"), time: t("admin:header.notifications.times.oneHour"), type: "info", to: "/hospitals" },
-    { id: 3, text: t("admin:header.notifications.items.monthlyReport"), time: t("admin:header.notifications.times.threeHour"), type: "success", to: "/analytics" },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const remote = await fetchNotifications();
+      if (cancelled) return;
+
+      let local: AppNotification[] = [];
+      try {
+        const raw = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as AppNotification[];
+          if (Array.isArray(parsed)) local = parsed;
+        }
+      } catch {
+        // Ignore malformed local notification cache
+      }
+
+      const merged = [...remote, ...local];
+      const dedupedById = Array.from(new Map(merged.map((item) => [item.id, item])).values());
+      setNotifications(getHeaderNotifications(dedupedById));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showNotifications]);
 
   return (
     <>
     <header
-      className={`fixed top-0 right-0 h-16 z-20 flex items-center px-4 md:px-6 transition-[left] duration-300 ease-out ${
+      className={`fixed top-0 right-0 h-16 z-[70] flex items-center px-4 md:px-6 transition-[left] duration-300 ease-out ${
         sidebarCollapsed ? "left-0 md:left-16" : "left-0 md:left-64"
       } ${darkMode ? "bg-[#0F1117] border-b border-[#1E2130]" : "bg-white border-b border-gray-100"}`}
     >
@@ -294,7 +336,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
             <div className="w-5 h-5 flex items-center justify-center">
               <i className="ri-notification-3-line text-base" aria-hidden="true"></i>
             </div>
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+            {notifications.some((n) => !n.read) ? <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span> : null}
           </button>
 
           {showNotifications && (
@@ -304,29 +346,34 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
               role="region"
               aria-label="Bildirishnomalar"
               tabIndex={-1}
-              className={`absolute right-0 top-11 w-80 rounded-xl shadow-lg border z-50 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}
+              className={`absolute right-0 top-11 w-80 rounded-xl shadow-lg border z-[80] ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}
             >
-              <div className={`px-4 py-3 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+              <div className={`px-[25px] py-3 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
                 <p id="header-notifications-title" className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{t("admin:header.notifications.title")}</p>
               </div>
               <div className="py-2">
-                {notifications.map((n) => (
+                {notifications.length === 0 ? (
+                  <p className={`px-4 py-4 text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Hozircha bildirishnoma yo'q</p>
+                ) : notifications.map((n) => (
                   <button
                     key={n.id}
                     type="button"
-                    onClick={() => {
+                    onClick={async () => {
                       setShowNotifications(false);
-                      navigate(n.to);
+                      if (!n.read) {
+                        await updateNotification(n.id, { read: true });
+                        setNotifications((prev) =>
+                          prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
+                        );
+                      }
+                      navigate(getNotificationRoute(n));
                     }}
                     className={`w-full px-4 py-3 text-left cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 ${darkMode ? "hover:bg-[#1A2235]" : "hover:bg-gray-50"}`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.type === "warning" ? "bg-yellow-400" : n.type === "success" ? "bg-emerald-400" : "bg-blue-400"}`}></div>
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.priority === "critical" ? "bg-red-400" : n.priority === "high" ? "bg-orange-400" : n.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`}></div>
                       <div>
-                        <p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{n.text}</p>
-                        <span className="sr-only">
-                          {n.type === "warning" ? "Ogohlantirish" : n.type === "success" ? "Muvaffaqiyat" : "Ma'lumot"}
-                        </span>
+                        <p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{n.title}</p>
                         <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{n.time}</p>
                       </div>
                     </div>

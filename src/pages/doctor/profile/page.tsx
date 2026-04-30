@@ -25,6 +25,7 @@ export function DocProfileContent() {
   const navigate = useNavigate();
   const [qrCopied, setQrCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const [doctor, setDoctor] = useState<DoctorDto | null>(null);
 
   const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
@@ -38,7 +39,6 @@ export function DocProfileContent() {
   const editBtn = darkMode
     ? "border border-[#30363D] text-gray-400 hover:text-gray-200 hover:bg-[#21262D]"
     : "border border-gray-200 text-gray-500 hover:text-gray-700";
-  const starEmpty = darkMode ? "text-gray-600" : "text-gray-200";
   const qrFrame = darkMode ? "p-3 bg-white border-2 border-[#30363D] rounded-xl inline-block" : "p-3 bg-white border-2 border-gray-200 rounded-xl inline-block";
   const copyIdle = darkMode
     ? "border-[#30363D] text-gray-200 hover:bg-[#21262D]"
@@ -66,7 +66,34 @@ export function DocProfileContent() {
     };
   }, [user?.id, user?.role]);
 
-  const checkinTarget = doctor?.qrCode?.trim() || "/checkin";
+  const checkinTarget = useMemo(() => {
+    const rawTarget = doctor?.qrCode?.trim() || user?.checkinUrl?.trim() || "";
+
+    if (rawTarget) {
+      try {
+        const parsed = /^https?:\/\//i.test(rawTarget)
+          ? new URL(rawTarget)
+          : new URL(rawTarget.startsWith("/") ? rawTarget : `/${rawTarget}`, "http://localhost");
+        if (/\/h\/[^/]+\/[^/]+\/d\/[^/\s?]+/i.test(parsed.pathname)) {
+          return rawTarget;
+        }
+      } catch {
+        // ignore invalid target
+      }
+    }
+
+    return "";
+  }, [doctor?.qrCode, user?.checkinUrl]);
+
+  const profileName = doctor?.name ?? user?.name ?? "Doctor";
+  const profileAvatar = doctor?.avatar ?? user?.avatar ?? "";
+  const profileInitials = profileName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const checkinFullUrl = useMemo(
     () => {
@@ -102,31 +129,22 @@ export function DocProfileContent() {
         <div className="min-w-0 space-y-5 lg:col-span-2">
           <div className={`rounded-xl p-6 ${cardBase}`}>
             <div className="flex items-start gap-5">
-              <div className="w-20 h-20 rounded-2xl bg-violet-600 flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-2xl font-bold">AK</span>
+              <div className="w-20 h-20 rounded-2xl bg-violet-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {!avatarFailed && profileAvatar ? (
+                  <img
+                    src={profileAvatar}
+                    alt={profileName}
+                    className="w-full h-full object-cover object-top"
+                    onError={() => setAvatarFailed(true)}
+                  />
+                ) : (
+                  <span className="text-white text-2xl font-bold">{profileInitials || "DR"}</span>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <h2 className={`text-xl font-bold ${pageTitle}`}>{doctor?.name ?? user?.name ?? "Doctor"}</h2>
                 <p className="text-violet-500 font-medium">{doctor?.specialty ?? "General"}</p>
                 <p className={`text-sm mt-1 ${pageMuted}`}>{user?.hospitalName ?? "MedCore"}</p>
-                <div className="flex items-center gap-1 mt-2">
-                  {/** doctor hali yuklanmagan holatda null-safe rating */}
-                  {(() => {
-                    const safeRating = doctor?.rating ?? 0;
-                    return (
-                      <>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="w-4 h-4 flex items-center justify-center">
-                      <i
-                        className={`ri-star-fill text-sm ${i < Math.floor(safeRating) ? "text-amber-400" : starEmpty}`}
-                      ></i>
-                    </div>
-                  ))}
-                    <span className={`text-sm font-semibold ml-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{safeRating}</span>
-                      </>
-                    );
-                  })()}
-                </div>
               </div>
               <button onClick={() => navigate("/doctor/settings")} className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${editBtn}`}>
                 <i className="ri-edit-2-line text-base"></i>
@@ -137,8 +155,8 @@ export function DocProfileContent() {
 
             <div className="grid grid-cols-2 gap-4 mt-5">
               {[
-                { icon: "ri-phone-line", label: "Telefon", value: doctor?.phone ?? "-" },
-                { icon: "ri-time-line", label: "Tajriba", value: "-" },
+                { icon: "ri-phone-line", label: "Telefon", value: doctor?.phone || user?.phone || "-" },
+                { icon: "ri-time-line", label: "Tajriba", value: doctor?.specialty ?? "-" },
                 { icon: "ri-calendar-line", label: "Qo'shilgan", value: doctor?.joinDate?.slice(0, 10) ?? "-" },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
@@ -178,7 +196,7 @@ export function DocProfileContent() {
 
             <div className="mb-4 flex justify-center">
               <div className={qrFrame}>
-                <QrCodeImage value={checkinFullUrl} size={200} alt="Navbatga yozilish QR kodi" />
+                <QrCodeImage value={checkinFullUrl || "about:blank"} size={200} alt="Navbatga yozilish QR kodi" />
               </div>
             </div>
 
@@ -206,6 +224,7 @@ export function DocProfileContent() {
               </button>
               <button
                 onClick={() => {
+                  if (!checkinTarget) return;
                   if (/^https?:\/\//i.test(checkinTarget)) {
                     window.open(checkinTarget, "_blank", "noopener,noreferrer");
                     return;

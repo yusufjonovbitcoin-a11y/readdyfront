@@ -8,9 +8,16 @@ import type {
 import type { DoctorDto } from "@/api/types/doctor.types";
 type BackendDoctorDto = {
   id: string;
-  phone_number: string;
+  user_id?: string;
+  phone_number?: string;
+  full_name?: string | null;
   specialization: string;
   hospital_id: string;
+  department_id?: string;
+  doctorUrl?: string;
+  avatar?: string | null;
+  avatar_url?: string | null;
+  refresh_token?: string | null;
   created_at?: string;
 };
 
@@ -25,24 +32,28 @@ type BackendDepartmentDto = {
   id: string;
   name: string;
   hospital_id: string;
-};
-
-type BackendQuestionnaireDto = {
-  id: string;
-  title: string;
-  department_id: string;
-  hospital_id: string;
-  is_active?: boolean;
-  created_at?: string;
+  hospital?: {
+    name?: string;
+  } | null;
 };
 
 type BackendQuestionDto = {
   id: string;
-  questionnaire_id: string;
-  question_text?: string;
-  text?: string;
-  type?: "SELECT" | "TEXT";
+  department_id: string;
+  hospital_id?: string;
+  doctor_id?: string | null;
+  source_question_id?: string | null;
+  scope?: "TEMPLATE" | "DOCTOR";
+  answer_mode?: "YES_NO" | "FREE_TEXT";
+  text: string;
+  type?: "TEXT" | "TEXTAREA" | "NUMBER" | "SELECT" | "RADIO" | "CHECKBOX" | "DATE";
   is_required?: boolean;
+  order: number;
+  created_at?: string;
+  departments?: {
+    id: string;
+    name: string;
+  };
 };
 
 type CreateDoctorInput = {
@@ -66,6 +77,8 @@ function normalizeUrlLike(value: string): string {
 function extractCheckinUrl(dto: BackendDoctorDto): string {
   const dtoWithExtra = dto as BackendDoctorDto & Record<string, unknown>;
   const knownCandidates = [
+    dtoWithExtra.doctorUrl,
+    dtoWithExtra.doctor_url,
     dtoWithExtra.checkin_url,
     dtoWithExtra.checkinUrl,
     dtoWithExtra.queue_url,
@@ -94,11 +107,11 @@ function extractCheckinUrl(dto: BackendDoctorDto): string {
 function normalizeDoctor(dto: BackendDoctorDto): DoctorDto {
   return {
     id: dto.id,
-    name: `Doctor ${dto.id.slice(0, 6)}`,
+    name: dto.full_name?.trim() || `Doctor ${dto.id.slice(0, 6)}`,
     specialty: dto.specialization,
-    phone: dto.phone_number,
+    phone: dto.phone_number ?? "",
     email: "",
-    avatar: "",
+    avatar: dto.avatar ?? dto.avatar_url ?? dto.refresh_token ?? "",
     todayPatients: 0,
     totalPatients: 0,
     rating: 0,
@@ -152,52 +165,47 @@ export const hospitalAdminAdapter = {
     };
   },
   getQuestionTemplates: async (): Promise<HAQuestionTemplateDto[]> => {
-    const [questionnaires, departments, questions] = await Promise.all([
-      apiRequest<BackendQuestionnaireDto[]>("/api/questionnaires"),
+    const [templateQuestions, departments] = await Promise.all([
+      apiRequest<BackendQuestionDto[]>("/api/questions/templates"),
       apiRequest<BackendDepartmentDto[]>("/api/departments"),
-      apiRequest<BackendQuestionDto[]>("/api/questions"),
     ]);
-    return questionnaires.map((questionnaire) => {
-      const category = departments.find((department) => department.id === questionnaire.department_id);
-      const questionCount = questions.filter((question) => question.questionnaire_id === questionnaire.id).length;
+    return departments.map((department) => {
+      const questionCount = templateQuestions.filter((question) => question.department_id === department.id).length;
       return {
-        id: questionnaire.id,
-        title: questionnaire.title,
-        categoryId: questionnaire.department_id,
-        categoryName: category?.name ?? "Uncategorized",
+        id: department.id,
+        title: department.name,
+        categoryId: department.id,
+        categoryName: department.name,
         questionCount,
-        createdAt: questionnaire.created_at ?? new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       };
     });
   },
   getQuestionTemplateById: async (id: string): Promise<HAQuestionTemplateDto | null> => {
-    const questionnaire = await apiRequest<BackendQuestionnaireDto | null>(
-      `/api/questionnaires/${encodeURIComponent(id)}`,
-    );
-    if (!questionnaire) return null;
-    const [departments, questions] = await Promise.all([
-      apiRequest<BackendDepartmentDto[]>("/api/departments"),
-      apiRequest<BackendQuestionDto[]>("/api/questions"),
+    const [department, templateQuestions] = await Promise.all([
+      apiRequest<BackendDepartmentDto | null>(`/api/departments/${encodeURIComponent(id)}`),
+      apiRequest<BackendQuestionDto[]>(`/api/questions/templates?department_id=${encodeURIComponent(id)}`),
     ]);
-    const category = departments.find((department) => department.id === questionnaire.department_id);
-    const questionCount = questions.filter((question) => question.questionnaire_id === questionnaire.id).length;
+    if (!department) return null;
     return {
-      id: questionnaire.id,
-      title: questionnaire.title,
-      categoryId: questionnaire.department_id,
-      categoryName: category?.name ?? "Uncategorized",
-      questionCount,
-      createdAt: questionnaire.created_at ?? new Date().toISOString(),
+      id: department.id,
+      title: department.name,
+      categoryId: department.id,
+      categoryName: department.name,
+      questionCount: templateQuestions.length,
+      createdAt: new Date().toISOString(),
     };
   },
   getQuestions: async (): Promise<HAQuestionDto[]> => {
-    const questions = await apiRequest<BackendQuestionDto[]>("/api/questions");
-    return questions.map((question, index) => ({
+    const questions = await apiRequest<BackendQuestionDto[]>("/api/questions/templates");
+    return questions.map((question) => ({
       id: question.id,
-      text: question.text ?? question.question_text ?? "",
-      templateId: question.questionnaire_id,
-      order: index + 1,
+      text: question.text ?? "",
+      templateId: question.department_id,
+      order: question.order ?? 1,
       type: question.type,
+      scope: question.scope,
+      answerMode: question.answer_mode,
       isRequired: question.is_required,
     }));
   },
@@ -214,13 +222,22 @@ export const hospitalAdminAdapter = {
       };
     }
 
+    const createdUser = await apiRequest<{ id: string; phone_number: string }>("/api/users", {
+      method: "POST",
+      body: JSON.stringify({
+        phone_number: input.phone,
+        password: input.password,
+        role: "doctor",
+      }),
+    });
+
     const created = await apiRequest<BackendDoctorDto>("/api/doctors", {
       method: "POST",
       body: JSON.stringify({
+        user_id: createdUser.id,
+        full_name: input.name,
         hospital_id: fallbackDepartment.hospital_id,
         department_id: fallbackDepartment.id,
-        phone_number: input.phone,
-        password: input.password,
         specialization: input.specialty,
       }),
     });
@@ -230,6 +247,7 @@ export const hospitalAdminAdapter = {
       ...normalized,
       name: input.name || normalized.name,
       specialty: input.specialty || normalized.specialty,
+      phone: input.phone || normalized.phone,
     };
   },
   createPatient: async (
@@ -261,7 +279,6 @@ export const hospitalAdminAdapter = {
     const created = await apiRequest<BackendDepartmentDto>("/api/departments", {
       method: "POST",
       body: JSON.stringify({
-        hospital_id: "3b1f208a-f0bb-4641-b3f9-b91cafdb794d",
         name: input.name,
       }),
     });
@@ -283,46 +300,37 @@ export const hospitalAdminAdapter = {
     const department = await apiRequest<BackendDepartmentDto>(
       `/api/departments/${encodeURIComponent(input.categoryId)}`,
     );
-    const created = await apiRequest<BackendQuestionnaireDto>("/api/questionnaires", {
-      method: "POST",
-      body: JSON.stringify({
-        hospital_id: department.hospital_id,
-        department_id: input.categoryId,
-        title: input.title,
-        is_active: true,
-      }),
-    });
+    // Templates are department-backed in current backend model.
     return {
-      id: created.id,
-      title: created.title,
-      categoryId: created.department_id,
-      categoryName: "",
+      id: department.id,
+      title: department.name,
+      categoryId: department.id,
+      categoryName: department.name,
       questionCount: 0,
-      createdAt: created.created_at ?? new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
   },
   updateTemplate: async (
     id: string,
     input: Pick<HAQuestionTemplateDto, "title" | "categoryId">,
   ): Promise<HAQuestionTemplateDto> => {
-    const updated = await apiRequest<BackendQuestionnaireDto>(`/api/questionnaires/${encodeURIComponent(id)}`, {
+    const updated = await apiRequest<BackendDepartmentDto>(`/api/departments/${encodeURIComponent(id)}`, {
       method: "PATCH",
       body: JSON.stringify({
-        department_id: input.categoryId,
-        title: input.title,
+        name: input.title,
       }),
     });
     return {
       id: updated.id,
-      title: updated.title,
-      categoryId: updated.department_id,
-      categoryName: "",
+      title: updated.name,
+      categoryId: updated.id,
+      categoryName: updated.name,
       questionCount: 0,
-      createdAt: updated.created_at ?? new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     };
   },
   deleteTemplate: async (id: string): Promise<void> => {
-    await apiRequest<null>(`/api/questionnaires/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await apiRequest<null>(`/api/departments/${encodeURIComponent(id)}`, { method: "DELETE" });
   },
   createQuestion: async (
     input: Pick<HAQuestionDto, "text" | "templateId" | "order"> & { type?: "SELECT" | "TEXT"; isRequired?: boolean },
@@ -330,19 +338,21 @@ export const hospitalAdminAdapter = {
     const created = await apiRequest<BackendQuestionDto>("/api/questions", {
       method: "POST",
       body: JSON.stringify({
-        questionnaire_id: input.templateId,
+        department_id: input.templateId,
         text: input.text,
-        type: input.type ?? "SELECT",
+        answer_mode: (input.type ?? "SELECT") === "TEXT" ? "FREE_TEXT" : "YES_NO",
         is_required: input.isRequired ?? true,
         order: input.order,
       }),
     });
     return {
       id: created.id,
-      text: created.text ?? created.question_text ?? input.text,
-      templateId: created.questionnaire_id ?? input.templateId,
-      order: input.order,
+      text: created.text ?? input.text,
+      templateId: created.department_id ?? input.templateId,
+      order: created.order ?? input.order,
       type: created.type ?? input.type ?? "SELECT",
+      scope: created.scope ?? "TEMPLATE",
+      answerMode: created.answer_mode ?? ((created.type ?? input.type ?? "SELECT") === "TEXT" ? "FREE_TEXT" : "YES_NO"),
       isRequired: created.is_required ?? input.isRequired ?? true,
     };
   },
@@ -354,16 +364,18 @@ export const hospitalAdminAdapter = {
       method: "PATCH",
       body: JSON.stringify({
         text: input.text,
-        ...(input.type ? { type: input.type } : {}),
+        ...(input.type ? { answer_mode: input.type === "TEXT" ? "FREE_TEXT" : "YES_NO" } : {}),
         ...(typeof input.isRequired === "boolean" ? { is_required: input.isRequired } : {}),
       }),
     });
     return {
       id: updated.id,
-      text: updated.text ?? updated.question_text ?? input.text,
-      templateId: updated.questionnaire_id,
-      order: 1,
+      text: updated.text ?? input.text,
+      templateId: updated.department_id,
+      order: updated.order ?? 1,
       type: updated.type ?? input.type,
+      scope: updated.scope,
+      answerMode: updated.answer_mode ?? (updated.type === "TEXT" ? "FREE_TEXT" : "YES_NO"),
       isRequired: updated.is_required ?? input.isRequired,
     };
   },

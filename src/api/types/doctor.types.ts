@@ -38,11 +38,18 @@ export interface DoctorPatientDto {
   consultationDuration: number;
 }
 
+export type DoctorQuestionType = "TEXT" | "TEXTAREA" | "NUMBER" | "SELECT" | "RADIO" | "CHECKBOX" | "DATE";
+export type DoctorQuestionScope = "TEMPLATE" | "DOCTOR";
+export type DoctorQuestionAnswerMode = "YES_NO" | "FREE_TEXT";
+
 export interface DoctorQuestionDto {
   id: string;
   text: string;
   category: string;
   categoryId: string;
+  type?: DoctorQuestionType;
+  scope?: DoctorQuestionScope;
+  answerMode?: DoctorQuestionAnswerMode;
   status: "active" | "inactive";
   isCustom: boolean;
   doctorId: string;

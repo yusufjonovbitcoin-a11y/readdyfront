@@ -20,9 +20,7 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
   const [darkMode, toggleDarkMode, setDarkMode] = usePersistedDoctorTheme();
   const [patientDetailLayout, setPatientDetailLayout] = usePersistedPatientDetailLayout();
   const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
-  const isFullBleedRoute =
-    pathname.startsWith("/doctor/support") ||
-    pathname.startsWith("/doctor/notifications");
+  const isFullBleedRoute = pathname.startsWith("/doctor/notifications");
 
   return (
     <DoctorThemeProvider

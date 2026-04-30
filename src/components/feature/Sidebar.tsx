@@ -3,8 +3,8 @@ import { useEffect, useState, type RefObject } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { getNotifications as fetchNotifications, type Notification as AppNotification } from "@/api/services/notifications.service";
 import medcoreLogoImage from "@/assets/medcore-logo.png";
-import { getSupportUnreadCount, SUPPORT_UNREAD_EVENT } from "@/lib/supportUnread";
 import { prefetchCoreQueriesForPath, prefetchSidebarWarmup } from "@/lib/coreQueryCache";
 
 interface NavItem {
@@ -23,18 +23,20 @@ interface SidebarProps {
   drawerRef?: RefObject<HTMLElement | null>;
 }
 
+const NOTIFICATIONS_STORAGE_KEY = "medcore_notifications_v1";
+
 export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onCloseMobile, drawerRef }: SidebarProps) {
   const { t } = useTranslation("admin");
   const location = useLocation();
-  const [supportUnread, setSupportUnread] = useState(0);
   const showExpanded = mobileOpen || !collapsed;
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(false);
   const navItems: NavItem[] = [
     { path: "/dashboard", icon: "ri-dashboard-line", label: t("admin:sidebar.dashboard") },
     { path: "/hospitals", icon: "ri-hospital-line", label: t("admin:sidebar.hospitals") },
     { path: "/analytics", icon: "ri-bar-chart-2-line", label: t("admin:sidebar.analytics") },
     { path: "/users", icon: "ri-team-line", label: t("admin:sidebar.users") },
-    { path: "/questions", icon: "ri-questionnaire-line", label: t("admin:sidebar.questions", { defaultValue: "Savollar" }) },
     { path: "/audit-logs", icon: "ri-shield-check-line", label: t("admin:sidebar.auditLogs") },
+    { path: "/questions", icon: "ri-questionnaire-line", label: t("admin:sidebar.questions") },
     { path: "/notifications", icon: "ri-notification-3-line", label: t("admin:sidebar.notifications") },
     { path: "/settings", icon: "ri-settings-3-line", label: t("admin:sidebar.settings") },
   ];
@@ -42,27 +44,49 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
   const navigate = useNavigate();
   const { logout } = useAuth();
   const queryClient = useQueryClient();
-  const isSupportActive = location.pathname.startsWith("/support") || location.pathname.includes("/support");
   const prefetchPath = (path: string) => {
     prefetchCoreQueriesForPath(queryClient, path);
   };
 
   useEffect(() => {
-    const syncUnread = () => setSupportUnread(getSupportUnreadCount());
-    syncUnread();
-
-    window.addEventListener("storage", syncUnread);
-    window.addEventListener(SUPPORT_UNREAD_EVENT, syncUnread);
-
-    return () => {
-      window.removeEventListener("storage", syncUnread);
-      window.removeEventListener(SUPPORT_UNREAD_EVENT, syncUnread);
-    };
-  }, []);
-
-  useEffect(() => {
     prefetchSidebarWarmup(queryClient, location.pathname);
   }, [location.pathname, queryClient]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncUnreadNotificationState = async () => {
+      let remote: AppNotification[] = [];
+      try {
+        remote = await fetchNotifications();
+      } catch {
+        // Ignore transient request issues, we still can fall back to local cache.
+      }
+
+      let local: AppNotification[] = [];
+      try {
+        const raw = window.localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as AppNotification[];
+          if (Array.isArray(parsed)) local = parsed;
+        }
+      } catch {
+        // Ignore malformed local notification cache.
+      }
+
+      if (cancelled) return;
+      const merged = [...remote, ...local];
+      const dedupedById = Array.from(new Map(merged.map((item) => [item.id, item])).values());
+      setHasUnreadNotifications(dedupedById.some((item) => !item.read));
+    };
+
+    void syncUnreadNotificationState();
+    window.addEventListener("storage", syncUnreadNotificationState);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("storage", syncUnreadNotificationState);
+    };
+  }, []);
 
   const handleProfileClick = async () => {
     onCloseMobile();
@@ -118,7 +142,7 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
               ? location.pathname === "/dashboard" || location.pathname === "/home"
               : location.pathname.startsWith(item.path);
             const itemClass =
-              `no-underline flex items-center h-11 rounded-lg transition-colors duration-150 cursor-pointer [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 ${
+              `no-underline relative flex items-center h-11 rounded-lg transition-colors duration-150 cursor-pointer [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 ${
                 showExpanded ? "px-3" : "justify-center px-2"
               } ${
                 isActive
@@ -149,12 +173,13 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
                 {showExpanded && (
                   <span className="ml-3 text-sm font-medium whitespace-nowrap">{item.label}</span>
                 )}
-                {item.path === "/support" && supportUnread > 0 && showExpanded ? (
-                  <span className="ml-auto min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold flex-shrink-0">
-                    {supportUnread > 99 ? "99+" : supportUnread}
-                  </span>
-                ) : null}
-                {isActive && showExpanded && item.path !== "/support" && (
+                {item.path === "/notifications" && hasUnreadNotifications && (
+                  <span
+                    className={`${showExpanded ? "ml-auto" : "absolute top-2.5 right-2.5"} w-2 h-2 rounded-full bg-red-500 flex-shrink-0`}
+                    aria-hidden="true"
+                  />
+                )}
+                {isActive && showExpanded && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" aria-hidden="true" />
                 )}
               </Link>
@@ -162,40 +187,6 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
           })}
         </div>
       </nav>
-
-      <div className={`px-2 pb-2 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
-        <Link
-          to="/support"
-          prefetch="none"
-          onClick={onCloseMobile}
-          onMouseEnter={() => prefetchPath("/support")}
-          onFocus={() => prefetchPath("/support")}
-          className={`no-underline flex items-center h-11 rounded-lg transition-colors duration-150 cursor-pointer [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 ${
-            showExpanded ? "px-3" : "justify-center px-2"
-          } ${
-            isSupportActive
-              ? darkMode
-                ? "bg-[#1E2A3A] text-emerald-400 active:bg-[#243044]"
-                : "bg-emerald-50 text-emerald-600 active:bg-emerald-100"
-              : darkMode
-                ? "text-gray-400 hover:bg-[#1A2235] hover:text-white active:bg-[#243044]"
-                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100"
-          }`}
-          aria-current={isSupportActive ? "page" : undefined}
-          aria-label={t("admin:sidebar.support")}
-          title={t("admin:sidebar.support")}
-        >
-          <div className="w-5 h-5 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-            <i className="ri-customer-service-2-line text-base"></i>
-          </div>
-          {showExpanded && <span className="ml-3 text-sm font-medium whitespace-nowrap">{t("admin:sidebar.support")}</span>}
-          {supportUnread > 0 && showExpanded ? (
-            <span className="ml-auto min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold flex-shrink-0">
-              {supportUnread > 99 ? "99+" : supportUnread}
-            </span>
-          ) : null}
-        </Link>
-      </div>
 
       {/* User Profile */}
       <div className={`p-3 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>

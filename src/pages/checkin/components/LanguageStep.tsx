@@ -8,6 +8,8 @@ interface LanguageStepProps {
   onContinue: (lang: CheckinLang) => void;
   doctorName: string;
   doctorSpecialty: string;
+  doctorSpecialization?: string;
+  doctorExperience?: string;
   doctorAvatar: string;
 }
 
@@ -15,6 +17,8 @@ export default function LanguageStep({
   onContinue,
   doctorName,
   doctorSpecialty,
+  doctorSpecialization,
+  doctorExperience,
   doctorAvatar,
 }: LanguageStepProps) {
   const { t } = useTranslation(["checkin", "common"]);
@@ -54,11 +58,20 @@ export default function LanguageStep({
 
         <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4 flex items-center gap-4 shadow-sm">
           <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0">
-            <img src={doctorAvatar} alt="" className="w-full h-full object-cover object-top" />
+            {doctorAvatar ? (
+              <img src={doctorAvatar} alt={doctorName} className="w-full h-full object-cover object-top" />
+            ) : (
+              <div className="w-full h-full bg-teal-100 text-teal-700 flex items-center justify-center text-sm font-bold">
+                {doctorName.trim().charAt(0).toUpperCase() || "D"}
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-gray-900 truncate">{doctorName}</p>
             <p className="text-xs text-teal-600 font-medium">{doctorSpecialty}</p>
+            <p className="text-xs text-gray-500 mt-0.5 truncate">
+              Tajriba: {doctorExperience?.trim() || doctorSpecialization?.trim() || doctorSpecialty}
+            </p>
           </div>
         </div>
 

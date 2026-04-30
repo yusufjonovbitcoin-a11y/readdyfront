@@ -49,14 +49,55 @@ export type HomeDashboardBundle = {
 };
 
 export async function getHomeDashboardBundle(): Promise<HomeDashboardBundle> {
-  const [dashboardRaw, hospitalsRaw, auditLogsRaw] = await Promise.all([
+  const [dashboardResult, hospitalsResult, auditLogsResult] = await Promise.allSettled([
     apiRequest<unknown>("/api/analytics/dashboard"),
     apiRequest<unknown>("/api/hospitals"),
     apiRequest<unknown>("/api/audit-logs"),
   ]);
-  const dashboard = parseContractOrThrow(dashboardRaw, "/api/analytics/dashboard", analyticsDashboardSchema);
-  const hospitals = parseContractOrThrow(hospitalsRaw, "/api/hospitals", hospitalSchema.array());
-  const auditLogs = parseContractOrThrow(auditLogsRaw, "/api/audit-logs", auditLogSchema.array());
+
+  if (dashboardResult.status === "rejected") {
+    throw dashboardResult.reason;
+  }
+
+  const dashboard = parseContractOrThrow(
+    dashboardResult.value,
+    "/api/analytics/dashboard",
+    analyticsDashboardSchema,
+  );
+
+  let hospitals: Hospital[] = [];
+  if (hospitalsResult.status === "fulfilled") {
+    try {
+      hospitals = parseContractOrThrow(hospitalsResult.value, "/api/hospitals", hospitalSchema.array());
+    } catch (error) {
+      console.warn("Ignoring hospitals contract mismatch in dashboard bundle", error);
+    }
+  }
+
+  let auditLogs: Array<{
+    id: string;
+    userId: string;
+    userName: string;
+    role: "SUPER_ADMIN" | "HOSPITAL_ADMIN" | "DOCTOR";
+    action: string;
+    resource: string;
+    detail: string;
+    ip: string;
+    userAgent: string;
+    timestamp: string;
+    status: "success" | "failed" | "warning";
+    resourceId?: string;
+    hospitalId?: string;
+    hospitalName?: string;
+  }> = [];
+  if (auditLogsResult.status === "fulfilled") {
+    try {
+      auditLogs = parseContractOrThrow(auditLogsResult.value, "/api/audit-logs", auditLogSchema.array());
+    } catch (error) {
+      console.warn("Ignoring audit logs contract mismatch in dashboard bundle", error);
+    }
+  }
+
   return {
     daily: dashboard.daily,
     weekly: dashboard.weekly,

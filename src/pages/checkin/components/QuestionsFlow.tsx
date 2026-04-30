@@ -88,7 +88,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
     void (async () => {
       setQuestionsLoadStatus("loading");
       try {
-        const questions = await getCheckinQuestions(t);
+        const questions = await getCheckinQuestions(doctorId, t);
         if (!mounted) return;
         setCheckinQuestions(questions);
         setQuestionsLoadStatus("ready");
@@ -101,7 +101,7 @@ export default function QuestionsFlow({ phone, doctorId, resumeDraft, onComplete
     return () => {
       mounted = false;
     };
-  }, [t, i18n.language, loadAttempt]);
+  }, [doctorId, t, i18n.language, loadAttempt]);
 
   const getVisibleQuestions = useCallback((ans: Record<string, string | string[]>): CheckinQuestion[] => {
     return checkinQuestions.filter(q => {

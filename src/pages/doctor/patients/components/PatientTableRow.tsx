@@ -19,6 +19,8 @@ interface PatientTableRowProps {
 export default function PatientTableRow({ patient, darkMode = false, onStatusChange }: PatientTableRowProps) {
   const navigate = useNavigate();
   const risk = riskConfig[patient.riskLevel];
+  const normalizedName = patient.name.startsWith("Patient ") ? `Bemor ${patient.phone.slice(-4)}` : patient.name;
+  const ageText = patient.age > 0 ? `${patient.age} yosh` : "-";
 
   return (
     <tr
@@ -40,11 +42,11 @@ export default function PatientTableRow({ patient, darkMode = false, onStatusCha
               {patient.queueNumber}
             </span>
           )}
-          {patient.name}
+          {normalizedName}
         </Link>
       </td>
       <td className={`hidden sm:table-cell px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{patient.phone}</td>
-      <td className={`hidden md:table-cell px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{patient.age} yosh</td>
+      <td className={`hidden md:table-cell px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{ageText}</td>
       <td className="px-4 py-3">
         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${risk.bg} ${risk.color}`}>{risk.label}</span>
       </td>

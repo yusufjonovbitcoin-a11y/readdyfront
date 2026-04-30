@@ -22,13 +22,17 @@ function withDoctorPrefix(value: string): string {
   return `Dr. ${normalized}`;
 }
 
+function withDoctorPrefixWhileTyping(value: string): string {
+  if (!value) return "";
+  if (/^dr\.?\s*/i.test(value)) {
+    return value.replace(/^dr\.?\s*/i, "Dr. ");
+  }
+  return `Dr. ${value}`;
+}
+
 export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isSaving = false }: DoctorFormModalProps) {
   const { t } = useTranslation("hospital");
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const specialtySelectRef = useRef<HTMLSelectElement>(null);
-  const phoneInputRef = useRef<HTMLInputElement>(null);
-  const passwordInputRef = useRef<HTMLInputElement>(null);
-  const [activeField, setActiveField] = useState<"name" | "specialty" | "phone" | "password">("name");
   const modalRef = useModalA11y({ isOpen: true, onClose, initialFocusRef: nameInputRef });
   const fieldId = {
     name: "ha-doctor-form-name",
@@ -87,22 +91,6 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
       mounted = false;
     };
   }, [doctor?.id, doctor?.specialty]);
-
-  useEffect(() => {
-    const targetRef =
-      activeField === "name"
-        ? nameInputRef
-        : activeField === "specialty"
-          ? specialtySelectRef
-          : activeField === "phone"
-            ? phoneInputRef
-            : passwordInputRef;
-    const el = targetRef.current;
-    if (!el) return;
-    if (document.activeElement !== el) {
-      el.focus();
-    }
-  }, [form, activeField]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,8 +175,8 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
               className={inputClass}
               placeholder="Dr. Ism Familiya"
               value={form.name}
-              onFocus={() => setActiveField("name")}
-              onChange={e => setForm({ ...form, name: withDoctorPrefix(e.target.value) })}
+              onChange={e => setForm((prev) => ({ ...prev, name: withDoctorPrefixWhileTyping(e.target.value) }))}
+              onBlur={() => setForm((prev) => ({ ...prev, name: withDoctorPrefix(prev.name) }))}
               required
             />
             {errors.name && <p id={`${fieldId.name}-error`} className="mt-1 text-xs text-red-500">{errors.name}</p>}
@@ -196,14 +184,12 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
           <div>
             <label htmlFor={fieldId.specialty} className={labelClass}>Bo'lim *</label>
             <select
-              ref={specialtySelectRef}
               id={fieldId.specialty}
               aria-invalid={Boolean(errors.specialty)}
               aria-describedby={errors.specialty ? `${fieldId.specialty}-error` : undefined}
               className={inputClass}
               value={form.specialty}
-              onFocus={() => setActiveField("specialty")}
-              onChange={e => setForm({ ...form, specialty: e.target.value })}
+              onChange={e => setForm((prev) => ({ ...prev, specialty: e.target.value }))}
               required
             >
               <option value="">
@@ -220,7 +206,6 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
           <div>
             <label htmlFor={fieldId.phone} className={labelClass}>Telefon *</label>
             <input
-              ref={phoneInputRef}
               id={fieldId.phone}
               aria-invalid={Boolean(errors.phone)}
               aria-describedby={errors.phone ? `${fieldId.phone}-error` : `${fieldId.phone}-help`}
@@ -228,8 +213,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
               className={inputClass}
               placeholder="+998 90 000 00 00"
               value={form.phone}
-              onFocus={() => setActiveField("phone")}
-              onChange={e => setForm({ ...form, phone: e.target.value })}
+              onChange={e => setForm((prev) => ({ ...prev, phone: e.target.value }))}
               required
             />
             <p id={`${fieldId.phone}-help`} className="sr-only">Telefon raqami xalqaro formatda kiritiladi.</p>
@@ -238,7 +222,6 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
           <div>
             <label htmlFor={fieldId.password} className={labelClass}>Parol</label>
             <input
-              ref={passwordInputRef}
               id={fieldId.password}
               aria-invalid={Boolean(errors.password)}
               aria-describedby={errors.password ? `${fieldId.password}-error` : `${fieldId.password}-help`}
@@ -246,8 +229,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
               className={inputClass}
               placeholder="Kamida 8 ta belgi"
               value={form.password}
-              onFocus={() => setActiveField("password")}
-              onChange={e => setForm({ ...form, password: e.target.value })}
+              onChange={e => setForm((prev) => ({ ...prev, password: e.target.value }))}
             />
             <p id={`${fieldId.password}-help`} className="sr-only">Ixtiyoriy parol maydoni.</p>
             {errors.password && <p id={`${fieldId.password}-error`} className="mt-1 text-xs text-red-500">{errors.password}</p>}
