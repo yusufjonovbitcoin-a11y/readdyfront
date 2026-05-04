@@ -26,6 +26,16 @@
       "showNotifications": "Bildirishnomalarni ko'rsatish",
       "openProfile": "Profilni ochish"
     },
+    "search": {
+      "trigger": "Qidiruv",
+      "placeholder": "Sahifa yoki bo‘lim...",
+      "global": "Tezkor qidiruv",
+      "close": "Yopish",
+      "results": "Natijalar",
+      "notFound": "Hech narsa topilmadi",
+      "page": "Sahifa",
+      "help": "Tanlash: Enter. Chiqish: Esc."
+    },
     "notifications": {
       "title": "Bildirishnomalar",
       "newPatient": "Yangi bemor navbatga qo'shildi: Sardor Umarov",

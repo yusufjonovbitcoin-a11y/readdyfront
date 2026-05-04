@@ -39,6 +39,8 @@ export interface HAQuestionTemplateDto {
   categoryName: string;
   questionCount: number;
   createdAt: string;
+  /** Bo‘lim uchun saqlangan AI tizim prompti (mavjud bo‘lsa) */
+  aiSystemPrompt?: string | null;
 }
 
 export type QuestionTypeDto = "TEXT" | "TEXTAREA" | "NUMBER" | "SELECT" | "RADIO" | "CHECKBOX" | "DATE";

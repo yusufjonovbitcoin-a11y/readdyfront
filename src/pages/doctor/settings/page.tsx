@@ -6,6 +6,7 @@ import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { getCurrentDoctorSession } from "@/api/services/doctorSession.service";
 import { changePassword } from "@/api/auth";
 import { updateDoctorAvatar } from "@/api/doctor";
+import { useAuth } from "@/hooks/useAuth";
 
 type SettingsTab = 'profile' | 'security' | 'language' | 'notifications';
 
@@ -27,6 +28,7 @@ export default function DocSettingsPage() {
 
 export function DocSettingsContent() {
   const { t, i18n } = useTranslation("doctor");
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => resolveSettingsTab(searchParams.get("tab")));
   const [language, setLanguage] = useState<'uz' | 'ru'>(i18n.language === "ru" ? "ru" : "uz");
@@ -56,8 +58,9 @@ export function DocSettingsContent() {
   }, [avatarMenuOpen]);
   const { darkMode, setDarkMode, patientDetailLayout, setPatientDetailLayout } = useDoctorTheme();
   const currentDoctorSession = getCurrentDoctorSession();
-  const fallbackAvatar = currentDoctorSession?.avatar ?? "";
-  const fallbackInitials = (currentDoctorSession?.name ?? "Doctor")
+  const fallbackAvatar = (localAvatarUrl ?? currentDoctorSession?.avatar ?? user?.avatar ?? "").trim();
+  const fallbackName = currentDoctorSession?.name ?? user?.name ?? "Doctor";
+  const fallbackInitials = fallbackName
     .split(" ")
     .filter(Boolean)
     .map((part) => part[0])
@@ -73,8 +76,8 @@ export function DocSettingsContent() {
   const cardTextMuted = darkMode ? "text-gray-400" : "text-gray-600";
   const divider = darkMode ? "border-[#30363D]" : "border-gray-100";
   const inputBase = darkMode
-    ? "w-full text-sm border border-[#30363D] rounded-lg px-3 py-2.5 bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
-    : "w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-400";
+    ? "w-full text-sm border border-[#30363D] rounded-lg px-3 py-2.5 bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+    : "w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-green-400";
 
   const [profile, setProfile] = useState({
     name: 'Dr. Alisher Karimov',
@@ -212,8 +215,8 @@ export function DocSettingsContent() {
                   className={`inline-flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
                     activeTab === tab.id
                       ? darkMode
-                        ? "bg-violet-900/40 text-violet-200"
-                        : "bg-violet-50 text-violet-700"
+                        ? "bg-green-900/30 text-green-200"
+                        : "bg-green-50 text-green-700"
                       : darkMode
                         ? "text-gray-300 hover:bg-[#21262D]"
                         : "text-gray-600 hover:bg-gray-50"
@@ -256,10 +259,10 @@ export function DocSettingsContent() {
                     onChange={handleAvatarFileChange}
                   />
                   <div className="relative" ref={avatarMenuRef}>
-                    <div className="w-16 h-16 shrink-0 overflow-hidden rounded-full bg-violet-600 flex items-center justify-center">
-                      {!avatarFailed ? (
+                    <div className="w-16 h-16 shrink-0 overflow-hidden rounded-full bg-green-600 flex items-center justify-center">
+                      {fallbackAvatar && !avatarFailed ? (
                         <img
-                          src={localAvatarUrl ?? fallbackAvatar}
+                          src={fallbackAvatar}
                           alt={profile.name}
                           width={64}
                           height={64}
@@ -275,8 +278,8 @@ export function DocSettingsContent() {
                       onClick={() => setAvatarMenuOpen((prev) => !prev)}
                       className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
                         darkMode
-                          ? "bg-[#21262D] border-[#161B22] text-violet-300 hover:text-violet-200"
-                          : "bg-white border-gray-100 text-violet-600 hover:text-violet-700"
+                          ? "bg-[#21262D] border-[#161B22] text-green-300 hover:text-green-200"
+                          : "bg-white border-gray-100 text-green-600 hover:text-green-700"
                       }`}
                       aria-label="Profil rasmini boshqarish"
                       title="Profil rasmini boshqarish"
@@ -296,7 +299,7 @@ export function DocSettingsContent() {
                             avatarFileInputRef.current?.click();
                           }}
                           className={`w-full text-left px-2.5 py-2 rounded-md text-xs font-medium transition-colors ${
-                            darkMode ? "text-violet-300 hover:bg-[#161B22]" : "text-violet-700 hover:bg-gray-50"
+                            darkMode ? "text-green-300 hover:bg-[#161B22]" : "text-green-700 hover:bg-gray-50"
                           }`}
                         >
                           Rasmni o'zgartirish
@@ -323,7 +326,7 @@ export function DocSettingsContent() {
                   </div>
                   <div>
                     <p className={`text-sm font-semibold ${cardTitle}`}>{profile.name}</p>
-                    <p className="text-xs text-violet-600">{profile.specialty}</p>
+                    <p className="text-xs text-green-600">{profile.specialty}</p>
                     <p className={`text-xs mt-0.5 ${cardTextMuted}`}>{profile.phone}</p>
                     {isUploadingAvatar && <p className={`text-xs mt-1 ${cardTextMuted}`}>Surat yuklanmoqda...</p>}
                     {avatarUploadError && <p className="text-xs mt-1 text-red-500">{avatarUploadError}</p>}
@@ -355,7 +358,7 @@ export function DocSettingsContent() {
 
                 <button
                   onClick={handleSaveProfile}
-                  className="px-6 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors whitespace-nowrap"
+                  className="px-6 py-2.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 cursor-pointer transition-colors whitespace-nowrap"
                 >
                   Saqlash
                 </button>
@@ -440,7 +443,7 @@ export function DocSettingsContent() {
                     void handleChangePassword();
                   }}
                   disabled={isChangingPassword}
-                  className="px-6 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors whitespace-nowrap"
+                  className="px-6 py-2.5 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 cursor-pointer transition-colors whitespace-nowrap"
                 >
                   {isChangingPassword ? "Yuborilmoqda..." : "Parolni o'zgartirish"}
                 </button>
@@ -469,8 +472,8 @@ export function DocSettingsContent() {
                         className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
                           language === lang.id
                             ? darkMode
-                              ? 'border-violet-500/70 bg-violet-900/30'
-                              : 'border-violet-500 bg-violet-50'
+                              ? 'border-green-500/70 bg-green-900/30'
+                              : 'border-green-500 bg-green-50'
                             : darkMode
                               ? 'border-[#30363D] hover:border-gray-500/60'
                               : 'border-gray-200 hover:border-gray-300'
@@ -479,14 +482,14 @@ export function DocSettingsContent() {
                         <span className="text-2xl">{lang.flag}</span>
                         <span className={`text-sm font-medium ${
                           language === lang.id
-                            ? (darkMode ? 'text-violet-200' : 'text-violet-700')
+                            ? (darkMode ? 'text-green-200' : 'text-green-700')
                             : (darkMode ? 'text-gray-200' : 'text-gray-700')
                         }`}>
                           {lang.label}
                         </span>
                         {language === lang.id && (
                           <div className="ml-auto w-5 h-5 flex items-center justify-center">
-                            <i className="ri-checkbox-circle-fill text-violet-600"></i>
+                            <i className="ri-checkbox-circle-fill text-green-600"></i>
                           </div>
                         )}
                       </button>
@@ -518,8 +521,8 @@ export function DocSettingsContent() {
                         className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer text-left ${
                           patientDetailLayout === opt.id
                             ? darkMode
-                              ? "border-violet-500/70 bg-violet-900/30"
-                              : "border-violet-500 bg-violet-50"
+                              ? "border-green-500/70 bg-green-900/30"
+                              : "border-green-500 bg-green-50"
                             : darkMode
                               ? "border-[#30363D] hover:border-gray-500/60"
                               : "border-gray-200 hover:border-gray-300"
@@ -531,8 +534,8 @@ export function DocSettingsContent() {
                               className={`${opt.icon} text-xl ${
                                 patientDetailLayout === opt.id
                                   ? darkMode
-                                    ? "text-violet-300"
-                                    : "text-violet-600"
+                                    ? "text-green-300"
+                                    : "text-green-600"
                                   : darkMode
                                     ? "text-gray-400"
                                     : "text-gray-500"
@@ -543,8 +546,8 @@ export function DocSettingsContent() {
                             className={`text-sm font-medium ${
                               patientDetailLayout === opt.id
                                 ? darkMode
-                                  ? "text-violet-200"
-                                  : "text-violet-700"
+                                  ? "text-green-200"
+                                  : "text-green-700"
                                 : darkMode
                                   ? "text-gray-200"
                                   : "text-gray-700"
@@ -572,8 +575,8 @@ export function DocSettingsContent() {
                         className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
                           darkMode === mode.id
                             ? darkMode
-                              ? 'border-violet-500/70 bg-violet-900/30'
-                              : 'border-violet-500 bg-violet-50'
+                              ? 'border-green-500/70 bg-green-900/30'
+                              : 'border-green-500 bg-green-50'
                             : darkMode
                               ? 'border-[#30363D] hover:border-gray-500/60'
                               : 'border-gray-200 hover:border-gray-300'
@@ -582,13 +585,13 @@ export function DocSettingsContent() {
                         <div className="w-8 h-8 flex items-center justify-center">
                           <i className={`${mode.icon} text-xl ${
                             darkMode === mode.id
-                              ? (darkMode ? 'text-violet-300' : 'text-violet-600')
+                              ? (darkMode ? 'text-green-300' : 'text-green-600')
                               : (darkMode ? 'text-gray-400' : 'text-gray-500')
                           }`}></i>
                         </div>
                         <span className={`text-sm font-medium ${
                           darkMode === mode.id
-                            ? (darkMode ? 'text-violet-200' : 'text-violet-700')
+                            ? (darkMode ? 'text-green-200' : 'text-green-700')
                             : (darkMode ? 'text-gray-200' : 'text-gray-700')
                         }`}>
                           {mode.label}
@@ -622,11 +625,11 @@ export function DocSettingsContent() {
                         aria-checked={notifs[item.key as keyof typeof notifs]}
                         aria-label={`${item.label}: bildirishnoma`}
                         onClick={() => setNotifs({ ...notifs, [item.key]: !notifs[item.key as keyof typeof notifs] })}
-                        className={`inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+                        className={`inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 ${
                           darkMode ? "focus-visible:ring-offset-[#161B22]" : "focus-visible:ring-offset-white"
                         } ${
                           notifs[item.key as keyof typeof notifs]
-                            ? "justify-end bg-violet-600"
+                            ? "justify-end bg-green-600"
                             : darkMode
                               ? "justify-start bg-[#30363D]"
                               : "justify-start bg-gray-300"

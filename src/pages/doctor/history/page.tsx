@@ -49,7 +49,7 @@ export function DocHistoryContent() {
   const linkCls = darkMode ? "text-violet-400 hover:text-violet-300" : "text-violet-600 hover:text-violet-700";
 
   const { patients } = useDocPatients();
-  const historyPatients = patients.filter((p) => p.status === "history" || p.status === "completed");
+  const historyPatients = patients.filter((p) => p.status === "history");
 
   const matchesDateFilter = (date: string) => {
     if (dateFilter === "all") return true;

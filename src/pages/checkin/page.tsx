@@ -1,16 +1,15 @@
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import PhoneStep from './components/PhoneStep';
 import LanguageStep from './components/LanguageStep';
 import type { CheckinLang } from './components/LanguageStep';
-import QuestionsFlow from './components/QuestionsFlow';
 import AIAssistStep from './components/AIAssistStep';
 import ResultStep from './components/ResultStep';
-import { clearCheckinDraft, getCheckinDoctorProfile, submitCheckin } from "@/api/checkin";
+import { clearCheckinDraft, getCheckinDoctorProfile, getCheckinDraft, submitCheckin } from "@/api/checkin";
 import type { SubmitCheckinResult } from "@/api/types/checkin.types";
 
-type FlowStep = 'phone' | 'language' | 'questions' | 'ai' | 'result';
+type FlowStep = 'phone' | 'language' | 'ai' | 'result';
 type SubmissionState = "idle" | "submitting" | "success" | "error";
 
 function NotFoundState({ title, description }: { title: string; description: string }) {
@@ -73,7 +72,7 @@ function SubmitErrorState({ onRetry, onBack }: { onRetry: () => void; onBack: ()
 
 export default function CheckInPage() {
   const { t } = useTranslation("checkin");
-  const params = useParams<{ doctorId?: string }>();
+  const params = useParams<{ doctorId?: string; departmentSlug?: string }>();
   const [searchParams] = useSearchParams();
   const doctorId =
     params.doctorId?.trim() ??
@@ -98,15 +97,24 @@ export default function CheckInPage() {
       searchParams.get("tajriba")?.trim() ||
       "",
     avatar: searchParams.get("doctor_avatar")?.trim() || "",
+    checkinToken: "",
   });
 
   const [step, setStep] = useState<FlowStep>('language');
+  const [checkinLang, setCheckinLang] = useState<CheckinLang>('uz');
+  const checkinVisitClientId = useMemo(
+    () =>
+      typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.randomUUID === 'function'
+        ? globalThis.crypto.randomUUID()
+        : `visit-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    [],
+  );
   const [phone, setPhone] = useState('');
-  const [resumeDraft, setResumeDraft] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [usedAI, setUsedAI] = useState(false);
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [submissionResult, setSubmissionResult] = useState<SubmitCheckinResult | null>(null);
+  const submitAiSummaryRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!resolvedDoctorId) return;
@@ -121,6 +129,7 @@ export default function CheckInPage() {
         specialty: profile.department_name?.trim() || profile.specialization?.trim() || prev.specialty,
         specialization: profile.specialization?.trim() || prev.specialization,
         avatar: profile.avatar?.trim() || prev.avatar,
+        checkinToken: profile.checkin_token?.trim() || prev.checkinToken,
       }));
     })();
     return () => {
@@ -135,7 +144,13 @@ export default function CheckInPage() {
     }
     setSubmissionState("submitting");
     try {
-      const result = await submitCheckin({ phone, doctorId: resolvedDoctorId, answers });
+      const result = await submitCheckin({
+        phone,
+        doctorId: resolvedDoctorId,
+        checkinToken: doctor.checkinToken,
+        answers,
+        aiSummary: submitAiSummaryRef.current,
+      });
       setSubmissionResult(result);
       try {
         await clearCheckinDraft(phone);
@@ -172,32 +187,38 @@ export default function CheckInPage() {
     );
   }
 
-  const handleLanguageContinue = (_: CheckinLang) => {
+  const handleLanguageContinue = (lang: CheckinLang) => {
+    setCheckinLang(lang);
     setStep('phone');
   };
 
-  const handlePhoneContinue = (p: string, resume: boolean) => {
+  const handlePhoneContinue = async (p: string, resume: boolean) => {
     setPhone(p);
-    setResumeDraft(resume);
-    setStep('questions');
-  };
-
-  const handleQuestionsComplete = (ans: Record<string, string | string[]>) => {
-    setAnswers(ans);
+    if (resume) {
+      try {
+        const draft = await getCheckinDraft(p);
+        setAnswers(draft?.answers ?? {});
+      } catch {
+        setAnswers({});
+      }
+    } else {
+      setAnswers({});
+    }
     setStep('ai');
   };
 
-  const handleAIFinish = (ai: boolean) => {
-    setUsedAI(ai);
+  const handleAIFinish = (usedAssistant: boolean, aiSummary?: string) => {
+    setUsedAI(usedAssistant);
+    submitAiSummaryRef.current = aiSummary;
     void submitFlow();
   };
 
   const handleRestart = () => {
     setStep('language');
     setPhone('');
-    setResumeDraft(false);
     setAnswers({});
     setUsedAI(false);
+    submitAiSummaryRef.current = undefined;
     setSubmissionResult(null);
     setSubmissionState("idle");
   };
@@ -223,23 +244,21 @@ export default function CheckInPage() {
           doctorAvatar={doctor.avatar}
         />
       )}
-      {step === 'questions' && (
-        <QuestionsFlow
-          phone={phone}
-          doctorId={resolvedDoctorId}
-          resumeDraft={resumeDraft}
-          onComplete={handleQuestionsComplete}
-        />
-      )}
       {step === 'ai' && (
         <AIAssistStep
+          doctorId={resolvedDoctorId}
+          checkinToken={doctor.checkinToken}
           answers={answers}
+          patientLanguage={checkinLang}
+          doctorLanguage={checkinLang}
+          visitId={checkinVisitClientId}
           onFinish={handleAIFinish}
         />
       )}
       {step === 'result' && submissionState === "success" && (
         <ResultStep
           phone={phone}
+          doctorId={resolvedDoctorId}
           doctorName={doctor.name}
           doctorSpecialty={doctor.specialty}
           answers={answers}

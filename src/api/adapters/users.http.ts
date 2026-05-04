@@ -9,6 +9,8 @@ type BackendHospitalDto = {
 
 type BackendAdminDto = {
   id: string;
+  user_id: string;
+  full_name?: string | null;
   phone_number: string;
   is_super: boolean;
   hospital_id: string | null;
@@ -41,6 +43,7 @@ async function getAdminById(id: string): Promise<BackendAdminDto | null> {
 }
 
 async function createAdmin(input: CreateUserInput): Promise<BackendAdminDto> {
+  const fullName = input.name?.trim();
   return apiRequest<BackendAdminDto>("/api/users", {
     method: "POST",
     body: JSON.stringify({
@@ -49,6 +52,7 @@ async function createAdmin(input: CreateUserInput): Promise<BackendAdminDto> {
       role: "admin",
       is_super: false,
       hospital_id: input.hospitalId || null,
+      ...(fullName ? { full_name: fullName } : {}),
     }),
   });
 }
@@ -71,9 +75,10 @@ function toIsoOrNow(value?: string) {
 }
 
 function normalizeAdmin(admin: BackendAdminDto): UserDto {
+  const displayName = admin.full_name?.trim();
   return {
     id: admin.id,
-    name: admin.is_super ? "Super Admin" : "Hospital Admin",
+    name: displayName || (admin.is_super ? "Super Admin" : "Hospital Admin"),
     phone: admin.phone_number,
     email: "",
     role: "HOSPITAL_ADMIN",
@@ -167,11 +172,22 @@ export async function updateUser(id: string, input: UpdateUserInput): Promise<Us
   if (!existing) return null;
 
   if (existing.role === "HOSPITAL_ADMIN") {
-    const payload: Record<string, unknown> = {};
-    if (input.phone) payload.phone_number = input.phone;
-    if (input.password) payload.password = input.password;
-    if (input.hospitalId) payload.hospital_id = input.hospitalId;
-    await patchAdmin(id, payload);
+    const adminRow = await getAdminById(id);
+    const accountUserId = adminRow?.user_id;
+    if (accountUserId && (input.full_name !== undefined || input.phone || input.password)) {
+      const body: { full_name?: string; phone_number?: string; password?: string } = {};
+      if (input.full_name !== undefined) {
+        const t = input.full_name?.trim();
+        if (t) body.full_name = t;
+        else body.full_name = "";
+      }
+      if (input.phone) body.phone_number = input.phone.replace(/\s+/g, "");
+      if (input.password) body.password = input.password;
+      await patchUserAccount(accountUserId, body);
+    }
+    if (input.hospitalId) {
+      await patchAdmin(id, { hospital_id: input.hospitalId });
+    }
     return getUserById(id);
   }
 
@@ -189,6 +205,17 @@ export async function updateUser(id: string, input: UpdateUserInput): Promise<Us
   }
 
   return existing;
+}
+
+/** `Users.id` bo‘yicha profil (masalan `Admins.full_name`) */
+export async function patchUserAccount(
+  userId: string,
+  body: { full_name?: string; phone_number?: string; password?: string },
+): Promise<void> {
+  await apiRequest<unknown>(`/api/users/${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
 }
 
 export async function deleteUser(id: string): Promise<boolean> {

@@ -10,6 +10,7 @@ export interface RequestOptions extends Omit<globalThis.RequestInit, "headers"> 
   headers?: Record<string, string>;
   skipRefreshOn401?: boolean;
   suppressSessionFailureOn401?: boolean;
+  timeoutMs?: number;
 }
 
 export class AuthError extends Error {
@@ -29,12 +30,14 @@ const MAX_RETRY_ATTEMPTS = 2;
 const RETRY_BASE_DELAY_MS = 350;
 
 const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
+/** Dev: Vite proxy returns 502 if Nest is not listening on the proxy target — try API origin directly. */
+const PROXY_FALLBACK_STATUS_CODES = new Set([404, 502, 503, 504]);
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
 const AUTH_ENDPOINTS = new Set(["/api/auth/login", "/api/auth/refresh", "/api/auth/logout"]);
 let authRecoverySuppressed = false;
 let sessionFailureNotified = false;
 
-function getStoredAccessToken(): string | null {
+export function getStoredAccessToken(): string | null {
   try {
     return globalThis.localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
   } catch {
@@ -138,6 +141,47 @@ async function parseResponse(response: Response): Promise<unknown> {
   }
 }
 
+/**
+ * Storage-da access token bo‘lmasa, httpOnly refresh cookie orqali bitta `/refresh` urinishi.
+ * Muvaffaqiyatli bo‘lsa token yoziladi. Hech qachon throw qilmaydi.
+ */
+export async function trySilentSessionRefresh(): Promise<boolean> {
+  if (getStoredAccessToken()?.trim()) return true;
+
+  const runFetch = (url: string) =>
+    fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+
+  let response = await runFetch(buildUrl("/api/auth/refresh"));
+  if (
+    !response.ok &&
+    PROXY_FALLBACK_STATUS_CODES.has(response.status) &&
+    !configuredApiBaseUrl
+  ) {
+    response = await runFetch(buildUrlWithBase("/api/auth/refresh", API_FALLBACK_BASE_URL));
+  }
+
+  if (!response.ok) return false;
+
+  const data = await parseResponse(response);
+  const token =
+    typeof data === "object" &&
+    data !== null &&
+    ("accessToken" in data || "access_token" in data)
+      ? (data as { accessToken?: string; access_token?: string }).accessToken ??
+        (data as { access_token?: string }).access_token
+      : undefined;
+
+  if (typeof token === "string" && token.trim()) {
+    setStoredAccessToken(token.trim());
+    return true;
+  }
+  return false;
+}
+
 export async function apiRequest<TResponse>(
   path: string,
   options: RequestOptions = {},
@@ -145,6 +189,7 @@ export async function apiRequest<TResponse>(
   const {
     skipRefreshOn401 = false,
     suppressSessionFailureOn401 = false,
+    timeoutMs,
     ...fetchOptions
   } = options;
   const requestInternal = async (allowRefreshRetry: boolean): Promise<TResponse> => {
@@ -162,9 +207,10 @@ export async function apiRequest<TResponse>(
 
     for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
       const controller = new AbortController();
+      const effectiveTimeoutMs = timeoutMs ?? REQUEST_TIMEOUT_MS;
       const timeoutId = globalThis.setTimeout(
         () => controller.abort(),
-        REQUEST_TIMEOUT_MS,
+        effectiveTimeoutMs,
       );
 
       const onAbort = () => controller.abort();
@@ -182,7 +228,7 @@ export async function apiRequest<TResponse>(
 
         if (
           !response.ok &&
-          response.status === 404 &&
+          PROXY_FALLBACK_STATUS_CODES.has(response.status) &&
           !configuredApiBaseUrl &&
           path.startsWith("/api")
         ) {
@@ -213,6 +259,9 @@ export async function apiRequest<TResponse>(
           if (response.status === 401) {
             const isAuthSessionProbe = path === "/api/auth/me" || path === "/api/auth/refresh";
             if (suppressSessionFailureOn401) {
+              if (path === "/api/auth/me") {
+                clearStoredAccessToken();
+              }
               throw normalizeError(401, message, responseData);
             }
             const canTryRefresh =

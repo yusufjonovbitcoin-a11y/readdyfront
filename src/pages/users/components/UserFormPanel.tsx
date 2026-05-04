@@ -4,7 +4,6 @@ import type { Hospital } from "@/types";
 interface UserFormState {
   name: string;
   phone: string;
-  email: string;
   role: string;
   hospitalId: string;
   password: string;
@@ -71,16 +70,6 @@ export default function UserFormPanel({
             placeholder={t("users.form.phonePlaceholder")}
             value={form.phone}
             onChange={(e) => onFormChange({ ...form, phone: e.target.value })}
-          />
-        </div>
-        <div>
-          <label htmlFor="users-form-email" className={labelClass}>{t("users.form.emailLabel")}</label>
-          <input
-            id="users-form-email"
-            className={inputClass}
-            placeholder={t("users.form.emailPlaceholder")}
-            value={form.email}
-            onChange={(e) => onFormChange({ ...form, email: e.target.value })}
           />
         </div>
         <div>

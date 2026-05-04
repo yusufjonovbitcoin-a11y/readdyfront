@@ -12,6 +12,7 @@
     "settings": "Sozlamalar",
     "hospitalName": "Toshkent Klinikasi",
     "hospitalAdmin": "Hospital Admin",
+    "hospitalUnknown": "Kasalxona nomi mavjud emas",
     "logout": "Chiqish",
     "expand": "Yon panelni kengaytirish",
     "collapse": "Yon panelni yig'ish"
@@ -19,6 +20,16 @@
   "header": {
     "searchPlaceholder": "Qidirish...",
     "globalSearch": "Global qidiruv",
+    "search": {
+      "trigger": "Qidiruv",
+      "placeholder": "Sahifa yoki bo‘lim...",
+      "global": "Tezkor qidiruv",
+      "close": "Yopish",
+      "results": "Natijalar",
+      "notFound": "Hech narsa topilmadi",
+      "page": "Sahifa",
+      "help": "Tanlash: Enter. Chiqish: Esc."
+    },
     "actions": {
       "openSidebar": "Yon panelni ochish",
       "switchToLight": "Yorug' rejimga o'tish",
@@ -153,6 +164,7 @@
   },
   "questions": {
     "templates": "Shablonlar",
+    "pageSubtitle": "Check-in uchun savol shablonlarini boshqaring: har bir shablon bo‘lim bilan bog‘langan va savollar to‘rt yo‘nalishda guruhlanadi.",
     "categories": "Kategoriyalar",
     "search": "Qidirish...",
     "addTemplate": "Shablon qo'shish",
@@ -163,6 +175,32 @@
     "noQuestions": "Hali savollar yo'q. Birinchi savolni qo'shing!",
     "categoryTemplateCount": "{{count}} ta shablon",
     "templateQuestionCount": "{{count}} ta savol",
+    "templateDetail": {
+      "titleWithName": "{{name}} — shablon",
+      "intro": "Savollar to‘rtta yo‘nalishda guruhlanadi: majburiy, shartli, sohaga tegishli (shifokor profili) va ixtiyoriy matn."
+    },
+    "questionBuckets": {
+      "mandatory": "Majburiy savollar",
+      "conditional": "Shartli savollar",
+      "domain": "Sohaga tegishli savollar",
+      "optionalFree": "Ixtiyoriy matn savollari"
+    },
+    "bucketEmpty": "Bu bo‘limda hali savol yo‘q.",
+    "questionMeta": {
+      "modeYesNo": "Javob: HA / YO‘Q",
+      "modeFreeText": "Javob: erkin matn",
+      "badgeTemplate": "Shablon",
+      "badgeDoctor": "Soha / shifokor",
+      "badgeRequired": "Majburiy",
+      "badgeOptional": "Ixtiyoriy"
+    },
+    "toasts": {
+      "templateSaved": "Shablon muvaffaqiyatli saqlandi.",
+      "templateSaveError": "Shablonni saqlashda xatolik yuz berdi."
+    },
+    "errors": {
+      "templateNameRequired": "Shablon (yo‘nalish) nomini kiriting."
+    },
     "createdAt": "Yaratilgan: {{date}}",
     "confirmDelete": "O'chirishni tasdiqlang",
     "confirmDeleteDesc": "Ushbu elementni o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.",
@@ -189,8 +227,9 @@
       "template": {
         "editTitle": "Shablonni tahrirlash",
         "createTitle": "Yangi shablon",
-        "nameLabel": "Shablon nomi *",
-        "namePlaceholder": "Shablon nomi...",
+        "nameLabel": "Shablon nomi (bo‘lim / yo‘nalish) *",
+        "namePlaceholder": "Masalan: LOR, Kardiologiya",
+        "directionHelp": "Yangi nom bo‘limga bog‘lanadi; mavjud bo‘lmasa avtomatik yaratiladi.",
         "categoryLabel": "Kategoriya *",
         "selectPlaceholder": "Tanlang..."
       },
@@ -216,7 +255,8 @@
     },
     "saved": {
       "localDemo": "Lokal saqlandi",
-      "notSent": "Serverga yuborilmadi"
+      "notSent": "Serverga yuborilmadi",
+      "done": "Saqlandi"
     },
     "profile": {
       "title": "Profil ma'lumotlari",
@@ -228,7 +268,11 @@
       "fullName": "To'liq ism",
       "hospital": "Kasalxona",
       "email": "Email",
-      "phone": "Telefon"
+      "phone": "Telefon",
+      "nameRequired": "To'liq ismni kiriting",
+      "phoneInvalid": "Telefon +998901234567 formatida bo'lishi kerak",
+      "saveFailed": "Profilni saqlashda xatolik",
+      "saving": "Saqlanmoqda..."
     },
     "security": {
       "title": "Parolni o'zgartirish",

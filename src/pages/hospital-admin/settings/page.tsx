@@ -4,6 +4,8 @@ import { useSearchParams } from "react-router-dom";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
 import { changePassword } from "@/api/auth";
+import { patchUserAccount } from "@/api/users";
+import { useAuth } from "@/hooks/useAuth";
 import {
   HA_ADMIN_AVATAR_KEY,
   getHaAdminStoredAvatar,
@@ -29,8 +31,18 @@ export default function HASettingsPage() {
   );
 }
 
+function formatPhoneDisplay(phone: string | undefined) {
+  if (!phone?.trim()) return "";
+  const d = phone.replace(/\s/g, "");
+  if (d.startsWith("+998") && d.length >= 13) {
+    return `${d.slice(0, 4)} ${d.slice(4, 6)} ${d.slice(6, 9)} ${d.slice(9, 11)} ${d.slice(11)}`.trim();
+  }
+  return phone;
+}
+
 export function HASettingsPageContent() {
   const { t, i18n } = useTranslation("hospital");
+  const { user, refreshUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const darkMode = useHospitalAdminDarkMode();
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -42,20 +54,69 @@ export function HASettingsPageContent() {
   const [notifications, setNotifications] = useState({
     newPatient: true, doctorUpdate: true, systemAlert: false, weeklyReport: true,
   });
-  const [profile, setProfile] = useState({
-    name: 'Aziz Rahimov', phone: '+998 90 123 45 67', hospital: 'Toshkent Klinikasi',
-  });
+  const [profile, setProfile] = useState({ name: "", phone: "", hospital: "" });
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
   const [saved, setSaved] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    setProfile({
+      name: user.name?.trim() ?? "",
+      phone: formatPhoneDisplay(user.phone) || "",
+      hospital: user.hospitalName?.trim() ?? "",
+    });
+  }, [user?.name, user?.phone, user?.hospitalName, user]);
 
   useEffect(() => {
     const fromUrl = resolveSettingsTab(searchParams.get("tab"));
     setActiveTab((prev) => (prev === fromUrl ? prev : fromUrl));
   }, [searchParams]);
 
-  const showSaved = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const showSaved = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user?.userId) {
+      setProfileError("Profilni saqlash uchun sessiya (userId) topilmadi. Qayta kiring.");
+      return;
+    }
+    const nameTrim = profile.name.trim();
+    if (!nameTrim) {
+      setProfileError(t("settings.profile.nameRequired"));
+      return;
+    }
+    setProfileError(null);
+    setIsSavingProfile(true);
+    try {
+      const body: { full_name: string; phone_number?: string } = { full_name: nameTrim };
+      const rawPhone = profile.phone.replace(/\s/g, "");
+      if (rawPhone && rawPhone !== (user.phone ?? "").replace(/\s/g, "")) {
+        if (!/^\+998\d{9}$/.test(rawPhone)) {
+          setProfileError(t("settings.profile.phoneInvalid"));
+          setIsSavingProfile(false);
+          return;
+        }
+        body.phone_number = rawPhone;
+      }
+      await patchUserAccount(user.userId, body);
+      await refreshUser();
+      showSaved();
+    } catch (e) {
+      const msg =
+        typeof e === "object" && e !== null && "message" in e && typeof (e as { message: unknown }).message === "string"
+          ? (e as { message: string }).message
+          : t("settings.profile.saveFailed");
+      setProfileError(msg);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const handlePasswordChange = async () => {
     if (!passwords.current || !passwords.newPass || !passwords.confirm) {
@@ -274,8 +335,14 @@ export function HASettingsPageContent() {
                 <label htmlFor="ha-settings-phone" className={labelClass}>{t("settings.profile.phone")}</label>
                 <input id="ha-settings-phone" type="tel" className={inputClass} value={profile.phone} onChange={e => setProfile({...profile, phone: e.target.value})} />
               </div>
-              <button onClick={showSaved} className="min-h-[44px] px-6 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap">
-                {saved ? t("settings.saved.notSent") : t("common:buttons.save")}
+              {profileError ? <p className="text-xs text-red-500">{profileError}</p> : null}
+              <button
+                type="button"
+                onClick={() => void handleSaveProfile()}
+                disabled={isSavingProfile}
+                className="min-h-[44px] px-6 rounded-lg bg-teal-500 hover:bg-teal-600 disabled:opacity-60 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+              >
+                {isSavingProfile ? t("settings.profile.saving") : saved ? t("settings.saved.done") : t("common:buttons.save")}
               </button>
             </div>
           </div>

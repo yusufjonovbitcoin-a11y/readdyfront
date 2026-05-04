@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useMemo, useState, type RefObject } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,13 @@ import {
 import { prefetchCoreQueriesForPath } from "@/lib/coreQueryCache";
 
 const HA_ADMIN_DISPLAY_NAME = "Aziz Rahimov";
+
+function isGenericHospitalAdminName(name: string, roleLabels: readonly string[]) {
+  const n = name.trim().toLowerCase();
+  if (!n) return true;
+  if (n === "hospital_admin" || n === "hospital admin") return true;
+  return roleLabels.some((l) => l.trim().toLowerCase() === n);
+}
 
 interface NavItem {
   path: string;
@@ -41,7 +48,20 @@ export default function HASidebar({ collapsed, onToggle, darkMode, mobileOpen, o
     { path: "/hospital-admin/settings", icon: "ri-settings-3-line", label: t("sidebar.settings") },
   ];
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const primaryDisplayName = useMemo(() => {
+    const raw = user?.name?.trim() ?? "";
+    const roleLabels = [t("sidebar.hospitalAdmin"), "Hospital Admin", "HOSPITAL_ADMIN"];
+    if (!isGenericHospitalAdminName(raw, roleLabels)) return raw;
+    const fromEmail = user?.email?.includes("@") ? user.email.split("@")[0]!.trim() : "";
+    if (fromEmail) return fromEmail;
+    return HA_ADMIN_DISPLAY_NAME;
+  }, [t, user?.email, user?.name]);
+
+  const hospitalSubtitle = useMemo(
+    () => user?.hospitalName?.trim() || t("sidebar.hospitalUnknown"),
+    [t, user?.hospitalName],
+  );
   const queryClient = useQueryClient();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(getHaAdminStoredAvatar);
   const prefetchPath = (path: string) => {
@@ -153,39 +173,54 @@ export default function HASidebar({ collapsed, onToggle, darkMode, mobileOpen, o
         </div>
       </nav>
 
-      {/* Chiqish (Super Admin sidebar bilan bir xil: pastki blok → login) */}
+      {/* Profil (sozlamalar) + chiqish — doctor sidebar bilan bir xil tuzilma */}
       <div className={`p-3 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
-        <button
-          type="button"
-          onClick={handleLogout}
-          aria-label={t("sidebar.logout")}
-          className={`w-full flex items-center rounded-lg p-2 text-left transition-colors [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 ${
-            showExpanded ? "" : "justify-center"
-          } ${darkMode ? "hover:bg-[#1E2A3A]" : "hover:bg-gray-50"} cursor-pointer`}
+        <div
+          className={`flex [-webkit-tap-highlight-color:transparent] ${
+            showExpanded ? "items-stretch justify-between gap-2" : "flex-col items-center gap-2"
+          }`}
         >
-          <div
-            className={`w-8 h-8 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
-              avatarUrl ? (darkMode ? "bg-[#1A2235]" : "bg-gray-100") : "bg-teal-500"
+          <Link
+            to="/hospital-admin/settings"
+            prefetch="none"
+            onClick={onCloseMobile}
+            className={`no-underline flex min-w-0 items-center rounded-lg py-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 ${
+              showExpanded ? "min-h-11 flex-1 gap-2 px-3" : "justify-center px-2"
+            } ${darkMode ? "text-white hover:bg-[#1E2A3A] active:bg-[#243044]/80" : "hover:bg-gray-50 active:bg-gray-100"}`}
+            aria-label={`${primaryDisplayName} — ${t("sidebar.settings")}`}
+          >
+            <div
+              className={`flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full ${
+                avatarUrl ? (darkMode ? "bg-[#1A2235]" : "bg-gray-100") : "bg-teal-600"
+              }`}
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold text-white">{haAdminInitialsFromName(primaryDisplayName)}</span>
+              )}
+            </div>
+            {showExpanded && (
+              <div className="min-w-0 flex-1 text-left">
+                <p className={`truncate text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{primaryDisplayName}</p>
+                <p className={`truncate text-xs ${darkMode ? "text-teal-400/90" : "text-teal-600"}`}>{hospitalSubtitle}</p>
+              </div>
+            )}
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label={t("sidebar.logout")}
+            title={t("sidebar.logout")}
+            className={`flex w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 ${
+              darkMode
+                ? "text-gray-400 hover:bg-[#1E2A3A] hover:text-white active:bg-[#243044]/80"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100"
             }`}
           >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-white text-xs font-bold">{haAdminInitialsFromName(HA_ADMIN_DISPLAY_NAME)}</span>
-            )}
-          </div>
-          {showExpanded && (
-            <div className="ml-2 flex-1 min-w-0">
-              <p className={`text-sm font-medium truncate ${darkMode ? "text-white" : "text-gray-900"}`}>{HA_ADMIN_DISPLAY_NAME}</p>
-              <p className="text-xs text-teal-500 truncate">HOSPITAL_ADMIN</p>
-            </div>
-          )}
-          {showExpanded && (
-            <div className="w-4 h-4 flex items-center justify-center flex-shrink-0" aria-hidden="true">
-              <i className={`ri-logout-box-r-line text-sm ${darkMode ? "text-gray-400" : "text-gray-400"}`}></i>
-            </div>
-          )}
-        </button>
+            <i className="ri-logout-box-r-line text-lg" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </aside>
   );

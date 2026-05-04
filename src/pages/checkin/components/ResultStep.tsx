@@ -1,23 +1,19 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { SubmitCheckinResult } from "@/api/types/checkin.types";
+import { createCheckinTelegramLink } from "@/api/checkin";
 
 type ResultCase = 'queue' | 'busy' | 'info';
 
 interface ResultStepProps {
   phone: string;
+  doctorId: string;
   doctorName: string;
   doctorSpecialty: string;
   answers: Record<string, string | string[]>;
   usedAI: boolean;
+  submissionResult: SubmitCheckinResult | null;
   onRestart: () => void;
-}
-
-function getResultCase(answers: Record<string, string | string[]>): ResultCase {
-  const hasHighRisk = answers['q4'] === 'yes' || answers['q8'] === 'yes' || answers['q1'] === 'Ko\'krak og\'rig\'i';
-  if (hasHighRisk) return 'queue';
-  const rand = Math.random();
-  if (rand < 0.6) return 'queue';
-  if (rand < 0.8) return 'busy';
-  return 'info';
 }
 
 function getRiskLevel(answers: Record<string, string | string[]>): 'low' | 'medium' | 'high' | 'critical' {
@@ -37,14 +33,35 @@ const riskConfig = {
   critical: { label: 'Kritik xavf', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
 };
 
-export default function ResultStep({ phone, doctorName, doctorSpecialty, answers, usedAI, onRestart }: ResultStepProps) {
-  const [resultCase] = useState<ResultCase>(() => getResultCase(answers));
-  const [queueNumber] = useState(() => Math.floor(Math.random() * 8) + 1);
-  const [waitTime] = useState(() => queueNumber * 12 + Math.floor(Math.random() * 5));
+export default function ResultStep({
+  phone,
+  doctorId,
+  doctorName,
+  doctorSpecialty,
+  answers,
+  usedAI,
+  submissionResult,
+  onRestart,
+}: ResultStepProps) {
+  const { t } = useTranslation('checkin');
+  const apiStatus = submissionResult?.status;
+  const resultCase: ResultCase =
+    apiStatus === 'busy' || apiStatus === 'info' || apiStatus === 'queue'
+      ? apiStatus
+      : (submissionResult?.queueNumber ?? 0) > 0
+        ? 'queue'
+        : 'info';
+  const queueNumber = Math.max(1, submissionResult?.queueNumber ?? 1);
+  const waitTime = Math.max(0, submissionResult?.waitMinutes ?? 0);
   const [notifSent, setNotifSent] = useState(false);
   const [countdown, setCountdown] = useState(waitTime * 60);
   const riskLevel = getRiskLevel(answers);
   const risk = riskConfig[riskLevel];
+  void onRestart;
+
+  useEffect(() => {
+    setCountdown(waitTime * 60);
+  }, [waitTime]);
 
   useEffect(() => {
     if (resultCase !== 'queue') return;
@@ -54,14 +71,34 @@ export default function ResultStep({ phone, doctorName, doctorSpecialty, answers
     return () => clearInterval(timer);
   }, [resultCase]);
 
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
+  const countdownDisplay = (() => {
+    const totalSeconds = Math.max(0, countdown);
+    const totalMinutes = Math.ceil(totalSeconds / 60);
+
+    if (totalMinutes >= 60) {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return `${hours} soat ${minutes} daqiqa`;
+    }
+
+    return `${totalMinutes} daqiqa`;
+  })();
 
   const handleNotify = () => {
-    setNotifSent(true);
+    if (!submissionResult?.checkinId) return;
+    void createCheckinTelegramLink({
+      checkinId: submissionResult.checkinId,
+      doctorId,
+      phone,
+    })
+      .then((res) => {
+        if (!res.url) return;
+        setNotifSent(true);
+        window.open(res.url, "_blank", "noopener,noreferrer");
+      })
+      .catch(() => {
+        setNotifSent(false);
+      });
   };
 
   return (
@@ -114,8 +151,10 @@ export default function ResultStep({ phone, doctorName, doctorSpecialty, answers
 
               {/* Countdown */}
               <div className="text-center py-3 border-t border-gray-50">
-                <p className="text-xs text-gray-400 mb-1">Taxminiy kutish vaqti</p>
-                <p className="text-3xl font-mono font-black text-gray-900">{formatTime(countdown)}</p>
+                <p className="text-xs text-gray-400 mb-1">{t('result.estimatedWait')}</p>
+                <p className="text-3xl font-semibold text-gray-900 tabular-nums tracking-tight">
+                  {countdownDisplay}
+                </p>
               </div>
 
               <div className="border-t border-gray-50 pt-4 space-y-2">
@@ -148,10 +187,13 @@ export default function ResultStep({ phone, doctorName, doctorSpecialty, answers
                 Navbatim kelganda xabar bering
               </button>
             ) : (
-              <div className="w-full h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center gap-2 mb-3">
-                <i className="ri-check-line text-emerald-600 text-base"></i>
-                <span className="text-sm font-medium text-emerald-700">SMS xabar yuboriladi</span>
-              </div>
+              <button
+                onClick={handleNotify}
+                className="w-full h-12 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center gap-2 mb-3"
+              >
+                <i className="ri-telegram-line text-emerald-600 text-base"></i>
+                <span className="text-sm font-medium text-emerald-700">Telegram bot ulandi</span>
+              </button>
             )}
           </>
         )}
@@ -247,14 +289,6 @@ export default function ResultStep({ phone, doctorName, doctorSpecialty, answers
           </>
         )}
 
-        {/* Restart button */}
-        <button
-          onClick={onRestart}
-          className="w-full h-12 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 text-sm font-medium transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
-        >
-          <i className="ri-refresh-line text-base"></i>
-          Yangi ro'yxat
-        </button>
       </div>
     </div>
   );

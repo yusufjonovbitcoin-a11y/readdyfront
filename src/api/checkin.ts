@@ -1,7 +1,11 @@
 import { checkinAdapter } from "@/api";
 import type { TFunction } from "i18next";
 import type {
+  CheckinAiPreviewInput,
+  CheckinAiPreviewResult,
   CheckinDoctorProfileDto,
+  CreateCheckinTelegramLinkInput,
+  CreateCheckinTelegramLinkResult,
   CheckinDraft,
   CheckinQuestionDto,
   SubmitCheckinInput,
@@ -30,4 +34,16 @@ export function submitCheckin(input: SubmitCheckinInput): Promise<SubmitCheckinR
 
 export function getCheckinDoctorProfile(doctorId: string): Promise<CheckinDoctorProfileDto | null> {
   return checkinAdapter.getCheckinDoctorProfile(doctorId);
+}
+
+export function generateCheckinAiPreview(
+  input: CheckinAiPreviewInput,
+): Promise<CheckinAiPreviewResult> {
+  return checkinAdapter.generateCheckinAiPreview(input);
+}
+
+export function createCheckinTelegramLink(
+  input: CreateCheckinTelegramLinkInput,
+): Promise<CreateCheckinTelegramLinkResult> {
+  return checkinAdapter.createCheckinTelegramLink(input);
 }

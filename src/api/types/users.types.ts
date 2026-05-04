@@ -20,7 +20,6 @@ export interface UserDto {
 export interface CreateUserInput {
   name: string;
   phone: string;
-  email: string;
   role: UserRole;
   hospitalId: string;
   password: string;
@@ -28,4 +27,6 @@ export interface CreateUserInput {
 
 export interface UpdateUserInput extends Partial<CreateUserInput> {
   status?: UserStatus;
+  /** Hospital / super admin `Admins.full_name` (Users PATCH orqali) */
+  full_name?: string;
 }

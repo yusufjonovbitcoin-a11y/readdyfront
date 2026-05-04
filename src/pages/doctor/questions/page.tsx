@@ -83,7 +83,7 @@ export function DocQuestionsContent() {
   const [dragOverQuestionId, setDragOverQuestionId] = useState<string | null>(null);
   const { toast, showToast } = useAppToast();
   const fetchPageData = useCallback(async (): Promise<DoctorQuestionsPageData> => {
-    const [questionsData, categoriesData, templatesData] = await Promise.all([
+    const [questionsData, categoriesData] = await Promise.all([
       getDoctorQuestions(),
       getDoctorQuestionCategories(),
     ]);

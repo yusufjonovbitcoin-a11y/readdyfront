@@ -1,6 +1,11 @@
 export interface DoctorDto {
   id: string;
+  /** Shifokor jadvalidagi `full_name` (bo‘sh bo‘lishi mumkin). */
   name: string;
+  /** Bo‘lim nomi (`department.name`). */
+  departmentName: string;
+  /** Kasalxona nomi (`hospital.name`). */
+  hospitalName: string;
   specialty: string;
   phone: string;
   email: string;
@@ -32,10 +37,17 @@ export interface DoctorPatientDto {
   hospitalId: string;
   symptoms: string[];
   riskFactors: string[];
+  /** Server AI tahlil matni (ai_analysis.aiSummary), shifokor izohi emas */
+  aiSummary: string;
   notes: string;
   diagnosis: string;
   date: string;
   consultationDuration: number;
+  questionnaireAnswers?: Array<{
+    questionId: string;
+    questionText: string;
+    answerText: string;
+  }>;
 }
 
 export type DoctorQuestionType = "TEXT" | "TEXTAREA" | "NUMBER" | "SELECT" | "RADIO" | "CHECKBOX" | "DATE";

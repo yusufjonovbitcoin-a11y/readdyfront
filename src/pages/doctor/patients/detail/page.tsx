@@ -11,6 +11,7 @@ import {
   ShifokorIzohlariCard,
   patientDetailBlockProps,
 } from "./PatientDetailBlocks";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 type RiskLevel = DocPatient["riskLevel"];
 
@@ -47,20 +48,6 @@ const riskConfig: Record<RiskLevel, { label: string; color: string; bg: string; 
     icon: "ri-alarm-warning-line",
     desc: "SHOSHILINCH! Darhol tibbiy yordam ko'rsatilishi shart.",
   },
-};
-
-const aiConditions: Record<RiskLevel, string[]> = {
-  low: ["Umumiy charchoq", "Stress reaktsiyasi", "Vitamin yetishmovchiligi"],
-  medium: ["Arterial gipertenziya", "Vegetovascular distoniya", "Surunkali stress"],
-  high: ["Yurak ishemik kasalligi", "Gipertenziv kriz", "Metabolik sindrom"],
-  critical: ["Miokard infarkti (shubhali)", "O'tkir koronar sindrom", "Gipertenziv favqulodda holat"],
-};
-
-const aiActions: Record<RiskLevel, string[]> = {
-  low: ["Qon tahlili buyurish", "Umumiy ko'rik o'tkazish", "1 oydan keyin qayta ko'rik"],
-  medium: ["EKG o'tkazish", "Qon bosimini kuzatish", "Kardiolog konsultatsiyasi", "2 haftadan keyin qayta ko'rik"],
-  high: ["Darhol EKG va EXO-KG", "Kardiolog konsultatsiyasi (bugun)", "Qon tahlillari (troponin, BNP)", "Kasalxonaga yotqizish ko'rib chiqilsin"],
-  critical: ["DARHOL reanimatsiya bo'limiga", "Troponin, D-dimer tahlillari", "EKG monitoring", "Kardiolog va reanimatolog chaqirish"],
 };
 
 /** AI kartasi fonini boshqa kartalar bilan bir xil qilish; xavf rangi faqat chap border + badge */
@@ -160,6 +147,7 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
   const [actionDone, setActionDone] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<PatientDetailTab>("javoblar");
+  const canShowNotes = patient.status === "in_progress";
   const rawListTab = searchParams.get("tab");
   const canonicalListTab = normalizeDoctorPatientsTab(rawListTab);
 
@@ -173,6 +161,11 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
   useEffect(() => {
     setDetailTab("javoblar");
   }, [patient.id]);
+  useEffect(() => {
+    if (!canShowNotes && detailTab === "izohlar") {
+      setDetailTab("javoblar");
+    }
+  }, [canShowNotes, detailTab]);
 
   const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
@@ -187,18 +180,11 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
   const textareaCls = darkMode
     ? "w-full text-sm border border-[#30363D] rounded-lg px-3 py-2.5 bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 resize-none"
     : "w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-400 resize-none text-gray-700 placeholder-gray-400";
-  const modalPanel = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white";
-  const modalTitle = darkMode ? "text-white" : "text-gray-900";
-  const btnSecondary = darkMode
-    ? "border border-[#30363D] text-gray-200 hover:bg-[#21262D]"
-    : "border border-gray-200 text-gray-600 hover:bg-gray-50";
   const disclaimer = darkMode
     ? "bg-amber-950/40 border border-amber-800/50 text-amber-200"
     : "bg-white/70 border border-amber-200 text-amber-700";
 
   const risk = riskConfig[patient.riskLevel];
-  const conditions = aiConditions[patient.riskLevel];
-  const actions = aiActions[patient.riskLevel];
 
   const showDoctorActions = !actionDone && (patient.status === "queue" || patient.status === "in_progress");
 
@@ -206,19 +192,22 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
     setShowConfirm(action);
   };
 
-  const confirmAction = () => {
+  const confirmAction = async () => {
     if (!showConfirm) return;
     if (showConfirm === "test") {
-      transitionPatientStatus(patient.id, "in_progress");
+      await transitionPatientStatus(patient.id, "in_progress");
       setShowConfirm(null);
       navigate(`/doctor/patients?tab=${CANONICAL_DOCTOR_PATIENTS_TAB}`);
       return;
     }
     if (showConfirm === "diagnosed") {
-      transitionPatientStatus(patient.id, "completed");
-      if (notes !== patient.notes) {
-        updatePatient(patient.id, { notes });
-      }
+      await transitionPatientStatus(patient.id, "completed", {
+        notes,
+        diagnosis: patient.diagnosis || "Ko'rik yakunlandi",
+        consultationDuration: patient.consultationDuration > 0 ? patient.consultationDuration : 15,
+      });
+      if (notes !== patient.notes) updatePatient(patient.id, { notes });
+      navigate("/doctor/patients?tab=completed");
     }
     setActionDone(showConfirm);
     setShowConfirm(null);
@@ -240,8 +229,7 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
     },
     risk,
     riskAccent,
-    conditions,
-    actions,
+    patient.aiSummary ?? "",
     notes,
     setNotes,
     showDoctorActions,
@@ -296,7 +284,7 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
 
           <div className="min-w-0 space-y-5 lg:col-span-3">
             <AiTavsiyaCard {...blockProps} />
-            <ShifokorIzohlariCard {...blockProps} />
+            {canShowNotes && <ShifokorIzohlariCard {...blockProps} />}
             <BemorVaAmallarGrid {...blockProps} />
           </div>
         </div>
@@ -305,7 +293,7 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
           <div
             className={`flex items-center gap-1 border-b ${darkMode ? "border-[#30363D]" : "border-gray-200"} overflow-x-auto`}
           >
-            {PATIENT_DETAIL_TAB_DEFS.map((t) => (
+            {PATIENT_DETAIL_TAB_DEFS.filter((t) => canShowNotes || t.key !== "izohlar").map((t) => (
               <button
                 key={t.key}
                 type="button"
@@ -326,53 +314,21 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
 
           {detailTab === "javoblar" && <JavoblarTahliliCard {...blockProps} />}
           {detailTab === "ai" && <AiTavsiyaCard {...blockProps} />}
-          {detailTab === "izohlar" && <ShifokorIzohlariCard {...blockProps} />}
+          {detailTab === "izohlar" && canShowNotes && <ShifokorIzohlariCard {...blockProps} />}
           {detailTab === "bemor" && <BemorVaAmallarGrid {...blockProps} />}
         </>
       )}
 
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className={`rounded-2xl p-6 w-full max-w-sm mx-4 ${modalPanel}`}>
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className={`w-10 h-10 flex items-center justify-center rounded-full ${
-                  showConfirm === "test" ? "bg-blue-100" : "bg-green-100"
-                }`}
-              >
-                <i
-                  className={`text-lg ${
-                    showConfirm === "test" ? "ri-flask-line text-blue-600" : "ri-checkbox-circle-line text-green-600"
-                  }`}
-                ></i>
-              </div>
-              <div>
-                <h3 className={`text-base font-semibold ${modalTitle}`}>Tasdiqlash</h3>
-                <p className={`text-sm ${pageMuted}`}>
-                  {showConfirm === "diagnosed" && "Ko'rikni tugatish deb belgilansinmi?"}
-                  {showConfirm === "test" && "Bemor tahlilga yuborilsinmi?"}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowConfirm(null)}
-                className={`flex-1 py-2.5 rounded-lg text-sm cursor-pointer transition-colors whitespace-nowrap ${btnSecondary}`}
-              >
-                Bekor qilish
-              </button>
-              <button
-                onClick={confirmAction}
-                className={`flex-1 py-2.5 rounded-lg text-sm text-white font-medium cursor-pointer transition-colors whitespace-nowrap ${
-                  showConfirm === "test" ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"
-                }`}
-              >
-                Tasdiqlash
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={Boolean(showConfirm)}
+        title="Tasdiqlash"
+        description={showConfirm === "test" ? "Bemor tahlilga yuborilsinmi?" : "Ko'rikni tugatish deb belgilansinmi?"}
+        confirmText="Tasdiqlash"
+        cancelText="Bekor qilish"
+        onConfirm={() => void confirmAction()}
+        onCancel={() => setShowConfirm(null)}
+        darkMode={darkMode}
+      />
     </div>
   );
 }

@@ -124,7 +124,11 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
               <button
                 onClick={() => {
                   void (async () => {
-                    await clearCheckinDraft(`+998 ${phone}`);
+                    try {
+                      await clearCheckinDraft(`+998 ${phone}`);
+                    } catch {
+                      // ignore
+                    }
                     setShowDraftModal(false);
                     onContinue(`+998 ${phone}`, false);
                   })();

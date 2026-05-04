@@ -81,17 +81,6 @@ export default function PatientTableRow({ patient, darkMode = false, onStatusCha
               Tugallandi
             </button>
           )}
-          {onStatusChange && patient.status === "completed" && (
-            <button
-              type="button"
-              onClick={() => onStatusChange(patient.id, "history")}
-              className={`text-xs font-medium cursor-pointer whitespace-nowrap ${
-                darkMode ? "text-gray-400 hover:text-gray-300" : "text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              Tarixga
-            </button>
-          )}
           <button
             onClick={() => navigate(`/doctor/patients/${patient.id}`)}
             className={`text-xs font-medium cursor-pointer whitespace-nowrap ${

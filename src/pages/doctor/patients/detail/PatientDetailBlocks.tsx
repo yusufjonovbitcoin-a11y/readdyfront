@@ -26,10 +26,7 @@ interface PatientDetailBlocksProps extends BlockStyles {
   patient: DocPatient;
   risk: RiskCfg;
   riskAccent: Record<RiskLevel, { left: string; badge: string }>;
-  conditions: string[];
-  actions: string[];
-  /** Bemor ma'lumotlaridan tuzilgan AI tahlil matni */
-  aiTahlilYozuvi: string;
+  aiSummary: string;
   notes: string;
   setNotes: (v: string) => void;
   showDoctorActions: boolean;
@@ -37,69 +34,22 @@ interface PatientDetailBlocksProps extends BlockStyles {
   patientStatus: DocPatient["status"];
 }
 
-function buildAiTahlilYozuvi(patient: DocPatient): string {
-  const sex = patient.gender === "male" ? "erkak" : "ayol";
-  let s = `Bemor ${patient.age} yoshli ${sex}, qabul sanasi ${patient.date}. `;
-
-  if (patient.symptoms.length) {
-    s += `Keltirilgan asosiy belgilar va shikoyatlar (${patient.symptoms.length}): ${patient.symptoms.join(", ")}. `;
-  } else {
-    s += `Navbatda klinik belgilar bo'yicha alohida shikoyat qayd etilmagan. `;
-  }
-
-  if (patient.riskFactors.length) {
-    s += `Savolnoma va anamnez bo'yicha xavf omillari: ${patient.riskFactors.join(", ")}. `;
-  } else {
-    s += `Qo'shimcha xavf omillari kiritilmagan yoki past. `;
-  }
-
-  const tail: Record<RiskLevel, string> = {
-    low: "Umumiy kombinatsiya jihatidan holat barqaror ko'rinadi; kuzatuv va profilaktika muhim.",
-    medium:
-      "Belgilar va omillar birgalikda konservativ boshqaruv yoki chuqurlashtirilgan tekshiruv ehtiyojini bildiradi.",
-    high: "Belgilar yurak-qon tomir yoki boshqa tizimlarga oid jiddiy patologiyani istisno qilish uchun tezkor baholash zarur.",
-    critical:
-      "Mavjud alomatlar favqulodda holatni istisno qilmaslikka asos beradi; darhol klinik protokol va monitoring talab etiladi.",
-  };
-  s += tail[patient.riskLevel];
-  return s;
-}
-
 /** Salbiy klinik/topilmalar — qizil; ijobiy (yo'q / yaxshi) — yashil */
 function buildJavoblarTableRows(patient: DocPatient): { question: string; answer: string; tone: "good" | "bad" }[] {
-  const rows: { question: string; answer: string; tone: "good" | "bad" }[] = [];
-
-  patient.symptoms.forEach((s) => {
-    rows.push({
-      question: `«${s}» klinik belgisi qayd etilganmi?`,
-      answer: "Ha",
-      tone: "bad",
-    });
-  });
-  if (patient.symptoms.length === 0) {
-    rows.push({
-      question: "Navbatga kelishda yangi klinik belgilar qayd etilganmi?",
-      answer: "Yo'q",
-      tone: "good",
+  if (patient.questionnaireAnswers && patient.questionnaireAnswers.length > 0) {
+    return patient.questionnaireAnswers.map((row) => {
+      const answer = (row.answerText || "").trim() || "—";
+      const normalized = answer.toLowerCase();
+      const tone: "good" | "bad" =
+        normalized === "yo'q" || normalized === "no" ? "good" : "bad";
+      return {
+        question: row.questionText || "Savol",
+        answer,
+        tone,
+      };
     });
   }
-
-  patient.riskFactors.forEach((r) => {
-    rows.push({
-      question: `«${r}» xavf omili aniqlanganmi?`,
-      answer: "Ha",
-      tone: "bad",
-    });
-  });
-  if (patient.riskFactors.length === 0) {
-    rows.push({
-      question: "Qo'shimcha xavf omillari kiritilganmi?",
-      answer: "Yo'q",
-      tone: "good",
-    });
-  }
-
-  return rows;
+  return [];
 }
 
 export function JavoblarTahliliCard(p: PatientDetailBlocksProps) {
@@ -174,7 +124,7 @@ export function JavoblarTahliliCard(p: PatientDetailBlocksProps) {
             {tableRows.length === 0 ? (
               <tr>
                 <td colSpan={2} className={`py-5 px-2.5 text-center text-base italic ${pageMuted}`}>
-                  Ma&apos;lumot yo&apos;q
+                  Real javoblar mavjud emas
                 </td>
               </tr>
             ) : (
@@ -220,9 +170,7 @@ export function AiTavsiyaCard(p: PatientDetailBlocksProps) {
     riskAccent,
     risk,
     disclaimer,
-    conditions,
-    actions,
-    aiTahlilYozuvi,
+    aiSummary,
   } = p;
   return (
     <div className={`rounded-xl border p-5 ${cardBase} border-l-4 ${riskAccent[patient.riskLevel].left}`}>
@@ -257,36 +205,9 @@ export function AiTavsiyaCard(p: PatientDetailBlocksProps) {
 
       <div className={`rounded-lg px-3 py-3 mb-4 ${darkMode ? "bg-[#0D1117]/80 border border-[#30363D]" : "bg-slate-50 border border-slate-100"}`}>
         <p className={`text-xs font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Tahlil yozuvi</p>
-        <p className={`text-sm leading-relaxed ${textBody}`}>{aiTahlilYozuvi}</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <p className={`text-xs font-semibold mb-2 uppercase tracking-wide ${labelSm}`}>Mumkin bo'lgan holatlar</p>
-          <div className="space-y-1.5">
-            {conditions.map((c, i) => (
-              <div key={i} className={`flex items-center gap-2 text-sm ${textBody}`}>
-                <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-                  <i className="ri-arrow-right-s-line text-violet-500"></i>
-                </div>
-                {c}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className={`text-xs font-semibold mb-2 uppercase tracking-wide ${labelSm}`}>Tavsiya etilgan harakatlar</p>
-          <div className="space-y-1.5">
-            {actions.map((a, i) => (
-              <div key={i} className={`flex items-center gap-2 text-sm ${textBody}`}>
-                <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-                  <i className="ri-checkbox-circle-line text-green-500"></i>
-                </div>
-                {a}
-              </div>
-            ))}
-          </div>
-        </div>
+        <p className={`text-sm leading-relaxed ${textBody}`}>
+          {aiSummary?.trim() ? aiSummary : "AI tahlil mavjud emas"}
+        </p>
       </div>
     </div>
   );
@@ -310,16 +231,8 @@ export function ShifokorIzohlariCard(p: PatientDetailBlocksProps) {
         maxLength={500}
         className={textareaCls}
       />
-      <div className="flex justify-between items-center mt-1">
+      <div className="mt-1">
         <span className={`text-xs ${pageMuted}`}>{notes.length}/500 belgi</span>
-        <button
-          type="button"
-          disabled
-          title="Tez orada"
-          className={`text-xs font-medium whitespace-nowrap opacity-60 cursor-not-allowed ${darkMode ? "text-violet-400" : "text-violet-600"}`}
-        >
-          Saqlash
-        </button>
       </div>
     </div>
   );
@@ -365,16 +278,6 @@ export function BemorVaAmallarGrid(p: PatientDetailBlocksProps) {
         <div className={`rounded-xl p-4 ${cardBase} lg:h-full lg:min-h-0`}>
           <h4 className={`text-sm font-semibold mb-3 ${sectionTitle}`}>Shifokor Amallari</h4>
           <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => onAction("diagnosed")}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors cursor-pointer text-sm font-medium whitespace-nowrap"
-            >
-              <div className="w-5 h-5 flex items-center justify-center">
-                <i className="ri-checkbox-circle-line text-green-600"></i>
-              </div>
-              Ko&apos;rikni tugatish
-            </button>
             {patientStatus === "queue" && (
               <button
                 type="button"
@@ -385,6 +288,18 @@ export function BemorVaAmallarGrid(p: PatientDetailBlocksProps) {
                   <i className="ri-flask-line text-blue-600"></i>
                 </div>
                 Tahlilga yuborish
+              </button>
+            )}
+            {patientStatus === "in_progress" && (
+              <button
+                type="button"
+                onClick={() => onAction("diagnosed")}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition-colors cursor-pointer text-sm font-medium whitespace-nowrap"
+              >
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <i className="ri-checkbox-circle-line text-green-600"></i>
+                </div>
+                Ko&apos;rikni tugatish
               </button>
             )}
           </div>
@@ -400,8 +315,7 @@ export function patientDetailBlockProps(
   styles: BlockStyles,
   risk: RiskCfg,
   riskAccent: Record<RiskLevel, { left: string; badge: string }>,
-  conditions: string[],
-  actions: string[],
+  aiSummary: string,
   notes: string,
   setNotes: (v: string) => void,
   showDoctorActions: boolean,
@@ -412,9 +326,7 @@ export function patientDetailBlockProps(
     ...styles,
     risk,
     riskAccent,
-    conditions,
-    actions,
-    aiTahlilYozuvi: buildAiTahlilYozuvi(patient),
+    aiSummary,
     notes,
     setNotes,
     showDoctorActions,

@@ -9,6 +9,8 @@ export type UserRole = Extract<AppRole, "SUPER_ADMIN" | "HOSPITAL_ADMIN" | "DOCT
 
 export interface AuthUser {
   id: string;
+  /** `Users.id` — /api/users/:id PATCH */
+  userId?: string;
   name: string;
   email: string;
   role: UserRole;
@@ -50,6 +52,7 @@ interface AuthContextValue {
   authenticate: (credentials: LoginInput) => Promise<AuthUser>;
   login: (userData: AuthUser) => void;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -73,6 +76,7 @@ function normalizeAuthCandidate(value: unknown): AuthUser | null {
 
   const normalized: AuthUser = {
     id: raw.id.trim(),
+    userId: typeof raw.userId === "string" && raw.userId.trim() ? raw.userId.trim() : undefined,
     name: raw.name.trim(),
     email: typeof raw.email === "string" && raw.email.trim() ? raw.email.trim() : `${raw.id.trim()}@local.medcore`,
     role: raw.role,
@@ -164,6 +168,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const next = await fetchCurrentUser();
+    const normalized = normalizeAuthCandidate(next);
+    if (normalized) setUser(normalized);
+  }, []);
+
   /**
    * Thin auth boundary for pages:
    * UI submits credentials, auth service validates via adapter, and session
@@ -188,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authenticate,
         login,
         logout,
+        refreshUser,
         isBootstrapping,
         bootstrapPhase,
       },

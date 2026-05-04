@@ -305,7 +305,12 @@
       "title": "Данные профиля",
       "changePhoto": "Изменить фото",
       "saveButton": "Сохранить",
+      "saving": "Сохранение...",
       "toastUpdated": "Профиль успешно обновлен!",
+      "nameRequired": "Введите полное имя.",
+      "phoneInvalid": "Телефон должен быть в формате +998XXXXXXXXX.",
+      "saveFailed": "Не удалось сохранить профиль.",
+      "noSession": "Сессия не найдена. Войдите снова.",
       "fields": {
         "fullName": "Полное имя",
         "email": "Email",
@@ -318,6 +323,9 @@
       "changePasswordButton": "Изменить пароль",
       "toastPasswordUpdated": "Пароль успешно изменен!",
       "activeSessionsTitle": "Активные сессии",
+      "activeSessionsSubtitle": "Последние успешные входы (аудит). Отдельная таблица сессий по устройствам не ведётся — показана история по IP и браузеру.",
+      "sessionsLoading": "Загрузка...",
+      "sessionsEmpty": "История входов пока пуста.",
       "currentSessionChip": "Текущая",
       "signOutButton": "Выйти",
       "fields": {

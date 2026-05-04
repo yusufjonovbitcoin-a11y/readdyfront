@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import { useNavigate } from "react-router-dom";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useHospitals } from "@/hooks/useHospitals";
+import { getModShortcut } from "@/utils/modShortcut";
 import {
   getNotifications as fetchNotifications,
   type Notification as AppNotification,
@@ -61,10 +62,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
   const previousNotificationsOpenRef = useRef(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
-  const modShortcut = useMemo(() => {
-    if (typeof navigator === "undefined") return "Ctrl+K";
-    return /Mac|iPhone|iPod|iPad/i.test(navigator.platform ?? "") ? "⌘K" : "Ctrl+K";
-  }, []);
+  const modShortcut = useMemo(() => getModShortcut(), []);
 
   const headerDateLabel = useMemo(() => {
     const now = new Date();
@@ -153,7 +151,8 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
         closeSearch();
         return;
       }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      const isK = e.key?.toLowerCase() === "k" || e.code === "KeyK";
+      if ((e.metaKey || e.ctrlKey) && isK) {
         e.preventDefault();
         setSearchOpen((o) => {
           if (o) {
@@ -250,7 +249,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
       <button
         type="button"
         onClick={onToggleMobile}
-        className={`mr-2 md:hidden w-11 h-11 flex items-center justify-center rounded-lg transition-colors ${
+        className={`mr-2 shrink-0 md:hidden h-11 w-11 flex items-center justify-center rounded-lg transition-colors ${
           darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
         }`}
         aria-label={t("admin:header.actions.openSidebar")}
@@ -273,7 +272,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
             setSearchQuery("");
             setSearchOpen(true);
           }}
-          className={`hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
+          className={`hidden shrink-0 lg:flex h-11 items-center gap-2 px-3 rounded-lg text-sm cursor-pointer transition-colors ${
             darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-400 hover:bg-gray-100"
           }`}
           aria-haspopup="dialog"
@@ -296,7 +295,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
             setSearchQuery("");
             setSearchOpen(true);
           }}
-          className={`hidden md:flex lg:hidden w-11 h-11 items-center justify-center rounded-lg transition-colors ${
+          className={`hidden h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors md:flex lg:hidden ${
             darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
           }`}
           aria-label={t("admin:header.search.global")}
@@ -309,31 +308,31 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
 
         {/* Dark mode toggle */}
         <button
+          type="button"
           onClick={onToggleDark}
           aria-label={darkMode ? t("admin:header.actions.switchToLight") : t("admin:header.actions.switchToDark")}
-          className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+          className={`h-11 w-11 shrink-0 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
             darkMode ? "bg-[#1A2235] text-yellow-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
           }`}
         >
-          <div className="w-5 h-5 flex items-center justify-center">
-            <i className={`${darkMode ? "ri-sun-line" : "ri-moon-line"} text-base`}></i>
-          </div>
+          <i className={`${darkMode ? "ri-sun-line" : "ri-moon-line"} text-base`} aria-hidden />
         </button>
 
         {/* Notifications */}
-        <div className="relative">
+        <div className="relative shrink-0">
           <button
+            type="button"
             ref={notificationsTriggerRef}
             onClick={() => setShowNotifications(!showNotifications)}
             aria-label={showNotifications ? t("admin:header.actions.hideNotifications") : t("admin:header.actions.showNotifications")}
             aria-expanded={showNotifications}
             aria-controls="admin-notification-popover"
             aria-haspopup="true"
-            className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors cursor-pointer relative ${
+            className={`relative h-11 w-11 shrink-0 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
               darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
             }`}
           >
-            <div className="w-5 h-5 flex items-center justify-center">
+            <div className="flex h-5 w-5 items-center justify-center">
               <i className="ri-notification-3-line text-base" aria-hidden="true"></i>
             </div>
             {notifications.some((n) => !n.read) ? <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span> : null}

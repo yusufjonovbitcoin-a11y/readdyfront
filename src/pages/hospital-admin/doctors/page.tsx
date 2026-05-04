@@ -6,7 +6,7 @@ import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
 import DoctorCard from "./components/DoctorCard";
 import DoctorFormModal from "./components/DoctorFormModal";
-import { getDoctors, updateDoctorStatus } from "@/api/doctor";
+import { deleteDoctor, getDoctors, updateDoctorStatus } from "@/api/doctor";
 import type { DoctorDto as HADoctor } from "@/api/types/doctor.types";
 import { createHADoctor } from "@/api/services/hospitalAdminData.service";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -15,6 +15,7 @@ import ResponsiveTable from "@/components/ui/ResponsiveTable";
 import AppToast from "@/components/ui/AppToast";
 import { useAppToast } from "@/hooks/useAppToast";
 import { doctorsQueryOptions } from "@/lib/coreQueryCache";
+import type { ApiError } from "@/api/client";
 
 export default function HADoctorsPage() {
   const { t } = useTranslation("hospital");
@@ -67,8 +68,8 @@ export function HADoctorsPageContent() {
   const navigate = useNavigate();
 
   const filtered = doctors.filter(d => {
-    const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.specialty.toLowerCase().includes(search.toLowerCase());
+    const haystack = `${d.name} ${d.departmentName} ${d.specialty}`.toLowerCase();
+    const matchSearch = haystack.includes(search.toLowerCase());
     const matchStatus = filterStatus === 'all' || d.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -143,13 +144,24 @@ export function HADoctorsPageContent() {
   };
 
   const handleDelete = (id: string) => {
-    try {
-      setDoctors(prev => prev.filter(d => d.id !== id));
-      setDeleteConfirm(null);
-      showToast("Shifokor hozircha faqat interfeys ro'yxatidan o'chirildi.", "info");
-    } catch {
-      showToast("O'chirishda xatolik yuz berdi.", "error");
-    }
+    void (async () => {
+      try {
+        await deleteDoctor(id);
+        setDoctors((prev) => prev.filter((d) => d.id !== id));
+        setDeleteConfirm(null);
+        showToast("Shifokor backenddan ham muvaffaqiyatli o'chirildi.", "success");
+      } catch (error) {
+        const apiError = error as Partial<ApiError> | null;
+        if (apiError?.status === 409) {
+          showToast(
+            "Bu shifokorni o'chirib bo'lmaydi: unga bog'langan bemor javoblari mavjud.",
+            "error",
+          );
+          return;
+        }
+        showToast("Shifokorni o'chirishda xatolik yuz berdi.", "error");
+      }
+    })();
   };
 
   const inputClass = `px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${
@@ -306,15 +318,17 @@ export function HADoctorsPageContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(doc => (
+                  {filtered.map((doc) => {
+                    const rowDisplayName = doc.name?.trim() || doc.specialty?.trim() || "Doctor";
+                    return (
                     <tr key={doc.id} className={`border-b last:border-0 ${darkMode ? "border-[#1E2130] hover:bg-[#1A2235]" : "border-gray-50 hover:bg-gray-50"} transition-colors`}>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
-                            <img src={doc.avatar} alt={doc.name} className="w-full h-full object-cover object-top" />
+                            <img src={doc.avatar} alt={rowDisplayName} className="w-full h-full object-cover object-top" />
                           </div>
                           <div>
-                            <p className={`text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{doc.name}</p>
+                            <p className={`text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{rowDisplayName}</p>
                             <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{doc.email}</p>
                           </div>
                         </div>
@@ -344,19 +358,20 @@ export function HADoctorsPageContent() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-1">
-                          <button aria-label={`View doctor ${doc.name}`} onClick={() => navigate(`/hospital-admin/doctors/${doc.id}`)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-teal-50 text-teal-600 transition-colors">
+                          <button aria-label={`View doctor ${rowDisplayName}`} onClick={() => navigate(`/hospital-admin/doctors/${doc.id}`)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-teal-50 text-teal-600 transition-colors">
                             <i className="ri-eye-line text-sm"></i>
                           </button>
-                          <button aria-label={`Edit doctor ${doc.name}`} onClick={() => { setEditingDoctor(doc); setShowModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+                          <button aria-label={`Edit doctor ${rowDisplayName}`} onClick={() => { setEditingDoctor(doc); setShowModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                             <i className="ri-edit-line text-sm"></i>
                           </button>
-                          <button aria-label={`Delete doctor ${doc.name}`} onClick={() => setDeleteConfirm(doc.id)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
+                          <button aria-label={`Delete doctor ${rowDisplayName}`} onClick={() => setDeleteConfirm(doc.id)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">
                             <i className="ri-delete-bin-line text-sm"></i>
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </ResponsiveTable>
             </div>

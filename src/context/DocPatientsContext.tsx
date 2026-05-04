@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getInitialDocPatients, type DocPatient } from "@/api/services/docPatients.service";
-import { getDoctorPatients } from "@/api/doctor";
-import { formatLocalYMD } from "@/utils/date";
+import { getDoctorPatients, updateDoctorPatientWorkflow } from "@/api/doctor";
 
 /** Navbatdagi bemorlar uchun reorder: to‘liq yoki ko‘rinayotgan subset id ro‘yxatini qabul qiladi */
 function applyQueueOrder(prev: DocPatient[], orderedQueueIds: string[]): DocPatient[] {
@@ -43,7 +42,11 @@ interface DocPatientsContextValue {
   patients: DocPatient[];
   updatePatient: (id: string, patch: Partial<DocPatient>) => void;
   reorderQueuePatients: (orderedQueueIds: string[]) => void;
-  transitionPatientStatus: (id: string, nextStatus: DocPatient["status"]) => void;
+  transitionPatientStatus: (
+    id: string,
+    nextStatus: DocPatient["status"],
+    extra?: { notes?: string; diagnosis?: string; consultationDuration?: number },
+  ) => Promise<void>;
 }
 
 const DocPatientsContext = createContext<DocPatientsContextValue | null>(null);
@@ -69,28 +72,6 @@ export function DocPatientsProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  /** Kun almashganda bugundan oldingi kunlar bo'yicha faol bemorlarni tarixga */
-  useEffect(() => {
-    const archivePastDays = () => {
-      const today = formatLocalYMD();
-      setPatients((prev) => {
-        let changed = false;
-        const next = prev.map((p) => {
-          if (p.status === "history") return p;
-          if (p.date < today) {
-            changed = true;
-            return { ...p, status: "history" as const };
-          }
-          return p;
-        });
-        return changed ? next : prev;
-      });
-    };
-    archivePastDays();
-    const id = window.setInterval(archivePastDays, 60_000);
-    return () => window.clearInterval(id);
-  }, []);
-
   const updatePatient = useCallback((id: string, patch: Partial<DocPatient>) => {
     setPatients((prev) => {
       const next = prev.map((p) => (p.id === id ? { ...p, ...patch } : p));
@@ -102,30 +83,50 @@ export function DocPatientsProvider({ children }: { children: ReactNode }) {
     setPatients((prev) => applyQueueOrder(prev, orderedQueueIds));
   }, []);
 
-  const transitionPatientStatus = useCallback((id: string, nextStatus: DocPatient["status"]) => {
-    setPatients((prev) => {
-      const next = prev.map((p) => {
-        if (p.id !== id) return p;
-
-        if (nextStatus === "in_progress") {
-          return { ...p, status: "in_progress" as const, queueNumber: 0 };
-        }
-        if (nextStatus === "completed") {
+  const transitionPatientStatus = useCallback(
+    async (
+      id: string,
+      nextStatus: DocPatient["status"],
+      extra?: { notes?: string; diagnosis?: string; consultationDuration?: number },
+    ) => {
+      const prevSnapshot = patients;
+      setPatients((prev) => {
+        const next = prev.map((p) => {
+          if (p.id !== id) return p;
           return {
             ...p,
-            status: "completed" as const,
-            queueNumber: 0,
-            consultationDuration: p.consultationDuration > 0 ? p.consultationDuration : 15,
+            status: nextStatus,
+            queueNumber: nextStatus === "queue" ? p.queueNumber : 0,
+            notes: extra?.notes ?? p.notes,
+            diagnosis: extra?.diagnosis ?? p.diagnosis,
+            consultationDuration:
+              extra?.consultationDuration ??
+              (nextStatus === "completed"
+                ? p.consultationDuration > 0
+                  ? p.consultationDuration
+                  : 15
+                : p.consultationDuration),
           };
-        }
-        if (nextStatus === "history") {
-          return { ...p, status: "history" as const, queueNumber: 0 };
-        }
-        return { ...p, status: "queue" as const };
+        });
+        return normalizeQueueNumbers(next);
       });
-      return normalizeQueueNumbers(next);
-    });
-  }, []);
+
+      try {
+        const updated = await updateDoctorPatientWorkflow(id, {
+          status: nextStatus,
+          notes: extra?.notes,
+          diagnosis: extra?.diagnosis,
+          consultationDuration: extra?.consultationDuration,
+        });
+        setPatients((prev) =>
+          normalizeQueueNumbers(prev.map((p) => (p.id === id ? { ...p, ...updated } : p))),
+        );
+      } catch {
+        setPatients(prevSnapshot);
+      }
+    },
+    [patients],
+  );
 
   const value = useMemo(
     () => ({ patients, updatePatient, reorderQueuePatients, transitionPatientStatus }),

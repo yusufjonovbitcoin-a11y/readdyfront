@@ -1,0 +1,9 @@
+﻿# Dependencies
+node_modules/
+
+# Git metadata / ignore files
+.gitignore
+
+# Docs that are not needed in AI context
+README.md
+project_plan.md

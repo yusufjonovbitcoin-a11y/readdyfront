@@ -11,7 +11,7 @@ type BackendDoctorDto = {
   user_id?: string;
   phone_number?: string;
   full_name?: string | null;
-  specialization: string;
+  specialization?: string;
   hospital_id: string;
   department_id?: string;
   doctorUrl?: string;
@@ -19,6 +19,8 @@ type BackendDoctorDto = {
   avatar_url?: string | null;
   refresh_token?: string | null;
   created_at?: string;
+  department?: { name?: string } | null;
+  hospital?: { name?: string } | null;
 };
 
 type BackendPatientDto = {
@@ -32,6 +34,7 @@ type BackendDepartmentDto = {
   id: string;
   name: string;
   hospital_id: string;
+  ai_system_prompt?: string | null;
   hospital?: {
     name?: string;
   } | null;
@@ -105,10 +108,16 @@ function extractCheckinUrl(dto: BackendDoctorDto): string {
 }
 
 function normalizeDoctor(dto: BackendDoctorDto): DoctorDto {
+  const departmentName =
+    (dto.department && typeof dto.department.name === "string" ? dto.department.name.trim() : "") || "";
+  const hospitalName =
+    (dto.hospital && typeof dto.hospital.name === "string" ? dto.hospital.name.trim() : "") || "";
   return {
     id: dto.id,
-    name: dto.full_name?.trim() || `Doctor ${dto.id.slice(0, 6)}`,
-    specialty: dto.specialization,
+    name: dto.full_name?.trim() ?? "",
+    departmentName,
+    hospitalName,
+    specialty: (dto.specialization ?? "").toString().trim(),
     phone: dto.phone_number ?? "",
     email: "",
     avatar: dto.avatar ?? dto.avatar_url ?? dto.refresh_token ?? "",
@@ -164,6 +173,12 @@ export const hospitalAdminAdapter = {
       name: department.name,
     };
   },
+  updateDepartmentAiPrompt: async (id: string, aiSystemPrompt: string | null): Promise<void> => {
+    await apiRequest<unknown>(`/api/departments/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ ai_system_prompt: aiSystemPrompt }),
+    });
+  },
   getQuestionTemplates: async (): Promise<HAQuestionTemplateDto[]> => {
     const [templateQuestions, departments] = await Promise.all([
       apiRequest<BackendQuestionDto[]>("/api/questions/templates"),
@@ -178,6 +193,7 @@ export const hospitalAdminAdapter = {
         categoryName: department.name,
         questionCount,
         createdAt: new Date().toISOString(),
+        aiSystemPrompt: department.ai_system_prompt ?? null,
       };
     });
   },
@@ -194,6 +210,7 @@ export const hospitalAdminAdapter = {
       categoryName: department.name,
       questionCount: templateQuestions.length,
       createdAt: new Date().toISOString(),
+      aiSystemPrompt: department.ai_system_prompt ?? null,
     };
   },
   getQuestions: async (): Promise<HAQuestionDto[]> => {

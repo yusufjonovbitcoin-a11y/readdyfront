@@ -32,7 +32,7 @@ export function UsersPageContent() {
   const [isSavingUser, setIsSavingUser] = useState(false);
   const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(new Set());
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", role: "HOSPITAL_ADMIN", hospitalId: "1", password: "" });
+  const [form, setForm] = useState({ name: "", phone: "", role: "HOSPITAL_ADMIN", hospitalId: "1", password: "" });
   const { toast, showToast } = useAppToast();
   const [page, setPage] = useState(1);
   const fetchInitialData = useCallback(async () => {
@@ -45,7 +45,7 @@ export function UsersPageContent() {
 
   const filtered = users.filter((u) => {
     const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
+      (u.email || "").toLowerCase().includes(search.toLowerCase()) ||
       u.phone.includes(search);
     const matchRole = roleFilter === "all" || u.role === roleFilter;
     return matchSearch && matchRole;
@@ -70,7 +70,7 @@ export function UsersPageContent() {
   }, [pageState.data]);
 
   const resetForm = useCallback(() => {
-    setForm({ name: "", phone: "", email: "", role: "HOSPITAL_ADMIN", hospitalId: hospitals[0]?.id ?? "1", password: "" });
+    setForm({ name: "", phone: "", role: "HOSPITAL_ADMIN", hospitalId: hospitals[0]?.id ?? "1", password: "" });
     setEditingUser(null);
   }, [hospitals]);
 
@@ -85,7 +85,6 @@ export function UsersPageContent() {
           const updated = await updateUser(editingUser.id, {
             name: form.name,
             phone: form.phone,
-            email: form.email,
             role: form.role as User["role"],
             hospitalId: form.hospitalId,
             ...(form.password ? { password: form.password } : {}),
@@ -97,7 +96,6 @@ export function UsersPageContent() {
           const created = await createUser({
             name: form.name,
             phone: form.phone,
-            email: form.email,
             role: form.role as User["role"],
             hospitalId: form.hospitalId,
             password: form.password,
@@ -150,7 +148,6 @@ export function UsersPageContent() {
     setForm({
       name: user.name,
       phone: user.phone,
-      email: user.email,
       role: user.role,
       hospitalId: user.hospitalId,
       password: "",

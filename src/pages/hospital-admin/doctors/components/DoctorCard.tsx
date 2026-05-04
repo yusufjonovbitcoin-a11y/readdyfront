@@ -13,6 +13,7 @@ interface DoctorCardProps {
 export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: DoctorCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("hospital");
+  const displayName = doctor.name?.trim() || doctor.specialty?.trim() || "Doctor";
   const avatarSrc = doctor.avatar?.trim() ? doctor.avatar : null;
   const qrPreview = doctor.qrCode?.trim() || `/checkin?doctor_id=${doctor.id}`;
   const qrTarget = /^https?:\/\//i.test(qrPreview)
@@ -21,7 +22,7 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
       ? `${window.location.origin}${qrPreview.startsWith("/") ? qrPreview : `/${qrPreview}`}`
       : qrPreview);
   const { dataUrl: miniQrUrl } = useQrPngDataUrl(qrTarget, 72);
-  const initials = doctor.name
+  const initials = displayName
     .split(" ")
     .filter(Boolean)
     .map((part) => part[0])
@@ -47,7 +48,7 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
         </div>
         <div className="absolute left-3 top-1/2 z-10 w-14 h-14 -translate-y-1/2 sm:left-4 sm:w-16 sm:h-16 rounded-lg border-[2.5px] border-white shadow-md overflow-hidden ring-1 ring-black/10">
           {avatarSrc ? (
-            <img src={avatarSrc} alt={doctor.name} className="w-full h-full object-cover object-top" />
+            <img src={avatarSrc} alt={displayName} className="w-full h-full object-cover object-top" />
           ) : (
             <div className="w-full h-full bg-teal-700 text-white text-xs font-semibold flex items-center justify-center">
               {initials || "DR"}
@@ -63,7 +64,7 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
       </div>
 
       <div className="px-5 pt-4 pb-4">
-        <h3 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"} mb-2`}>{doctor.name}</h3>
+        <h3 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"} mb-2`}>{displayName}</h3>
 
         <div className="flex items-center gap-2 mb-2">
           <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
@@ -87,7 +88,7 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
         <div className={`flex items-center gap-2 p-2 rounded-lg mb-4 ${darkMode ? "bg-[#1A2235]" : "bg-gray-50"}`}>
           <div className={`w-10 h-10 rounded-md overflow-hidden border flex items-center justify-center flex-shrink-0 ${darkMode ? "border-[#273041] bg-[#0F1117]" : "border-gray-200 bg-white"}`}>
             {miniQrUrl ? (
-              <img src={miniQrUrl} alt={`${doctor.name} QR`} className="w-full h-full object-contain" />
+              <img src={miniQrUrl} alt={`${displayName} QR`} className="w-full h-full object-contain" />
             ) : (
               <i className={`ri-qr-code-line text-lg ${darkMode ? "text-gray-400" : "text-gray-500"}`}></i>
             )}

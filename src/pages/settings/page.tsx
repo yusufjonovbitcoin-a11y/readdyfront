@@ -5,7 +5,12 @@ import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutTheme } from "@/context/LayoutThemeContext";
 import AppToast from "@/components/ui/AppToast";
 import { useAppToast } from "@/hooks/useAppToast";
-import { changePassword } from "@/api/auth";
+import { changePassword, getLoginHistory } from "@/api/auth";
+import type { LoginHistoryEntry } from "@/api/types/auth.types";
+import { formatRelativeTime } from "@/lib/formatRelativeTime";
+import { patchUserAccount } from "@/api/users";
+import { useAuth } from "@/hooks/useAuth";
+import { formatAppRoleLabel, getUserInitials } from "@/lib/userDisplay";
 
 type SettingsTab = "profile" | "security" | "language" | "appearance" | "notifications";
 type NotificationPreferences = {
@@ -29,8 +34,29 @@ function resolveSettingsTab(value: string | null): SettingsTab {
   return "profile";
 }
 
+function sessionRowIcon(deviceLabel: string): string {
+  const d = deviceLabel.toLowerCase();
+  if (d.includes("chrome")) return "ri-chrome-line";
+  if (d.includes("safari")) return "ri-safari-line";
+  if (d.includes("edge")) return "ri-edge-line";
+  if (d.includes("firefox")) return "ri-firefox-line";
+  if (d.includes("android")) return "ri-android-line";
+  if (d.includes("iphone") || d.includes("ipad") || d.includes("ios")) return "ri-smartphone-line";
+  return "ri-global-line";
+}
+
+function formatPhoneDisplay(phone: string | undefined) {
+  if (!phone?.trim()) return "";
+  const d = phone.replace(/\s/g, "");
+  if (d.startsWith("+998") && d.length >= 13) {
+    return `${d.slice(0, 4)} ${d.slice(4, 6)} ${d.slice(6, 9)} ${d.slice(9, 11)} ${d.slice(11)}`.trim();
+  }
+  return phone;
+}
+
 export function SettingsPageContent() {
   const { t, i18n } = useTranslation("admin");
+  const { user, refreshUser, isBootstrapping } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { darkMode: dm, setDarkMode } = useMainLayoutTheme();
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -57,20 +83,47 @@ export function SettingsPageContent() {
       return { email: true, system: true, reports: false, security: true };
     }
   });
-  const [profile, setProfile] = useState({
-    name: "Super Admin",
-    email: "admin@medcore.uz",
-    phone: "+998 71 000 00 00",
-    role: "SUPER_ADMIN",
-  });
+  const [profile, setProfile] = useState({ name: "", phone: "", role: "" });
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [loginHistory, setLoginHistory] = useState<LoginHistoryEntry[]>([]);
+  const [loginHistoryLoading, setLoginHistoryLoading] = useState(false);
   const { toast, showToast } = useAppToast();
+  const relTimeLang = i18n.language === "ru" ? "ru" : "uz";
+
+  useEffect(() => {
+    if (!user) return;
+    setProfile({
+      name: user.name?.trim() ?? "",
+      phone: formatPhoneDisplay(user.phone) || "",
+      role: user.role ?? "",
+    });
+  }, [user]);
 
   useEffect(() => {
     const fromUrl = resolveSettingsTab(searchParams.get("tab"));
     setActiveTab((prev) => (prev === fromUrl ? prev : fromUrl));
   }, [searchParams]);
+
+  useEffect(() => {
+    if (activeTab !== "security") return;
+    let cancelled = false;
+    setLoginHistoryLoading(true);
+    void (async () => {
+      try {
+        const rows = await getLoginHistory();
+        if (!cancelled) setLoginHistory(rows);
+      } catch {
+        if (!cancelled) setLoginHistory([]);
+      } finally {
+        if (!cancelled) setLoginHistoryLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
 
   useEffect(() => {
     return () => {
@@ -162,6 +215,44 @@ export function SettingsPageContent() {
     }
   };
 
+  const handleSaveProfile = async () => {
+    if (!user?.userId) {
+      showToast(t("settings.profile.noSession"), "error");
+      return;
+    }
+    const nameTrim = profile.name.trim();
+    if (!nameTrim) {
+      showToast(t("settings.profile.nameRequired"), "error");
+      return;
+    }
+    setIsSavingProfile(true);
+    try {
+      const body: { full_name: string; phone_number?: string } = { full_name: nameTrim };
+      const rawPhone = profile.phone.replace(/\s/g, "");
+      if (rawPhone && rawPhone !== (user.phone ?? "").replace(/\s/g, "")) {
+        if (!/^\+998\d{9}$/.test(rawPhone)) {
+          showToast(t("settings.profile.phoneInvalid"), "error");
+          return;
+        }
+        body.phone_number = rawPhone;
+      }
+      await patchUserAccount(user.userId, body);
+      await refreshUser();
+      showToast(t("settings.profile.toastUpdated"), "success");
+    } catch (e) {
+      const msg =
+        typeof e === "object" &&
+        e !== null &&
+        "message" in e &&
+        typeof (e as { message: unknown }).message === "string"
+          ? (e as { message: string }).message
+          : t("settings.profile.saveFailed");
+      showToast(msg, "error");
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
   return (
     <>
       <AppToast toast={toast} />
@@ -219,7 +310,9 @@ export function SettingsPageContent() {
                     {avatarUrl ? (
                       <img src={avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-white text-xl font-bold">SA</span>
+                      <span className="text-white text-xl font-bold">
+                        {getUserInitials(profile.name || user?.name)}
+                      </span>
                     )}
                   </div>
                   <button
@@ -299,21 +392,24 @@ export function SettingsPageContent() {
                 </div>
                 <div>
                   <label htmlFor="settings-profile-role" className={labelClass}>{t("settings.profile.fields.role")}</label>
-                  <input id="settings-profile-role" className={inputClass} value={profile.role} disabled />
+                  <input
+                    id="settings-profile-role"
+                    className={inputClass}
+                    value={formatAppRoleLabel(profile.role)}
+                    disabled
+                  />
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  showToast(
-                    "Backend profile update endpointi ulanmaguncha bu amal vaqtincha o'chirilgan.",
-                    "info",
-                  )
-                }
-                className="mt-5 px-5 py-2.5 bg-emerald-500 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-emerald-600 whitespace-nowrap"
+                onClick={() => {
+                  void handleSaveProfile();
+                }}
+                disabled={isBootstrapping || isSavingProfile || !user}
+                className="mt-5 px-5 py-2.5 bg-emerald-500 text-white rounded-lg text-sm font-medium cursor-pointer hover:bg-emerald-600 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {t("settings.profile.saveButton")}
+                {isSavingProfile ? t("settings.profile.saving") : t("settings.profile.saveButton")}
               </button>
             </div>
           )}
@@ -369,39 +465,48 @@ export function SettingsPageContent() {
               </div>
 
               <div className={`mt-6 pt-5 border-t ${dm ? "border-[#1E2130]" : "border-gray-100"}`}>
-                <h4 className={`text-sm font-semibold mb-3 ${dm ? "text-white" : "text-gray-900"}`}>{t("settings.security.activeSessionsTitle")}</h4>
-                {[
-                  { device: t("settings.security.sessions.chromeWindows"), ip: "10.0.0.1", time: t("settings.security.sessions.nowActive"), current: true },
-                  { device: t("settings.security.sessions.safariIphone"), ip: "192.168.1.45", time: t("settings.security.sessions.twoHoursAgo"), current: false },
-                ].map((s, i) => (
-                  <div key={i} className={`flex items-center justify-between p-3 rounded-lg mb-2 ${dm ? "bg-[#0F1117]" : "bg-gray-50"}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-500/20">
-                        <i className={`${s.device.includes("Chrome") ? "ri-chrome-line" : "ri-safari-line"} text-emerald-400 text-sm`}></i>
+                <h4 className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>
+                  {t("settings.security.activeSessionsTitle")}
+                </h4>
+                <p className={`text-xs mt-1 mb-3 ${dm ? "text-gray-500" : "text-gray-500"}`}>
+                  {t("settings.security.activeSessionsSubtitle")}
+                </p>
+                {loginHistoryLoading ? (
+                  <p className={`text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>
+                    {t("settings.security.sessionsLoading")}
+                  </p>
+                ) : loginHistory.length === 0 ? (
+                  <p className={`text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>
+                    {t("settings.security.sessionsEmpty")}
+                  </p>
+                ) : (
+                  loginHistory.map((s) => (
+                    <div
+                      key={s.id}
+                      className={`flex items-center justify-between p-3 rounded-lg mb-2 ${dm ? "bg-[#0F1117]" : "bg-gray-50"}`}
+                      title={s.userAgent}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-500/20 flex-shrink-0">
+                          <i className={`${sessionRowIcon(s.deviceLabel)} text-emerald-400 text-sm`} aria-hidden />
+                        </div>
+                        <div className="min-w-0">
+                          <p className={`text-sm font-medium truncate ${dm ? "text-white" : "text-gray-900"}`}>
+                            {s.deviceLabel}
+                          </p>
+                          <p className={`text-xs truncate ${dm ? "text-gray-500" : "text-gray-400"}`}>
+                            {s.ip} · {formatRelativeTime(s.signedInAt, relTimeLang)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className={`text-sm font-medium ${dm ? "text-white" : "text-gray-900"}`}>{s.device}</p>
-                        <p className={`text-xs ${dm ? "text-gray-500" : "text-gray-400"}`}>{s.ip} · {s.time}</p>
-                      </div>
+                      {s.isCurrent ? (
+                        <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-400 flex-shrink-0">
+                          {t("settings.security.currentSessionChip")}
+                        </span>
+                      ) : null}
                     </div>
-                    {s.current ? (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-400">{t("settings.security.currentSessionChip")}</span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          showToast(
-                            "Remote session revoke endpointi hali ulanmagan.",
-                            "info",
-                          )
-                        }
-                        className="text-xs text-red-400 cursor-pointer hover:underline whitespace-nowrap"
-                      >
-                        {t("settings.security.signOutButton")}
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           )}

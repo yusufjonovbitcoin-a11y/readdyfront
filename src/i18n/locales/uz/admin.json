@@ -305,7 +305,12 @@
       "title": "Profil Ma'lumotlari",
       "changePhoto": "Rasm o'zgartirish",
       "saveButton": "Saqlash",
+      "saving": "Saqlanmoqda...",
       "toastUpdated": "Profil muvaffaqiyatli yangilandi!",
+      "nameRequired": "To'liq ismni kiriting.",
+      "phoneInvalid": "Telefon +998XXXXXXXXX formatida bo'lishi kerak.",
+      "saveFailed": "Profilni saqlab bo'lmadi.",
+      "noSession": "Sessiya (userId) topilmadi. Qayta kiring.",
       "fields": {
         "fullName": "To'liq Ism",
         "email": "Email",
@@ -318,6 +323,9 @@
       "changePasswordButton": "Parolni O'zgartirish",
       "toastPasswordUpdated": "Parol muvaffaqiyatli o'zgartirildi!",
       "activeSessionsTitle": "Faol Sessiyalar",
+      "activeSessionsSubtitle": "Oxirgi muvaffaqiyatli kirishlar (audit). Har bir qurilma uchun alohida sessiya jadvali yo'q — IP va brauzer bo'yicha tarix.",
+      "sessionsLoading": "Yuklanmoqda...",
+      "sessionsEmpty": "Kirish tarixi hali yo'q.",
       "currentSessionChip": "Joriy",
       "signOutButton": "Chiqarish",
       "fields": {

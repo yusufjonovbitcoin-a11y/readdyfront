@@ -2,6 +2,7 @@ import { authAdapter } from "@/api";
 import type {
   AuthUserDto,
   ChangePasswordInput,
+  LoginHistoryEntry,
   LoginInput,
   LoginResult,
 } from "@/api/types/auth.types";
@@ -20,4 +21,8 @@ export function logout(): Promise<void> {
 
 export function changePassword(input: ChangePasswordInput): Promise<void> {
   return authAdapter.changePassword(input);
+}
+
+export function getLoginHistory(): Promise<LoginHistoryEntry[]> {
+  return authAdapter.getLoginHistory();
 }

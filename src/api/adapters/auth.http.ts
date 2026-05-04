@@ -1,8 +1,14 @@
-import { apiRequest } from "@/api/client";
-import { clearStoredAccessToken, setStoredAccessToken } from "@/api/client";
+import {
+  apiRequest,
+  clearStoredAccessToken,
+  getStoredAccessToken,
+  setStoredAccessToken,
+  trySilentSessionRefresh,
+} from "@/api/client";
 import type {
   AuthUserDto,
   ChangePasswordInput,
+  LoginHistoryEntry,
   LoginInput,
   LoginResult,
 } from "@/api/types/auth.types";
@@ -41,7 +47,14 @@ export async function login(input: LoginInput): Promise<LoginResult> {
 
 export async function getCurrentUser(): Promise<AuthUserDto | null> {
   try {
-    return await apiRequest<AuthUserDto>("/api/auth/me", { skipRefreshOn401: true });
+    if (!getStoredAccessToken()?.trim()) {
+      const refreshed = await trySilentSessionRefresh();
+      if (!refreshed) return null;
+    }
+    return await apiRequest<AuthUserDto>("/api/auth/me", {
+      skipRefreshOn401: true,
+      suppressSessionFailureOn401: true,
+    });
   } catch {
     return null;
   }
@@ -64,4 +77,8 @@ export async function changePassword(input: ChangePasswordInput): Promise<void> 
     skipRefreshOn401: true,
     suppressSessionFailureOn401: true,
   });
+}
+
+export async function getLoginHistory(): Promise<LoginHistoryEntry[]> {
+  return apiRequest<LoginHistoryEntry[]>("/api/auth/login-history");
 }

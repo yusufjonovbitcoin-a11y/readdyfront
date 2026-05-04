@@ -19,7 +19,7 @@ type BackendDoctorDto = {
   id: string;
   full_name?: string | null;
   phone_number?: string;
-  specialization: string;
+  specialization?: string;
   hospital_id: string;
   avatar?: string | null;
   avatar_url?: string | null;
@@ -35,6 +35,9 @@ type BackendDoctorDto = {
   registrationUrl?: string;
   link?: string;
   url?: string;
+  department?: {
+    name?: string;
+  } | null;
   hospital?: {
     name?: string;
   } | null;
@@ -105,11 +108,16 @@ function extractCheckinUrl(dto: BackendDoctorDto): string {
 }
 
 function normalizeDoctor(dto: BackendDoctorDto): DoctorDto {
-  const resolvedName = dto.full_name?.trim() || dto.specialization?.trim() || `Doctor ${dto.id.slice(0, 6)}`;
+  const departmentName =
+    (dto.department && typeof dto.department.name === "string" ? dto.department.name.trim() : "") || "";
+  const hospitalName =
+    (dto.hospital && typeof dto.hospital.name === "string" ? dto.hospital.name.trim() : "") || "";
   return {
     id: dto.id,
-    name: resolvedName,
-    specialty: dto.specialization,
+    name: dto.full_name?.trim() ?? "",
+    departmentName,
+    hospitalName,
+    specialty: (dto.specialization ?? "").toString().trim(),
     phone: dto.phone_number ?? "",
     email: "",
     avatar: dto.avatar ?? dto.avatar_url ?? dto.refresh_token ?? "",
@@ -133,6 +141,16 @@ export async function getDoctorById(id: string): Promise<DoctorDto | null> {
   return doctor ? normalizeDoctor(doctor) : null;
 }
 
+/** Joriy shifokor (JWT `user_id`) — profil sahifasi uchun. */
+export async function getMyDoctorProfile(): Promise<DoctorDto | null> {
+  try {
+    const doctor = await apiRequest<BackendDoctorDto>("/api/doctors/me");
+    return doctor ? normalizeDoctor(doctor) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function updateDoctorStatus(id: string, input: UpdateDoctorStatusInput): Promise<DoctorDto | null> {
   const updated = await apiRequest<BackendDoctorDto | null>(`/api/doctors/${encodeURIComponent(id)}`, {
     method: "PATCH",
@@ -141,12 +159,33 @@ export async function updateDoctorStatus(id: string, input: UpdateDoctorStatusIn
   return updated ? normalizeDoctor(updated) : null;
 }
 
+export async function deleteDoctor(id: string): Promise<void> {
+  await apiRequest<null>(`/api/doctors/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
 export async function getDoctorPatients(): Promise<DoctorPatientDto[]> {
   try {
     return await apiRequest<DoctorPatientDto[]>("/api/doctors/me/patients");
   } catch {
     return [];
   }
+}
+
+export async function updateDoctorPatientWorkflow(
+  responseId: string,
+  input: {
+    status: "queue" | "in_progress" | "completed" | "history";
+    diagnosis?: string;
+    notes?: string;
+    consultationDuration?: number;
+  },
+): Promise<DoctorPatientDto> {
+  return apiRequest<DoctorPatientDto>(`/api/doctors/me/patients/${encodeURIComponent(responseId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function getDoctorQuestions(): Promise<DoctorQuestionDto[]> {

@@ -258,6 +258,8 @@ export function HADoctorDetailContent() {
     );
   }
 
+  const headerDisplayName = doctor.name?.trim() || doctor.specialty?.trim() || "Doctor";
+
   const tabs: { key: TabType; label: string; icon: string }[] = [
     { key: 'overview', label: 'Umumiy', icon: 'ri-user-line' },
     { key: 'patients', label: 'Bemorlar', icon: 'ri-user-heart-line' },
@@ -280,11 +282,11 @@ export function HADoctorDetailContent() {
         <div className={`rounded-xl p-6 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0">
-              <img src={doctor.avatar} alt={doctor.name} className="w-full h-full object-cover object-top" />
+              <img src={doctor.avatar} alt={headerDisplayName} className="w-full h-full object-cover object-top" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 flex-wrap">
-                <h2 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{doctor.name}</h2>
+                <h2 className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{headerDisplayName}</h2>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${doctor.status === 'active' ? 'bg-teal-50 text-teal-700' : 'bg-red-50 text-red-600'}`}>
                   {doctor.status === 'active' ? 'Faol' : 'Nofaol'}
                 </span>
@@ -349,7 +351,7 @@ export function HADoctorDetailContent() {
               <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>Shaxsiy ma'lumotlar</h3>
               <div className="space-y-3">
                 {[
-                  { label: 'To\'liq ism', value: doctor.name },
+                  { label: 'To\'liq ism', value: doctor.name?.trim() || "—" },
                   { label: 'Mutaxassislik', value: doctor.specialty },
                   { label: 'Telefon', value: doctor.phone },
                   { label: 'Email', value: doctor.email },
@@ -478,7 +480,7 @@ export function HADoctorDetailContent() {
 
         {activeTab === 'qr' && (
           <div className={`rounded-xl p-8 flex justify-center ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
-            <QRCodeDisplay doctorId={doctor.id} doctorName={doctor.name} qrUrl={doctor.qrCode} darkMode={darkMode} />
+            <QRCodeDisplay doctorId={doctor.id} doctorName={headerDisplayName} qrUrl={doctor.qrCode} darkMode={darkMode} />
           </div>
         )}
       </div>

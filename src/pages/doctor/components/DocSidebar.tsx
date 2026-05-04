@@ -1,8 +1,10 @@
 import { useTranslation } from "react-i18next";
-import type { RefObject } from "react";
+import { useMemo, type RefObject } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useDocPatients } from "@/context/DocPatientsContext";
+import { formatLocalYMD } from "@/utils/date";
 
 interface NavItem {
   path: string;
@@ -26,7 +28,17 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
   const navigate = useNavigate();
   const { logout, user } = useAuth();
   const { darkMode } = useDoctorTheme();
+  const { patients } = useDocPatients();
   const showExpanded = mobileOpen || !collapsed;
+
+  const { queueTodayCount, completedTodayCount } = useMemo(() => {
+    const todayStr = formatLocalYMD();
+    const todayList = patients.filter((p) => p.date === todayStr);
+    return {
+      queueTodayCount: todayList.filter((p) => p.status === "queue").length,
+      completedTodayCount: todayList.filter((p) => p.status === "completed").length,
+    };
+  }, [patients]);
   const doctorName = user?.name?.trim() || t("sidebar.doctorName");
   const doctorAvatar = user?.avatar?.trim() || "";
   const doctorInitials = doctorName
@@ -66,7 +78,7 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
       {/* Logo */}
       <div className={`flex items-center h-16 px-4 border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
         <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
             <i className="ri-stethoscope-line text-white text-sm"></i>
           </div>
         </div>
@@ -75,7 +87,7 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
             <span className={`text-sm font-bold tracking-wide block truncate ${darkMode ? "text-white" : "text-gray-900"}`}>
               {t("sidebar.doctorName")}
             </span>
-            <span className="text-xs text-violet-500 font-medium">{t("sidebar.specialty")}</span>
+            <span className="text-xs text-green-600 font-medium">{t("sidebar.specialty")}</span>
           </div>
         )}
         <button
@@ -97,13 +109,13 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
           {navItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path);
             const itemClass =
-              `no-underline flex items-center h-11 rounded-lg transition-colors duration-150 cursor-pointer [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 ${
+              `no-underline flex items-center h-11 rounded-lg transition-colors duration-150 cursor-pointer [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-green-500/40 ${
                 showExpanded ? "px-3" : "justify-center px-2"
               } ${
                 isActive
                   ? darkMode
-                    ? "bg-violet-900/40 text-violet-300 active:bg-violet-900/60"
-                    : "bg-violet-50 text-violet-600 active:bg-violet-100"
+                    ? "bg-green-900/30 text-green-300 active:bg-green-900/45"
+                    : "bg-green-50 text-green-700 active:bg-green-100"
                   : darkMode
                   ? "text-gray-300 hover:bg-[#21262D] hover:text-white active:bg-[#30363D]/80"
                   : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100"
@@ -127,7 +139,7 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
                   <span className="ml-3 text-sm font-medium whitespace-nowrap">{item.label}</span>
                 )}
                 {isActive && showExpanded && (
-                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-violet-400 flex-shrink-0" aria-hidden="true" />
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-green-400 flex-shrink-0" aria-hidden="true" />
                 )}
               </Link>
             );
@@ -137,53 +149,88 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
 
       {/* Quick Stats */}
       {showExpanded && (
-        <div className={`mx-3 mb-3 p-3 rounded-lg ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-violet-50"}`}>
+        <div className={`mx-3 mb-3 p-3 rounded-lg ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-green-50"}`}>
           <p className={`text-xs font-semibold mb-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{t("sidebar.today")}</p>
-          <div className="flex justify-between gap-2">
-            <div className="text-center flex-1">
-              <p className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>3</p>
-              <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("sidebar.queue")}</p>
-            </div>
-            <div className="text-center flex-1">
-              <p className={`text-lg font-bold text-green-500`}>2</p>
-              <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("sidebar.completed")}</p>
-            </div>
+          <div className="flex gap-2">
+            <Link
+              to="/doctor/patients?tab=queue"
+              prefetch="none"
+              onClick={onCloseMobile}
+              className={`no-underline flex min-w-0 flex-1 flex-col items-center justify-center rounded-lg px-2 py-2.5 text-center transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500/40 [-webkit-tap-highlight-color:transparent] ${
+                darkMode
+                  ? "bg-[#161B22] hover:bg-[#30363D] active:bg-[#21262D]"
+                  : "bg-white/80 hover:bg-white active:bg-white shadow-sm border border-green-100/80"
+              }`}
+              aria-label={`${t("sidebar.queue")}: ${queueTodayCount}`}
+            >
+              <p className={`text-lg font-bold tabular-nums ${darkMode ? "text-white" : "text-gray-900"}`}>
+                {queueTodayCount}
+              </p>
+              <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-500" : "text-gray-500"}`}>{t("sidebar.queue")}</p>
+            </Link>
+            <Link
+              to="/doctor/patients?tab=completed"
+              prefetch="none"
+              onClick={onCloseMobile}
+              className={`no-underline flex min-w-0 flex-1 flex-col items-center justify-center rounded-lg px-2 py-2.5 text-center transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500/40 [-webkit-tap-highlight-color:transparent] ${
+                darkMode
+                  ? "bg-[#161B22] hover:bg-[#30363D] active:bg-[#21262D]"
+                  : "bg-white/80 hover:bg-white active:bg-white shadow-sm border border-green-100/80"
+              }`}
+              aria-label={`${t("sidebar.completed")}: ${completedTodayCount}`}
+            >
+              <p className={`text-lg font-bold tabular-nums text-green-500`}>{completedTodayCount}</p>
+              <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-500" : "text-gray-500"}`}>{t("sidebar.completed")}</p>
+            </Link>
           </div>
         </div>
       )}
-      {/* User Profile */}
+      {/* User profile (settings) + chiqish alohida */}
       <div className={`p-3 border-t ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
-        <button
-          type="button"
-          onClick={handleLogout}
-          aria-label="Log out"
-          className={`no-underline flex items-center rounded-lg p-2 [-webkit-tap-highlight-color:transparent] outline-none focus-visible:ring-2 focus-visible:ring-violet-500/40 ${showExpanded ? "" : "justify-center"} ${
-            darkMode ? "hover:bg-[#21262D] active:bg-[#30363D]/80" : "hover:bg-gray-50 active:bg-gray-100"
-          } cursor-pointer transition-colors`}
+        <div
+          className={`flex [-webkit-tap-highlight-color:transparent] ${
+            showExpanded ? "items-stretch justify-between gap-2" : "flex-col items-center gap-2"
+          }`}
         >
-          <div className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {doctorAvatar ? (
-              <img
-                src={doctorAvatar}
-                alt={doctorName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white text-xs font-bold">{doctorInitials || "DR"}</span>
+          <Link
+            to="/doctor/settings"
+            prefetch="none"
+            onClick={onCloseMobile}
+            className={`no-underline flex min-w-0 items-center rounded-lg py-2 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500/40 ${
+              showExpanded ? "min-h-11 flex-1 gap-2 px-3" : "justify-center px-2"
+            } ${
+              darkMode ? "text-white hover:bg-[#21262D] active:bg-[#30363D]/80" : "hover:bg-gray-50 active:bg-gray-100"
+            }`}
+            aria-label={`${doctorName} — ${t("sidebar.settings")}`}
+          >
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-green-600">
+              {doctorAvatar ? (
+                <img src={doctorAvatar} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-xs font-bold text-white">{doctorInitials || "DR"}</span>
+              )}
+            </div>
+            {showExpanded && (
+              <div className="min-w-0 flex-1 text-left">
+                <p className={`truncate text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{doctorName}</p>
+                <p className="truncate text-xs text-green-600">DOCTOR</p>
+              </div>
             )}
-          </div>
-          {showExpanded && (
-            <div className="ml-2 flex-1 min-w-0">
-              <p className={`text-sm font-medium truncate ${darkMode ? "text-white" : "text-gray-900"}`}>{doctorName}</p>
-              <p className="text-xs text-violet-500 truncate">DOCTOR</p>
-            </div>
-          )}
-          {showExpanded && (
-            <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-              <i className={`ri-logout-box-r-line text-sm ${darkMode ? "text-gray-400" : "text-gray-400"}`}></i>
-            </div>
-          )}
-        </button>
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label="Log out"
+            title="Log out"
+            className={`flex w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500/40 ${
+              darkMode
+                ? "text-gray-400 hover:bg-[#21262D] hover:text-white active:bg-[#30363D]/80"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100"
+            }`}
+          >
+            <i className="ri-logout-box-r-line text-lg" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </aside>
   );

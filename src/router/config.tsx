@@ -8,6 +8,7 @@ import { RouteFallback, RootIndexRedirect, WithSuspense } from "./helpers";
 
 const LoginPage = lazy(() => import("../pages/login/page"));
 const CheckInPage = lazy(() => import("../pages/checkin/page"));
+const ChatDemoPage = lazy(() => import("../pages/chat/page"));
 const NotFoundPage = lazy(() => import("../pages/NotFound"));
 
 const DashboardContent = lazy(() =>
@@ -112,6 +113,14 @@ const routes: RouteObject[] = [
     element: (
       <WithSuspense>
         <CheckInPage />
+      </WithSuspense>
+    ),
+  },
+  {
+    path: "/chat",
+    element: (
+      <WithSuspense>
+        <ChatDemoPage />
       </WithSuspense>
     ),
   },

@@ -18,12 +18,32 @@ export function getDoctorById(id: string): Promise<DoctorDto | null> {
   return doctorAdapter.getDoctorById(id);
 }
 
+export function getMyDoctorProfile(): Promise<DoctorDto | null> {
+  return doctorAdapter.getMyDoctorProfile();
+}
+
 export function updateDoctorStatus(id: string, input: UpdateDoctorStatusInput): Promise<DoctorDto | null> {
   return doctorAdapter.updateDoctorStatus(id, input);
 }
 
+export function deleteDoctor(id: string): Promise<void> {
+  return doctorAdapter.deleteDoctor(id);
+}
+
 export function getDoctorPatients(): Promise<DoctorPatientDto[]> {
   return doctorAdapter.getDoctorPatients();
+}
+
+export function updateDoctorPatientWorkflow(
+  responseId: string,
+  input: {
+    status: "queue" | "in_progress" | "completed" | "history";
+    diagnosis?: string;
+    notes?: string;
+    consultationDuration?: number;
+  },
+): Promise<DoctorPatientDto> {
+  return doctorAdapter.updateDoctorPatientWorkflow(responseId, input);
 }
 
 export function getDoctorQuestions(): Promise<DoctorQuestionDto[]> {

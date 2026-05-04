@@ -6,8 +6,19 @@ import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { copyTextWithFallback } from "@/utils/clipboard";
 import { useAuth } from "@/hooks/useAuth";
-import { getDoctorById } from "@/api/doctor";
-import type { DoctorDto } from "@/api/types/doctor.types";
+import { getDoctorPatients, getMyDoctorProfile } from "@/api/doctor";
+import type { DoctorDto, DoctorPatientDto } from "@/api/types/doctor.types";
+
+function formatJoinedDate(iso: string | undefined): string {
+  if (!iso?.trim()) return "—";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+    return d.toLocaleDateString("uz-UZ", { year: "numeric", month: "2-digit", day: "2-digit" });
+  } catch {
+    return iso.slice(0, 10);
+  }
+}
 
 export default function DocProfilePage() {
   const { t } = useTranslation("doctor");
@@ -27,6 +38,7 @@ export function DocProfileContent() {
   const [copyError, setCopyError] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [doctor, setDoctor] = useState<DoctorDto | null>(null);
+  const [patients, setPatients] = useState<DoctorPatientDto[]>([]);
 
   const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
@@ -53,7 +65,7 @@ export function DocProfileContent() {
     let cancelled = false;
     void (async () => {
       try {
-        const profile = await getDoctorById(user.id);
+        const profile = await getMyDoctorProfile();
         if (cancelled) return;
         setDoctor(profile);
       } catch {
@@ -65,6 +77,36 @@ export function DocProfileContent() {
       cancelled = true;
     };
   }, [user?.id, user?.role]);
+
+  useEffect(() => {
+    if (!user?.id || user.role !== "DOCTOR") return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const list = await getDoctorPatients();
+        if (cancelled) return;
+        setPatients(Array.isArray(list) ? list : []);
+      } catch {
+        if (cancelled) return;
+        setPatients([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.role]);
+
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [doctor?.avatar, user?.avatar]);
+
+  const { totalPatients, todayPatients } = useMemo(() => {
+    const total = patients.length;
+    const d = new Date();
+    const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const today = patients.filter((p) => p.date === ymd).length;
+    return { totalPatients: total, todayPatients: today };
+  }, [patients]);
 
   const checkinTarget = useMemo(() => {
     const rawTarget = doctor?.qrCode?.trim() || user?.checkinUrl?.trim() || "";
@@ -85,8 +127,8 @@ export function DocProfileContent() {
     return "";
   }, [doctor?.qrCode, user?.checkinUrl]);
 
-  const profileName = doctor?.name ?? user?.name ?? "Doctor";
-  const profileAvatar = doctor?.avatar ?? user?.avatar ?? "";
+  const profileName = user?.name?.trim() || doctor?.name?.trim() || "Doctor";
+  const profileAvatar = (doctor?.avatar ?? user?.avatar ?? "").trim();
   const profileInitials = profileName
     .split(" ")
     .filter(Boolean)
@@ -142,9 +184,13 @@ export function DocProfileContent() {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className={`text-xl font-bold ${pageTitle}`}>{doctor?.name ?? user?.name ?? "Doctor"}</h2>
-                <p className="text-violet-500 font-medium">{doctor?.specialty ?? "General"}</p>
-                <p className={`text-sm mt-1 ${pageMuted}`}>{user?.hospitalName ?? "MedCore"}</p>
+                <h2 className={`text-xl font-bold ${pageTitle}`}>{profileName}</h2>
+                <p className="text-violet-500 font-medium truncate">
+                  {doctor?.hospitalName?.trim() || user?.hospitalName?.trim() || "—"}
+                </p>
+                <p className={`text-sm mt-1 truncate ${pageMuted}`}>
+                  {doctor?.departmentName?.trim() || "—"}
+                </p>
               </div>
               <button onClick={() => navigate("/doctor/settings")} className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${editBtn}`}>
                 <i className="ri-edit-2-line text-base"></i>
@@ -156,8 +202,8 @@ export function DocProfileContent() {
             <div className="grid grid-cols-2 gap-4 mt-5">
               {[
                 { icon: "ri-phone-line", label: "Telefon", value: doctor?.phone || user?.phone || "-" },
-                { icon: "ri-time-line", label: "Tajriba", value: doctor?.specialty ?? "-" },
-                { icon: "ri-calendar-line", label: "Qo'shilgan", value: doctor?.joinDate?.slice(0, 10) ?? "-" },
+                { icon: "ri-time-line", label: "Tajriba", value: doctor?.specialty?.trim() || "—" },
+                { icon: "ri-calendar-line", label: "Qo'shilgan", value: formatJoinedDate(doctor?.joinDate) },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className={`w-8 h-8 flex items-center justify-center rounded-lg ${iconBox}`}>
@@ -172,18 +218,29 @@ export function DocProfileContent() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
             {[
-              { label: "Jami bemorlar", value: doctor?.totalPatients ?? 0, icon: "ri-user-heart-line", color: "text-violet-600", bg: "bg-violet-50" },
-              { label: "Bugun", value: doctor?.todayPatients ?? 0, icon: "ri-calendar-check-line", color: "text-green-600", bg: "bg-green-50" },
-              { label: "Reyting", value: doctor?.rating ?? 0, icon: "ri-star-line", color: "text-amber-600", bg: "bg-amber-50" },
+              {
+                label: "Jami bemorlar",
+                value: totalPatients,
+                icon: "ri-user-heart-line",
+                color: darkMode ? "text-violet-300" : "text-violet-600",
+                bg: darkMode ? "bg-violet-900/25" : "bg-violet-50",
+              },
+              {
+                label: "Bugun",
+                value: todayPatients,
+                icon: "ri-calendar-check-line",
+                color: darkMode ? "text-green-300" : "text-green-600",
+                bg: darkMode ? "bg-green-900/25" : "bg-green-50",
+              },
             ].map((stat, i) => (
-              <div key={i} className={`rounded-xl p-4 text-center ${cardBase}`}>
-                <div className={`w-10 h-10 flex items-center justify-center rounded-lg ${stat.bg} mx-auto mb-2`}>
-                  <i className={`${stat.icon} text-lg ${stat.color}`}></i>
+              <div key={i} className={`rounded-xl p-5 text-center ${cardBase}`}>
+                <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl ${stat.bg}`}>
+                  <i className={`${stat.icon} text-xl ${stat.color}`}></i>
                 </div>
-                <p className={`text-2xl font-bold ${pageTitle}`}>{stat.value}</p>
-                <p className={`text-xs mt-0.5 ${pageMuted}`}>{stat.label}</p>
+                <p className={`text-3xl font-bold tabular-nums ${pageTitle}`}>{stat.value}</p>
+                <p className={`mt-1 text-sm ${pageMuted}`}>{stat.label}</p>
               </div>
             ))}
           </div>

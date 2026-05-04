@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
 import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
 import { useModalA11y } from "@/hooks/useModalA11y";
@@ -16,6 +16,7 @@ import {
   getHAQuestions,
   updateHAQuestion,
   updateHAQuestionCategory,
+  updateHADepartmentAiPrompt,
   type HACategory,
   type HAQuestionTemplate,
   type HAQuestion,
@@ -36,6 +37,156 @@ function toErrorMessage(error: unknown, fallback: string): string {
     }
   }
   return fallback;
+}
+
+/** Shablon ichidagi savollarni UI bo‘limlariga ajratish (backend maydonlari bilan mos). */
+function partitionTemplateQuestions(questions: HAQuestion[]): {
+  mandatory: HAQuestion[];
+  conditional: HAQuestion[];
+  domain: HAQuestion[];
+  optionalFree: HAQuestion[];
+} {
+  const mandatory: HAQuestion[] = [];
+  const conditional: HAQuestion[] = [];
+  const domain: HAQuestion[] = [];
+  const optionalFree: HAQuestion[] = [];
+  for (const q of questions) {
+    if (q.scope === "DOCTOR") {
+      domain.push(q);
+      continue;
+    }
+    if (q.isRequired === true) {
+      mandatory.push(q);
+      continue;
+    }
+    if (q.answerMode === "FREE_TEXT") {
+      optionalFree.push(q);
+      continue;
+    }
+    conditional.push(q);
+  }
+  return { mandatory, conditional, domain, optionalFree };
+}
+
+function QuestionCardRow({
+  q,
+  index,
+  darkMode,
+  cardBase,
+  isMutating,
+  onEdit,
+  onDelete,
+}: {
+  q: HAQuestion;
+  index: number;
+  darkMode: boolean;
+  cardBase: string;
+  isMutating: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useTranslation("hospital");
+  const scopeLabel = q.scope === "DOCTOR" ? t("questions.questionMeta.badgeDoctor") : t("questions.questionMeta.badgeTemplate");
+  const modeLabel =
+    q.answerMode === "FREE_TEXT" ? t("questions.questionMeta.modeFreeText") : t("questions.questionMeta.modeYesNo");
+  return (
+    <div className={`${cardBase} flex items-start gap-4`}>
+      <div className="w-7 h-7 flex items-center justify-center rounded-full bg-teal-50 flex-shrink-0 mt-0.5">
+        <span className="text-teal-700 text-xs font-bold">{index}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm mb-2 ${darkMode ? "text-gray-200" : "text-gray-700"}`}>{q.text}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>
+            {modeLabel}
+          </span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${darkMode ? "bg-violet-900/40 text-violet-300" : "bg-violet-50 text-violet-700"}`}>
+            {scopeLabel}
+          </span>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+              q.isRequired
+                ? darkMode
+                  ? "bg-emerald-900/40 text-emerald-300"
+                  : "bg-emerald-50 text-emerald-700"
+                : darkMode
+                  ? "bg-amber-900/40 text-amber-300"
+                  : "bg-amber-50 text-amber-700"
+            }`}
+          >
+            {q.isRequired ? t("questions.questionMeta.badgeRequired") : t("questions.questionMeta.badgeOptional")}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <button
+          type="button"
+          aria-label={t("questions.actions.editQuestionAria", { index })}
+          onClick={onEdit}
+          className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+        >
+          <i aria-hidden="true" className="ri-edit-line text-sm"></i>
+        </button>
+        <button
+          type="button"
+          aria-label={t("questions.actions.deleteQuestionAria", { index })}
+          onClick={onDelete}
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors"
+          disabled={isMutating}
+        >
+          <i aria-hidden="true" className="ri-delete-bin-line text-sm"></i>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function QuestionBucketSection({
+  title,
+  items,
+  darkMode,
+  cardBase,
+  isMutating,
+  emptyHint,
+  onEdit,
+  onDelete,
+}: {
+  title: string;
+  items: HAQuestion[];
+  darkMode: boolean;
+  cardBase: string;
+  isMutating: boolean;
+  emptyHint: string;
+  onEdit: (q: HAQuestion) => void;
+  onDelete: (q: HAQuestion) => void;
+}) {
+  const sectionTitleClass = `text-sm font-semibold tracking-tight ${darkMode ? "text-white" : "text-gray-900"}`;
+  const emptyClass = `text-xs text-center rounded-xl border border-dashed px-4 py-6 ${
+    darkMode ? "border-[#1E2130] text-gray-500 bg-[#141824]/50" : "border-gray-200 text-gray-500 bg-gray-50/50"
+  }`;
+  return (
+    <section className="space-y-3">
+      <h3 className={sectionTitleClass}>{title}</h3>
+      {items.length === 0 ? (
+        <p className={emptyClass}>{emptyHint}</p>
+      ) : (
+        <div className="space-y-3">
+          {items.map((q, i) => (
+            <QuestionCardRow
+              key={q.id}
+              q={q}
+              index={i + 1}
+              darkMode={darkMode}
+              cardBase={cardBase}
+              isMutating={isMutating}
+              onEdit={() => onEdit(q)}
+              onDelete={() => onDelete(q)}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 function CategoryModal({ cat, darkMode, onClose, onSave, isSubmitting }: {
@@ -104,19 +255,19 @@ function TemplateModal({ tmpl, categories, darkMode, onClose, onSave, isSubmitti
         </div>
         <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="space-y-4">
           <div>
-            <label htmlFor={fieldId.direction} className={labelClass}>Shifokor yo'nalishi</label>
+            <label htmlFor={fieldId.direction} className={labelClass}>{t("questions.modal.template.nameLabel")}</label>
             <input
               ref={titleInputRef}
               id={fieldId.direction}
               type="text"
               className={inputClass}
-              placeholder="Masalan: Kardiologiya"
+              placeholder={t("questions.modal.template.namePlaceholder")}
               value={form.directionName}
               onChange={e => setForm({ ...form, directionName: e.target.value })}
               required
             />
             <p className={`text-xs mt-1 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-              Yo'nalish nomini yozing, mavjud bo'lmasa yangi qo'shiladi.
+              {t("questions.modal.template.directionHelp")}
             </p>
           </div>
           <div className="flex gap-3">
@@ -124,6 +275,97 @@ function TemplateModal({ tmpl, categories, darkMode, onClose, onSave, isSubmitti
             <button type="submit" disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}>{isSubmitting ? "Saqlanmoqda..." : t("common:buttons.save")}</button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+/** Shu bo‘lim (department) uchun `PATCH /api/departments/:id` → `ai_system_prompt`. Har bir yo‘nalish alohida. */
+function DepartmentAiPromptModal({
+  template,
+  darkMode,
+  onClose,
+  onSave,
+  isSubmitting,
+}: {
+  template: HAQuestionTemplate;
+  darkMode: boolean;
+  onClose: () => void;
+  onSave: (text: string | null) => void;
+  isSubmitting: boolean;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const modalRef = useModalA11y({ isOpen: true, onClose, initialFocusRef: textareaRef });
+  const [text, setText] = useState(() => template.aiSystemPrompt ?? "");
+  useEffect(() => {
+    setText(template.aiSystemPrompt ?? "");
+  }, [template]);
+  const inputClass = `w-full px-3 py-2 rounded-lg text-sm border outline-none transition-colors resize-y min-h-[140px] ${darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"}`;
+  const labelClass = `block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ha-ai-prompt-modal-title"
+        tabIndex={-1}
+        className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h2 id="ha-ai-prompt-modal-title" className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+            Bo‘lim AI prompti — {template.title}
+          </h2>
+          <button
+            type="button"
+            aria-label="Yopish"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}
+          >
+            <i aria-hidden="true" className={`ri-close-line ${darkMode ? "text-gray-400" : "text-gray-500"}`} />
+          </button>
+        </div>
+        <label htmlFor="ha-department-ai-prompt" className={labelClass}>
+          Bo‘lim tizim prompti
+        </label>
+        <textarea
+          ref={textareaRef}
+          id="ha-department-ai-prompt"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={20000}
+          rows={10}
+          className={inputClass}
+          placeholder="Masalan: Sen LOR bo‘yicha qisqa savollar ber va..."
+        />
+        <p className={`text-xs mt-1 mb-4 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{text.length} / 20000</p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={() => onSave(null)}
+            disabled={isSubmitting}
+            className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300 border border-[#1E2130]" : "bg-gray-100 text-gray-700 border border-gray-200"}`}
+          >
+            Tozalash (standart)
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}
+          >
+            Bekor qilish
+          </button>
+          <button
+            type="button"
+            onClick={() => onSave(text.trim() || null)}
+            disabled={isSubmitting}
+            className={`flex-1 min-h-[44px] rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}
+          >
+            {isSubmitting ? "Saqlanmoqda..." : "Saqlash"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -249,6 +491,8 @@ export function HAQuestionsPageContent() {
   const [search, setSearch] = useState('');
   const [isMutating, setIsMutating] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
+  const [showAiPromptModal, setShowAiPromptModal] = useState(false);
+  const [aiPromptTemplate, setAiPromptTemplate] = useState<HAQuestionTemplate | null>(null);
 
   useEffect(() => {
     if (categoriesState.status === "success") setCategories(categoriesState.data ?? []);
@@ -261,6 +505,21 @@ export function HAQuestionsPageContent() {
   useEffect(() => {
     if (questionsState.status === "success") setQuestions(questionsState.data ?? []);
   }, [questionsState.status, questionsState.data]);
+
+  const filteredTemplates = templates.filter(
+    (item) =>
+      item.title.toLowerCase().includes(search.toLowerCase()) ||
+      item.categoryName.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const templateQuestions = selectedTemplate
+    ? [...questions].filter((q) => q.templateId === selectedTemplate.id).sort((a, b) => a.order - b.order)
+    : [];
+
+  const questionBuckets = useMemo(
+    () => partitionTemplateQuestions(templateQuestions),
+    [templateQuestions],
+  );
 
   if (categoriesState.status === "loading" || templatesState.status === "loading" || questionsState.status === "loading") {
     return (
@@ -289,15 +548,6 @@ export function HAQuestionsPageContent() {
     );
   }
 
-  const filteredTemplates = templates.filter(t =>
-    t.title.toLowerCase().includes(search.toLowerCase()) ||
-    t.categoryName.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const templateQuestions = selectedTemplate
-    ? [...questions].filter((q) => q.templateId === selectedTemplate.id).sort((a, b) => a.order - b.order)
-    : [];
-
   const reloadAll = async () => {
     await Promise.all([categoriesState.reload(), templatesState.reload(), questionsState.reload()]);
   };
@@ -320,7 +570,8 @@ export function HAQuestionsPageContent() {
     try {
       const trimmedDirection = data.directionName.trim();
       if (!trimmedDirection) {
-        showToast("Yo'nalish nomini kiriting.", "error");
+        showToast(t("questions.errors.templateNameRequired"), "error");
+        setIsMutating(false);
         return;
       }
       let categoryId =
@@ -335,9 +586,9 @@ export function HAQuestionsPageContent() {
       await reloadAll();
       setShowTmplModal(false);
       setEditingTmpl(null);
-      showToast("Savolnoma muvaffaqiyatli saqlandi.");
+      showToast(t("questions.toasts.templateSaved"));
     } catch (error) {
-      showToast(toErrorMessage(error, "Savolnomani saqlashda xatolik yuz berdi."), "error");
+      showToast(toErrorMessage(error, t("questions.toasts.templateSaveError")), "error");
     } finally {
       setIsMutating(false);
     }
@@ -388,6 +639,22 @@ export function HAQuestionsPageContent() {
     }
   };
 
+  const saveDepartmentAiPrompt = async (text: string | null) => {
+    if (!aiPromptTemplate) return;
+    setIsMutating(true);
+    try {
+      await updateHADepartmentAiPrompt(aiPromptTemplate.id, text);
+      await reloadAll();
+      setShowAiPromptModal(false);
+      setAiPromptTemplate(null);
+      showToast(text === null ? "Bo‘lim prompti tozalandi. AI faqat prompt yozilganda ishlaydi." : "Bo‘lim AI prompti saqlandi.");
+    } catch (error) {
+      showToast(toErrorMessage(error, "Bo‘lim promptini saqlashda xatolik yuz berdi."), "error");
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     setIsMutating(true);
@@ -428,7 +695,7 @@ export function HAQuestionsPageContent() {
               {t("questions.templates")}
             </h1>
             <p className={`text-sm mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-              Savollarni yo'nalishlar bo'yicha boshqaring va yangilang.
+              {t("questions.pageSubtitle")}
             </p>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -449,7 +716,7 @@ export function HAQuestionsPageContent() {
               className="h-11 px-4 flex items-center gap-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
             >
               <i className="ri-add-line text-base"></i>
-              Yo'nalish qo'shish
+              {t("questions.addTemplate")}
             </button>
           </div>
         </div>
@@ -469,6 +736,18 @@ export function HAQuestionsPageContent() {
                     <i className="ri-file-list-3-line text-teal-600 text-lg"></i>
                   </div>
                   <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      title="Bo‘lim AI prompti"
+                      aria-label={`Bo‘lim AI prompti — ${tmpl.title}`}
+                      onClick={() => {
+                        setAiPromptTemplate(tmpl);
+                        setShowAiPromptModal(true);
+                      }}
+                      className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-violet-950/50 text-violet-400" : "hover:bg-violet-50 text-violet-600"}`}
+                    >
+                      <i aria-hidden="true" className="ri-sparkling-line text-sm"></i>
+                    </button>
                     <button aria-label={t("questions.actions.editTemplateAria", { title: tmpl.title })} onClick={() => { setEditingTmpl(tmpl); setShowTmplModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                       <i aria-hidden="true" className="ri-edit-line text-sm"></i>
                     </button>
@@ -487,6 +766,17 @@ export function HAQuestionsPageContent() {
                   <h3 className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{tmpl.title}</h3>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">{tmpl.categoryName}</span>
+                    {tmpl.aiSystemPrompt?.trim() ? (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium border ${
+                          darkMode
+                            ? "bg-violet-900/40 text-violet-300 border-violet-700/40"
+                            : "bg-violet-50 text-violet-800 border-violet-200"
+                        }`}
+                      >
+                        AI prompt
+                      </span>
+                    ) : null}
                     <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("questions.templateQuestionCount", { count: tmpl.questionCount })}</span>
                   </div>
                   {previewQs.length > 0 && (
@@ -515,86 +805,105 @@ export function HAQuestionsPageContent() {
           </div>
         )}
 
-        {/* Template detail — questions */}
+        {/* Shablon tafsiloti — to‘rt savollar bloki */}
         {selectedTemplate && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center gap-3">
-              <button onClick={() => setSelectedTemplate(null)} className={`flex items-center gap-2 text-sm cursor-pointer ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"} transition-colors`}>
+              <button type="button" onClick={() => setSelectedTemplate(null)} className={`flex items-center gap-2 text-sm cursor-pointer ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"} transition-colors`}>
                 <i className="ri-arrow-left-line text-base"></i>
                 {t("questions.backToTemplates")}
               </button>
             </div>
 
-            <div className={`${cardBase} flex items-center justify-between`}>
-              <div>
-                <h2 className={`text-base font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{selectedTemplate.title}</h2>
-                <div className="flex items-center gap-2 mt-1">
+            <div className={`${cardBase} flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between`}>
+              <div className="min-w-0 flex-1">
+                <h2 className={`text-base font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                  {t("questions.templateDetail.titleWithName", { name: selectedTemplate.title })}
+                </h2>
+                <p className={`text-xs mt-1.5 leading-relaxed max-w-2xl ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                  {t("questions.templateDetail.intro")}
+                </p>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">{selectedTemplate.categoryName}</span>
                   <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("questions.templateQuestionCount", { count: templateQuestions.length })}</span>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => { setEditingQ(null); setShowQModal(true); }}
-                className="min-h-[44px] px-4 flex items-center gap-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap"
+                className="min-h-[44px] px-4 flex items-center justify-center gap-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0"
               >
                 <i className="ri-add-line text-base"></i>
                 {t("questions.addQuestion")}
               </button>
             </div>
 
-            <div className="space-y-3">
-              {templateQuestions.map((q, i) => (
-                <div key={q.id} className={`${cardBase} flex items-start gap-4`}>
-                  <div className="w-7 h-7 flex items-center justify-center rounded-full bg-teal-50 flex-shrink-0 mt-0.5">
-                    <span className="text-teal-700 text-xs font-bold">{i + 1}</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className={`text-sm mb-2 ${darkMode ? "text-gray-200" : "text-gray-700"}`}>{q.text}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>
-                        Mode: {q.answerMode === "FREE_TEXT" ? "Ixtiyoriy javob" : "HA / YO'Q"}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>
-                        Type: {q.type ?? "N/A"}
-                      </span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          q.isRequired
-                            ? darkMode
-                              ? "bg-emerald-900/40 text-emerald-300"
-                              : "bg-emerald-50 text-emerald-700"
-                            : darkMode
-                              ? "bg-amber-900/40 text-amber-300"
-                              : "bg-amber-50 text-amber-700"
-                        }`}
-                      >
-                        {q.isRequired ? "Majburiy" : "Ixtiyoriy"}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${darkMode ? "bg-violet-900/40 text-violet-300" : "bg-violet-50 text-violet-700"}`}>
-                        Scope: {q.scope ?? "TEMPLATE"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <button aria-label={t("questions.actions.editQuestionAria", { index: i + 1 })} onClick={() => { setEditingQ(q); setShowQModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
-                      <i aria-hidden="true" className="ri-edit-line text-sm"></i>
-                    </button>
-                    <button aria-label={t("questions.actions.deleteQuestionAria", { index: i + 1 })} onClick={() => setPendingDelete({ type: "question", id: q.id })} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors" disabled={isMutating}>
-                      <i aria-hidden="true" className="ri-delete-bin-line text-sm"></i>
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {templateQuestions.length === 0 && (
-                <div className={`${cardBase} text-center py-10`}>
-                  <p className={`text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("questions.noQuestions")}</p>
-                </div>
-              )}
-            </div>
+            {templateQuestions.length === 0 ? (
+              <div className={`${cardBase} text-center py-10`}>
+                <p className={`text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("questions.noQuestions")}</p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                <QuestionBucketSection
+                  title={t("questions.questionBuckets.mandatory")}
+                  items={questionBuckets.mandatory}
+                  darkMode={darkMode}
+                  cardBase={cardBase}
+                  isMutating={isMutating}
+                  emptyHint={t("questions.bucketEmpty")}
+                  onEdit={(q) => { setEditingQ(q); setShowQModal(true); }}
+                  onDelete={(q) => setPendingDelete({ type: "question", id: q.id })}
+                />
+                <QuestionBucketSection
+                  title={t("questions.questionBuckets.conditional")}
+                  items={questionBuckets.conditional}
+                  darkMode={darkMode}
+                  cardBase={cardBase}
+                  isMutating={isMutating}
+                  emptyHint={t("questions.bucketEmpty")}
+                  onEdit={(q) => { setEditingQ(q); setShowQModal(true); }}
+                  onDelete={(q) => setPendingDelete({ type: "question", id: q.id })}
+                />
+                <QuestionBucketSection
+                  title={t("questions.questionBuckets.domain")}
+                  items={questionBuckets.domain}
+                  darkMode={darkMode}
+                  cardBase={cardBase}
+                  isMutating={isMutating}
+                  emptyHint={t("questions.bucketEmpty")}
+                  onEdit={(q) => { setEditingQ(q); setShowQModal(true); }}
+                  onDelete={(q) => setPendingDelete({ type: "question", id: q.id })}
+                />
+                <QuestionBucketSection
+                  title={t("questions.questionBuckets.optionalFree")}
+                  items={questionBuckets.optionalFree}
+                  darkMode={darkMode}
+                  cardBase={cardBase}
+                  isMutating={isMutating}
+                  emptyHint={t("questions.bucketEmpty")}
+                  onEdit={(q) => { setEditingQ(q); setShowQModal(true); }}
+                  onDelete={(q) => setPendingDelete({ type: "question", id: q.id })}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
 
+      {showAiPromptModal && aiPromptTemplate && (
+        <DepartmentAiPromptModal
+          template={aiPromptTemplate}
+          darkMode={darkMode}
+          onClose={() => {
+            if (!isMutating) {
+              setShowAiPromptModal(false);
+              setAiPromptTemplate(null);
+            }
+          }}
+          onSave={saveDepartmentAiPrompt}
+          isSubmitting={isMutating}
+        />
+      )}
       {showCatModal && <CategoryModal cat={editingCat} darkMode={darkMode} onClose={() => { setShowCatModal(false); setEditingCat(null); }} onSave={saveCat} isSubmitting={isMutating} />}
       {showTmplModal && <TemplateModal tmpl={editingTmpl} categories={categories} darkMode={darkMode} onClose={() => { setShowTmplModal(false); setEditingTmpl(null); }} onSave={saveTmpl} isSubmitting={isMutating} />}
       {showQModal && selectedTemplate && <QuestionModal question={editingQ} darkMode={darkMode} onClose={() => { setShowQModal(false); setEditingQ(null); }} onSave={saveQ} isSubmitting={isMutating} />}

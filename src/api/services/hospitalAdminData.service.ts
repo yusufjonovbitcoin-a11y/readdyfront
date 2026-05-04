@@ -81,6 +81,14 @@ export async function deleteHAQuestionCategory(id: string): Promise<void> {
   return hospitalAdminAdapter.deleteCategory(id);
 }
 
+/** Bo‘lim uchun check-in AI tizim prompti (`departments.ai_system_prompt`). */
+export async function updateHADepartmentAiPrompt(
+  departmentId: string,
+  aiSystemPrompt: string | null,
+): Promise<void> {
+  return hospitalAdminAdapter.updateDepartmentAiPrompt(departmentId, aiSystemPrompt);
+}
+
 export async function createHAQuestionTemplate(data: { title: string; categoryId: string }): Promise<HAQuestionTemplateDto> {
   return hospitalAdminAdapter.createTemplate(data);
 }

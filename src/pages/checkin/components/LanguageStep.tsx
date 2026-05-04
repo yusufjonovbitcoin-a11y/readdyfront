@@ -1,6 +1,5 @@
 import i18n from "@/i18n";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export type CheckinLang = "uz" | "ru";
 
@@ -22,6 +21,12 @@ export default function LanguageStep({
   doctorAvatar,
 }: LanguageStepProps) {
   const { t } = useTranslation(["checkin", "common"]);
+  const normalizedExperience = doctorExperience?.trim() ?? "";
+  const experienceLabel = normalizedExperience
+    ? /\byil\b/i.test(normalizedExperience)
+      ? normalizedExperience
+      : `${normalizedExperience} yil`
+    : "Kiritilmagan";
   const options = [
     {
       lang: "uz" as const,
@@ -45,9 +50,6 @@ export default function LanguageStep({
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-4">
       <div className="w-full max-w-sm">
-        <div className="mb-4 flex justify-end">
-          <LanguageSwitcher />
-        </div>
         <div className="text-center mb-6">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-teal-200">
             <i className="ri-translate-2 text-white text-2xl" aria-hidden />
@@ -70,7 +72,7 @@ export default function LanguageStep({
             <p className="text-sm font-bold text-gray-900 truncate">{doctorName}</p>
             <p className="text-xs text-teal-600 font-medium">{doctorSpecialty}</p>
             <p className="text-xs text-gray-500 mt-0.5 truncate">
-              Tajriba: {doctorExperience?.trim() || doctorSpecialization?.trim() || doctorSpecialty}
+              Tajriba: {experienceLabel}
             </p>
           </div>
         </div>
