@@ -29,49 +29,117 @@ function formatMinutesTrend(current: number, previous: number): string {
   return `${delta > 0 ? "+" : ""}${delta} daq`;
 }
 
+function parseDateOnly(value: string): Date | null {
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function formatYmd(value: Date): string {
+  const y = value.getFullYear();
+  const m = String(value.getMonth() + 1).padStart(2, "0");
+  const d = String(value.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function formatMd(value: Date): string {
+  const m = String(value.getMonth() + 1).padStart(2, "0");
+  const d = String(value.getDate()).padStart(2, "0");
+  return `${m}-${d}`;
+}
+
+function mondayOf(value: Date): Date {
+  const day = value.getDay();
+  const diffToMonday = day === 0 ? 6 : day - 1;
+  const monday = new Date(value);
+  monday.setDate(value.getDate() - diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
 function bucketByPeriod(rows: DoctorAnalyticsDto[], period: Period): ChartPoint[] {
   if (period === "daily") {
-    return rows.map((d) => ({
-      label: d.date.slice(5),
-      patients: d.patients,
-      diagnoses: d.diagnoses,
-      avgDuration: d.avgDuration,
-    }));
+    const byDay = new Map(rows.map((row) => [row.date, row]));
+    const now = new Date();
+    const points: ChartPoint[] = [];
+    for (let i = 6; i >= 0; i -= 1) {
+      const day = new Date(now);
+      day.setDate(now.getDate() - i);
+      const key = formatYmd(day);
+      const row = byDay.get(key);
+      points.push({
+        label: formatMd(day),
+        patients: row?.patients ?? 0,
+        diagnoses: row?.diagnoses ?? 0,
+        avgDuration: row?.avgDuration ?? 0,
+      });
+    }
+    return points;
   }
 
-  const bucketMap = new Map<string, { label: string; patients: number; diagnoses: number; totalDuration: number; count: number }>();
+  const bucketMap = new Map<string, { label: string; patients: number; diagnoses: number; durationWeighted: number; weight: number }>();
   for (const row of rows) {
-    const d = new Date(row.date);
-    if (Number.isNaN(d.getTime())) continue;
+    const d = parseDateOnly(row.date);
+    if (!d) continue;
 
     let key = "";
     let label = "";
     if (period === "weekly") {
-      const day = d.getDay();
-      const diffToMonday = day === 0 ? 6 : day - 1;
-      const monday = new Date(d);
-      monday.setDate(d.getDate() - diffToMonday);
-      key = `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
-      label = `${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
+      const monday = mondayOf(d);
+      key = formatYmd(monday);
+      label = formatMd(monday);
     } else {
       key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       label = key;
     }
 
-    const current = bucketMap.get(key) ?? { label, patients: 0, diagnoses: 0, totalDuration: 0, count: 0 };
+    const current = bucketMap.get(key) ?? { label, patients: 0, diagnoses: 0, durationWeighted: 0, weight: 0 };
     current.patients += row.patients;
     current.diagnoses += row.diagnoses;
-    current.totalDuration += row.avgDuration;
-    current.count += 1;
+    const weight = Math.max(row.patients, 0);
+    current.durationWeighted += row.avgDuration * weight;
+    current.weight += weight;
     bucketMap.set(key, current);
   }
 
-  return Array.from(bucketMap.values()).map((item) => ({
-    label: item.label,
-    patients: item.patients,
-    diagnoses: item.diagnoses,
-    avgDuration: item.count > 0 ? Math.round(item.totalDuration / item.count) : 0,
-  }));
+  if (period === "weekly") {
+    const nowMonday = mondayOf(new Date());
+    const points: ChartPoint[] = [];
+    for (let i = 3; i >= 0; i -= 1) {
+      const monday = new Date(nowMonday);
+      monday.setDate(nowMonday.getDate() - i * 7);
+      const key = formatYmd(monday);
+      const item = bucketMap.get(key);
+      points.push({
+        label: formatMd(monday),
+        patients: item?.patients ?? 0,
+        diagnoses: item?.diagnoses ?? 0,
+        avgDuration:
+          item && item.weight > 0
+            ? Math.round(item.durationWeighted / item.weight)
+            : 0,
+      });
+    }
+    return points;
+  }
+
+  const now = new Date();
+  const points: ChartPoint[] = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}`;
+    const item = bucketMap.get(key);
+    points.push({
+      label: key,
+      patients: item?.patients ?? 0,
+      diagnoses: item?.diagnoses ?? 0,
+      avgDuration:
+        item && item.weight > 0
+          ? Math.round(item.durationWeighted / item.weight)
+          : 0,
+    });
+  }
+  return points;
 }
 
 export default function DocAnalyticsPage() {
@@ -192,6 +260,10 @@ export function DocAnalyticsContent() {
     if (t.includes("daq")) return darkMode ? "text-emerald-400" : "text-emerald-600";
     return darkMode ? "text-emerald-400" : "text-emerald-600";
   };
+  const hasChartData = chartData.length > 0;
+  const hasPeakData = peakHours.length > 0;
+  const flowEmptyText = t("analytics.emptyFlow", "Ma'lumot hali mavjud emas");
+  const peakEmptyText = t("analytics.emptyPeakHours", "Soatlik ma'lumot hali mavjud emas");
 
   return (
     <PageStateBoundary state={pageState}>
@@ -257,23 +329,33 @@ export function DocAnalyticsContent() {
               </span>
             </div>
           </div>
-          <div className="flex h-48 items-end gap-2">
-            {chartData.map((d, i) => (
-              <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                <div className="flex h-40 w-full items-end gap-0.5">
-                  <div
-                    className="flex-1 rounded-t-md bg-violet-500 transition-all"
-                    style={{ height: `${(d.patients / maxVal) * 100}%` }}
-                  ></div>
-                  <div
-                    className="flex-1 rounded-t-md bg-green-400 transition-all"
-                    style={{ height: `${(d.diagnoses / maxVal) * 100}%` }}
-                  ></div>
+          {hasChartData ? (
+            <div className="flex h-48 items-end gap-2">
+              {chartData.map((d, i) => (
+                <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                  <div className="flex h-40 w-full items-end gap-0.5">
+                    <div
+                      className="flex-1 rounded-t-md bg-violet-500 transition-all"
+                      style={{ height: `${Math.max(6, (d.patients / maxVal) * 100)}%` }}
+                    ></div>
+                    <div
+                      className="flex-1 rounded-t-md bg-green-400 transition-all"
+                      style={{ height: `${Math.max(6, (d.diagnoses / maxVal) * 100)}%` }}
+                    ></div>
+                  </div>
+                  <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{d.label}</span>
                 </div>
-                <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{d.label}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              className={`flex h-48 items-center justify-center rounded-lg border border-dashed ${
+                darkMode ? "border-[#30363D] text-gray-400" : "border-gray-200 text-gray-500"
+              }`}
+            >
+              <span className="text-sm">{flowEmptyText}</span>
+            </div>
+          )}
         </div>
 
         <div className={`rounded-xl border p-5 ${cardBase}`}>
@@ -305,30 +387,42 @@ export function DocAnalyticsContent() {
 
       <div className={`rounded-xl border p-5 ${cardBase}`}>
         <h3 className={`mb-4 text-base font-semibold ${titleText}`}>{t("analytics.peakHours")}</h3>
-        <div className="flex h-32 items-end gap-2">
-          {peakHours.map((h, i) => (
-            <div key={i} className="flex flex-1 flex-col items-center gap-1">
-              <span className={`text-xs font-medium ${mutedText}`}>{h.count}</span>
-              <div
-                className={`w-full rounded-t-md transition-all ${
-                  h.count === maxPeak
-                    ? "bg-violet-500"
-                    : h.count >= maxPeak * 0.7
-                      ? "bg-violet-300"
-                      : "bg-violet-100"
-                }`}
-                style={{ height: `${(h.count / maxPeak) * 80}px` }}
-              ></div>
-              <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{h.hour}</span>
+        {hasPeakData ? (
+          <>
+            <div className="flex h-32 items-end gap-2">
+              {peakHours.map((h, i) => (
+                <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                  <span className={`text-xs font-medium ${mutedText}`}>{h.count}</span>
+                  <div
+                    className={`w-full rounded-t-md transition-all ${
+                      h.count === maxPeak
+                        ? "bg-violet-500"
+                        : h.count >= maxPeak * 0.7
+                          ? "bg-violet-300"
+                          : "bg-violet-100"
+                    }`}
+                    style={{ height: `${Math.max(6, (h.count / maxPeak) * 80)}px` }}
+                  ></div>
+                  <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{h.hour}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <p className={`mt-3 text-xs ${mutedText}`}>
-          {t("analytics.peakTime")}{" "}
-          <span className="font-semibold text-violet-600">
-            {peakSlot.hour} ({peakSlot.count} bemor)
-          </span>
-        </p>
+            <p className={`mt-3 text-xs ${mutedText}`}>
+              {t("analytics.peakTime")}{" "}
+              <span className="font-semibold text-violet-600">
+                {peakSlot.hour} ({peakSlot.count} bemor)
+              </span>
+            </p>
+          </>
+        ) : (
+          <div
+            className={`flex h-32 items-center justify-center rounded-lg border border-dashed ${
+              darkMode ? "border-[#30363D] text-gray-400" : "border-gray-200 text-gray-500"
+            }`}
+          >
+            <span className="text-sm">{peakEmptyText}</span>
+          </div>
+        )}
       </div>
         </div>
       )}

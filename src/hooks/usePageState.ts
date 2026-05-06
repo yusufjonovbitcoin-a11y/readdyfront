@@ -25,12 +25,21 @@ export function usePageState<T>(fetchFn: () => Promise<T>): PageState<T> {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestVersionRef = useRef(0);
+  const dataRef = useRef<T | null>(null);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   const load = useCallback(async () => {
     const requestVersion = requestVersionRef.current + 1;
     requestVersionRef.current = requestVersion;
 
-    setStatus("loading");
+    // Stale-while-revalidate: if previous data exists, keep UI as success
+    // while refreshing in background.
+    if (dataRef.current === null) {
+      setStatus("loading");
+    }
     setError(null);
 
     try {

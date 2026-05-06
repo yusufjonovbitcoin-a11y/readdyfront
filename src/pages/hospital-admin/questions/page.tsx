@@ -647,7 +647,7 @@ export function HAQuestionsPageContent() {
       await reloadAll();
       setShowAiPromptModal(false);
       setAiPromptTemplate(null);
-      showToast(text === null ? "Bo‘lim prompti tozalandi. AI faqat prompt yozilganda ishlaydi." : "Bo‘lim AI prompti saqlandi.");
+      showToast(text === null ? "Bo‘lim prompti tozalandi. Endi standart AI prompt ishlaydi." : "Bo‘lim AI prompti saqlandi.");
     } catch (error) {
       showToast(toErrorMessage(error, "Bo‘lim promptini saqlashda xatolik yuz berdi."), "error");
     } finally {

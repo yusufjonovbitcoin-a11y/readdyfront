@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getInitialDocPatients, type DocPatient } from "@/api/services/docPatients.service";
 import { getDoctorPatients, updateDoctorPatientWorkflow } from "@/api/doctor";
+import { io, type Socket } from "socket.io-client";
 
 /** Navbatdagi bemorlar uchun reorder: to‘liq yoki ko‘rinayotgan subset id ro‘yxatini qabul qiladi */
 function applyQueueOrder(prev: DocPatient[], orderedQueueIds: string[]): DocPatient[] {
@@ -51,8 +52,28 @@ interface DocPatientsContextValue {
 
 const DocPatientsContext = createContext<DocPatientsContextValue | null>(null);
 
+function resolveSocketBaseUrl(): string {
+  const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+  if (!raw) return "http://localhost:4000";
+  return raw.replace(/\/api\/?$/i, "").replace(/\/$/, "");
+}
+
 export function DocPatientsProvider({ children }: { children: ReactNode }) {
   const [patients, setPatients] = useState<DocPatient[]>(() => getInitialDocPatients());
+  const doctorIdRef = useRef<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+
+  const refreshPatients = useCallback(async () => {
+    try {
+      const serverPatients = await getDoctorPatients();
+      if (!Array.isArray(serverPatients)) return;
+      const firstDoctorId = serverPatients.find((p) => p.doctorId)?.doctorId ?? null;
+      if (firstDoctorId) doctorIdRef.current = firstDoctorId;
+      setPatients(serverPatients);
+    } catch {
+      // Keep the current UI state when refresh fails.
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,9 +81,10 @@ export function DocPatientsProvider({ children }: { children: ReactNode }) {
       try {
         const serverPatients = await getDoctorPatients();
         if (cancelled) return;
-        if (Array.isArray(serverPatients) && serverPatients.length > 0) {
-          setPatients(serverPatients);
-        }
+        if (!Array.isArray(serverPatients)) return;
+        const firstDoctorId = serverPatients.find((p) => p.doctorId)?.doctorId ?? null;
+        if (firstDoctorId) doctorIdRef.current = firstDoctorId;
+        setPatients(serverPatients);
       } catch {
         if (cancelled) return;
       }
@@ -71,6 +93,64 @@ export function DocPatientsProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const socketBaseUrl = resolveSocketBaseUrl();
+    const socket: Socket = io(`${socketBaseUrl}/doctor-updates`, {
+      transports: ["websocket"],
+      withCredentials: true,
+      autoConnect: true,
+    });
+    socketRef.current = socket;
+
+    const subscribeIfReady = () => {
+      if (!doctorIdRef.current) return;
+      socket.emit("doctor:subscribe", { doctorId: doctorIdRef.current });
+    };
+
+    socket.on("connect", subscribeIfReady);
+    socket.on(
+      "doctor:patients_changed",
+      (_payload: {
+        doctorId: string;
+        reason: "patient_created" | "patient_status_updated" | "patient_updated" | "queue_updated";
+        responseId?: string;
+        at: string;
+      }) => {
+        void refreshPatients();
+      },
+    );
+
+    return () => {
+      socket.removeAllListeners();
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [refreshPatients]);
+
+  useEffect(() => {
+    const doctorId = patients.find((p) => p.doctorId)?.doctorId ?? null;
+    if (!doctorId) return;
+    doctorIdRef.current = doctorId;
+    socketRef.current?.emit("doctor:subscribe", { doctorId });
+  }, [patients]);
+
+  useEffect(() => {
+    const onFocus = () => {
+      void refreshPatients();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void refreshPatients();
+      }
+    };
+    globalThis.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      globalThis.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [refreshPatients]);
 
   const updatePatient = useCallback((id: string, patch: Partial<DocPatient>) => {
     setPatients((prev) => {

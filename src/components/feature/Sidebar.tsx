@@ -15,6 +15,18 @@ interface NavItem {
   label: string;
 }
 
+const adminRouteWarmupMap: Record<string, () => Promise<unknown>> = {
+  "/dashboard": () => import("@/pages/home/page"),
+  "/home": () => import("@/pages/home/page"),
+  "/hospitals": () => import("@/pages/hospitals/page"),
+  "/analytics": () => import("@/pages/analytics/page"),
+  "/users": () => import("@/pages/users/page"),
+  "/audit-logs": () => import("@/pages/audit-logs/page"),
+  "/questions": () => import("@/pages/questions/page"),
+  "/notifications": () => import("@/pages/notifications/page"),
+  "/settings": () => import("@/pages/settings/page"),
+};
+
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -50,11 +62,36 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
   const queryClient = useQueryClient();
   const prefetchPath = (path: string) => {
     prefetchCoreQueriesForPath(queryClient, path);
+    void adminRouteWarmupMap[path]?.();
   };
 
   useEffect(() => {
     prefetchSidebarWarmup(queryClient, location.pathname);
   }, [location.pathname, queryClient]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const warmup = () => {
+      if (cancelled) return;
+      Object.values(adminRouteWarmupMap).forEach((loader) => {
+        void loader();
+      });
+    };
+    const idle = (globalThis as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    if (typeof idle === "function") {
+      const id = idle(warmup);
+      return () => {
+        cancelled = true;
+        const cancelIdle = (globalThis as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+        cancelIdle?.(id);
+      };
+    }
+    const timer = globalThis.setTimeout(warmup, 250);
+    return () => {
+      cancelled = true;
+      globalThis.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

@@ -48,6 +48,16 @@ export interface DoctorPatientDto {
     questionText: string;
     answerText: string;
   }>;
+  /** Strukturalangan AI xulosasi (ai_analysis_json). Eski yozuvlarda null bo'lishi mumkin. */
+  aiAnalysisStructured?: import("./final-summary.types").FinalAiSummary | null;
+  /** AI ish holati: not_started | in_progress | completed | failed. */
+  aiStatus?: import("./final-summary.types").AiSummaryStatus | string | null;
+  /** Yangi AI risk darajasi (low/medium/high). Eski "critical" ga mos kelmaydi. */
+  aiRiskLevel?: "low" | "medium" | "high" | null;
+  /** Server-saqlangan bir qatorlik xulosa (ai_summary_text). */
+  aiSummaryText?: string | null;
+  /** AI suhbat tarixini detail endpoint qaytaradi. */
+  aiMessages?: Array<import("./final-summary.types").AiCheckinMessageDto>;
 }
 
 export type DoctorQuestionType = "TEXT" | "TEXTAREA" | "NUMBER" | "SELECT" | "RADIO" | "CHECKBOX" | "DATE";

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type { DoctorPatientDto as DocPatient, DoctorPatientRiskLevel as RiskLevel } from "@/api/types/doctor.types";
 
 type StatusHandler = (id: string, status: DocPatient["status"]) => void;
@@ -21,29 +21,33 @@ export default function PatientTableRow({ patient, darkMode = false, onStatusCha
   const risk = riskConfig[patient.riskLevel];
   const normalizedName = patient.name.startsWith("Patient ") ? `Bemor ${patient.phone.slice(-4)}` : patient.name;
   const ageText = patient.age > 0 ? `${patient.age} yosh` : "-";
+  const openDetail = () => navigate(`/doctor/patients/${patient.id}`);
 
   return (
     <tr
-      className={`transition-colors ${darkMode ? "hover:bg-[#21262D]" : "hover:bg-gray-50"}`}
+      className={`cursor-pointer transition-colors ${darkMode ? "hover:bg-[#21262D] focus-visible:bg-[#21262D]" : "hover:bg-gray-50 focus-visible:bg-gray-50"}`}
+      onClick={openDetail}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDetail();
+        }
+      }}
+      tabIndex={0}
     >
       <td className={`px-4 py-3 text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>
-        <Link
-          to={`/doctor/patients/${patient.id}`}
-          className={`inline-flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
-            darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
-          }`}
-        >
+        <span className="inline-flex items-center gap-2">
           {patient.status === "queue" && (
             <span
               className={`w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold ${
-                darkMode ? "bg-violet-900/40 text-violet-400" : "bg-violet-100 text-violet-700"
+                darkMode ? "bg-emerald-900/40 text-emerald-400" : "bg-emerald-100 text-emerald-800"
               }`}
             >
               {patient.queueNumber}
             </span>
           )}
           {normalizedName}
-        </Link>
+        </span>
       </td>
       <td className={`hidden sm:table-cell px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{patient.phone}</td>
       <td className={`hidden md:table-cell px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{ageText}</td>
@@ -62,7 +66,10 @@ export default function PatientTableRow({ patient, darkMode = false, onStatusCha
           {onStatusChange && patient.status === "queue" && (
             <button
               type="button"
-              onClick={() => onStatusChange(patient.id, "in_progress")}
+              onClick={(e) => {
+                e.stopPropagation();
+                onStatusChange(patient.id, "in_progress");
+              }}
               className={`text-xs font-medium cursor-pointer whitespace-nowrap ${
                 darkMode ? "text-sky-400 hover:text-sky-300" : "text-sky-600 hover:text-sky-800"
               }`}
@@ -73,7 +80,10 @@ export default function PatientTableRow({ patient, darkMode = false, onStatusCha
           {onStatusChange && patient.status === "in_progress" && (
             <button
               type="button"
-              onClick={() => onStatusChange(patient.id, "completed")}
+              onClick={(e) => {
+                e.stopPropagation();
+                onStatusChange(patient.id, "completed");
+              }}
               className={`text-xs font-medium cursor-pointer whitespace-nowrap ${
                 darkMode ? "text-emerald-400 hover:text-emerald-300" : "text-emerald-600 hover:text-emerald-800"
               }`}
@@ -82,9 +92,12 @@ export default function PatientTableRow({ patient, darkMode = false, onStatusCha
             </button>
           )}
           <button
-            onClick={() => navigate(`/doctor/patients/${patient.id}`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              openDetail();
+            }}
             className={`text-xs font-medium cursor-pointer whitespace-nowrap ${
-              darkMode ? "text-violet-400 hover:text-violet-300" : "text-violet-600 hover:text-violet-700"
+              darkMode ? "text-emerald-400 hover:text-emerald-300" : "text-emerald-600 hover:text-emerald-700"
             }`}
           >
             Ko'rish

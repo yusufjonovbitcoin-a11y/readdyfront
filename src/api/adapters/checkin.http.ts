@@ -8,6 +8,8 @@ import type {
   CreateCheckinTelegramLinkResult,
   CheckinDraft,
   CheckinQuestionDto,
+  CheckinSessionStartInput,
+  CheckinSessionStartResult,
   SubmitCheckinInput,
   SubmitCheckinResult,
 } from "@/api/types/checkin.types";
@@ -62,10 +64,14 @@ export async function clearDraft(phone: string): Promise<void> {
   }
 }
 
+/** Server final summary (OpenAI) + DB; default 5s client timeout is too short. */
+const SUBMIT_CHECKIN_TIMEOUT_MS = 120_000;
+
 export async function submitCheckin(input: SubmitCheckinInput): Promise<SubmitCheckinResult> {
   return apiRequest<SubmitCheckinResult>("/api/checkin/submissions", {
     method: "POST",
     body: JSON.stringify(input),
+    timeoutMs: SUBMIT_CHECKIN_TIMEOUT_MS,
   });
 }
 
@@ -87,11 +93,29 @@ export async function generateCheckinAiPreview(
   });
 }
 
+export async function createCheckinSession(
+  input: CheckinSessionStartInput,
+): Promise<CheckinSessionStartResult | null> {
+  try {
+    return await apiRequest<CheckinSessionStartResult>(
+      "/api/checkin/session/start",
+      {
+        method: "POST",
+        body: JSON.stringify(input),
+        timeoutMs: 12000,
+      },
+    );
+  } catch {
+    return null;
+  }
+}
+
 export async function createCheckinTelegramLink(
   input: CreateCheckinTelegramLinkInput,
 ): Promise<CreateCheckinTelegramLinkResult> {
   return apiRequest<CreateCheckinTelegramLinkResult>("/api/checkin/telegram-link", {
     method: "POST",
     body: JSON.stringify(input),
+    timeoutMs: 15000,
   });
 }

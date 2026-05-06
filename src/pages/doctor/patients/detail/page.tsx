@@ -3,15 +3,16 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useDocPatients } from "@/context/DocPatientsContext";
+import { getDoctorPatientById } from "@/api/doctor";
 import type { DoctorPatientDto as DocPatient } from "@/api/types/doctor.types";
 import {
-  AiTavsiyaCard,
+  AiXulosaCard,
   BemorVaAmallarGrid,
   JavoblarTahliliCard,
   ShifokorIzohlariCard,
+  SuhbatTarixiCard,
   patientDetailBlockProps,
 } from "./PatientDetailBlocks";
-import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 type RiskLevel = DocPatient["riskLevel"];
 
@@ -50,6 +51,20 @@ const riskConfig: Record<RiskLevel, { label: string; color: string; bg: string; 
   },
 };
 
+const aiConditions: Record<RiskLevel, string[]> = {
+  low: ["Umumiy charchoq", "Stress reaktsiyasi", "Vitamin yetishmovchiligi"],
+  medium: ["Arterial gipertenziya", "Vegetovascular distoniya", "Surunkali stress"],
+  high: ["Yurak ishemik kasalligi", "Gipertenziv kriz", "Metabolik sindrom"],
+  critical: ["Miokard infarkti (shubhali)", "O'tkir koronar sindrom", "Gipertenziv favqulodda holat"],
+};
+
+const aiActions: Record<RiskLevel, string[]> = {
+  low: ["Qon tahlili buyurish", "Umumiy ko'rik o'tkazish", "1 oydan keyin qayta ko'rik"],
+  medium: ["EKG o'tkazish", "Qon bosimini kuzatish", "Kardiolog konsultatsiyasi", "2 haftadan keyin qayta ko'rik"],
+  high: ["Darhol EKG va EXO-KG", "Kardiolog konsultatsiyasi (bugun)", "Qon tahlillari (troponin, BNP)", "Kasalxonaga yotqizish ko'rib chiqilsin"],
+  critical: ["DARHOL reanimatsiya bo'limiga", "Troponin, D-dimer tahlillari", "EKG monitoring", "Kardiolog va reanimatolog chaqirish"],
+};
+
 /** AI kartasi fonini boshqa kartalar bilan bir xil qilish; xavf rangi faqat chap border + badge */
 const riskAccent: Record<RiskLevel, { left: string; badge: string }> = {
   low: {
@@ -70,15 +85,7 @@ const riskAccent: Record<RiskLevel, { left: string; badge: string }> = {
   },
 };
 
-type PatientDetailTab = "javoblar" | "ai" | "izohlar" | "bemor";
 type DoctorPatientsTab = "queue" | "in_progress" | "completed";
-
-const PATIENT_DETAIL_TAB_DEFS: { key: PatientDetailTab; label: string; icon: string }[] = [
-  { key: "javoblar", label: "Javoblar", icon: "ri-questionnaire-line" },
-  { key: "ai", label: "AI tavsiya", icon: "ri-robot-line" },
-  { key: "izohlar", label: "Izohlar", icon: "ri-edit-2-line" },
-  { key: "bemor", label: "Bemor", icon: "ri-user-line" },
-];
 
 const CANONICAL_DOCTOR_PATIENTS_TAB = "in_progress";
 const DEFAULT_DOCTOR_PATIENTS_TAB: DoctorPatientsTab = "queue";
@@ -139,15 +146,14 @@ export function PatientNotFoundContent() {
 }
 
 export function PatientDetailContent({ patient }: { patient: DocPatient }) {
-  const { darkMode, patientDetailLayout } = useDoctorTheme();
+  const { darkMode } = useDoctorTheme();
   const { transitionPatientStatus, updatePatient } = useDocPatients();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [notes, setNotes] = useState(patient.notes || "");
   const [actionDone, setActionDone] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState<string | null>(null);
-  const [detailTab, setDetailTab] = useState<PatientDetailTab>("javoblar");
-  const canShowNotes = patient.status === "in_progress";
+  const [detailFromServer, setDetailFromServer] = useState<DocPatient | null>(null);
   const rawListTab = searchParams.get("tab");
   const canonicalListTab = normalizeDoctorPatientsTab(rawListTab);
 
@@ -159,13 +165,26 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
   }, [rawListTab, canonicalListTab, searchParams, setSearchParams]);
 
   useEffect(() => {
-    setDetailTab("javoblar");
+    setDetailFromServer(null);
   }, [patient.id]);
+
   useEffect(() => {
-    if (!canShowNotes && detailTab === "izohlar") {
-      setDetailTab("javoblar");
-    }
-  }, [canShowNotes, detailTab]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const detail = await getDoctorPatientById(patient.id);
+        if (cancelled) return;
+        setDetailFromServer(detail);
+      } catch (err) {
+        if (!cancelled) {
+          console.warn("[doctor-detail] hydrate failed", err);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [patient.id]);
 
   const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
@@ -180,11 +199,18 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
   const textareaCls = darkMode
     ? "w-full text-sm border border-[#30363D] rounded-lg px-3 py-2.5 bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 resize-none"
     : "w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-400 resize-none text-gray-700 placeholder-gray-400";
+  const modalPanel = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white";
+  const modalTitle = darkMode ? "text-white" : "text-gray-900";
+  const btnSecondary = darkMode
+    ? "border border-[#30363D] text-gray-200 hover:bg-[#21262D]"
+    : "border border-gray-200 text-gray-600 hover:bg-gray-50";
   const disclaimer = darkMode
     ? "bg-amber-950/40 border border-amber-800/50 text-amber-200"
     : "bg-white/70 border border-amber-200 text-amber-700";
 
   const risk = riskConfig[patient.riskLevel];
+  const conditions = aiConditions[patient.riskLevel];
+  const actions = aiActions[patient.riskLevel];
 
   const showDoctorActions = !actionDone && (patient.status === "queue" || patient.status === "in_progress");
 
@@ -192,22 +218,19 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
     setShowConfirm(action);
   };
 
-  const confirmAction = async () => {
+  const confirmAction = () => {
     if (!showConfirm) return;
     if (showConfirm === "test") {
-      await transitionPatientStatus(patient.id, "in_progress");
+      transitionPatientStatus(patient.id, "in_progress");
       setShowConfirm(null);
       navigate(`/doctor/patients?tab=${CANONICAL_DOCTOR_PATIENTS_TAB}`);
       return;
     }
     if (showConfirm === "diagnosed") {
-      await transitionPatientStatus(patient.id, "completed", {
-        notes,
-        diagnosis: patient.diagnosis || "Ko'rik yakunlandi",
-        consultationDuration: patient.consultationDuration > 0 ? patient.consultationDuration : 15,
-      });
-      if (notes !== patient.notes) updatePatient(patient.id, { notes });
-      navigate("/doctor/patients?tab=completed");
+      transitionPatientStatus(patient.id, "completed");
+      if (notes !== patient.notes) {
+        updatePatient(patient.id, { notes });
+      }
     }
     setActionDone(showConfirm);
     setShowConfirm(null);
@@ -229,11 +252,18 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
     },
     risk,
     riskAccent,
-    patient.aiSummary ?? "",
+    conditions,
+    actions,
     notes,
     setNotes,
     showDoctorActions,
     handleAction,
+    {
+      aiAnalysisStructured: detailFromServer?.aiAnalysisStructured ?? patient.aiAnalysisStructured ?? null,
+      aiStatus: detailFromServer?.aiStatus ?? patient.aiStatus ?? null,
+      aiRiskLevel: detailFromServer?.aiRiskLevel ?? patient.aiRiskLevel ?? null,
+      aiMessages: detailFromServer?.aiMessages ?? patient.aiMessages ?? [],
+    },
   );
 
   return (
@@ -276,59 +306,64 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
         </div>
       )}
 
-      {patientDetailLayout === "scroll" ? (
-        <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-3">
-          <div className="min-w-0 lg:col-span-3">
-            <JavoblarTahliliCard {...blockProps} />
-          </div>
-
-          <div className="min-w-0 space-y-5 lg:col-span-3">
-            <AiTavsiyaCard {...blockProps} />
-            {canShowNotes && <ShifokorIzohlariCard {...blockProps} />}
-            <BemorVaAmallarGrid {...blockProps} />
-          </div>
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-3">
+        <div className="min-w-0 lg:col-span-3">
+          <AiXulosaCard {...blockProps} />
         </div>
-      ) : (
-        <>
-          <div
-            className={`flex items-center gap-1 border-b ${darkMode ? "border-[#30363D]" : "border-gray-200"} overflow-x-auto`}
-          >
-            {PATIENT_DETAIL_TAB_DEFS.filter((t) => canShowNotes || t.key !== "izohlar").map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setDetailTab(t.key)}
-                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
-                  detailTab === t.key
-                    ? "border-violet-500 text-violet-400"
-                    : `border-transparent ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"}`
+
+        <div className="min-w-0 lg:col-span-3">
+          <JavoblarTahliliCard {...blockProps} />
+        </div>
+
+        <div className="min-w-0 space-y-5 lg:col-span-3">
+          <SuhbatTarixiCard {...blockProps} />
+          <ShifokorIzohlariCard {...blockProps} />
+          <BemorVaAmallarGrid {...blockProps} />
+        </div>
+      </div>
+
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className={`rounded-2xl p-6 w-full max-w-sm mx-4 ${modalPanel}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className={`w-10 h-10 flex items-center justify-center rounded-full ${
+                  showConfirm === "test" ? "bg-blue-100" : "bg-green-100"
                 }`}
               >
-                <span className="w-4 h-4 flex items-center justify-center" aria-hidden>
-                  <i className={`${t.icon} text-sm`}></i>
-                </span>
-                {t.label}
+                <i
+                  className={`text-lg ${
+                    showConfirm === "test" ? "ri-flask-line text-blue-600" : "ri-checkbox-circle-line text-green-600"
+                  }`}
+                ></i>
+              </div>
+              <div>
+                <h3 className={`text-base font-semibold ${modalTitle}`}>Tasdiqlash</h3>
+                <p className={`text-sm ${pageMuted}`}>
+                  {showConfirm === "diagnosed" && "Ko'rikni tugatish deb belgilansinmi?"}
+                  {showConfirm === "test" && "Bemor tahlilga yuborilsinmi?"}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowConfirm(null)}
+                className={`flex-1 py-2.5 rounded-lg text-sm cursor-pointer transition-colors whitespace-nowrap ${btnSecondary}`}
+              >
+                Bekor qilish
               </button>
-            ))}
+              <button
+                onClick={confirmAction}
+                className={`flex-1 py-2.5 rounded-lg text-sm text-white font-medium cursor-pointer transition-colors whitespace-nowrap ${
+                  showConfirm === "test" ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"
+                }`}
+              >
+                Tasdiqlash
+              </button>
+            </div>
           </div>
-
-          {detailTab === "javoblar" && <JavoblarTahliliCard {...blockProps} />}
-          {detailTab === "ai" && <AiTavsiyaCard {...blockProps} />}
-          {detailTab === "izohlar" && canShowNotes && <ShifokorIzohlariCard {...blockProps} />}
-          {detailTab === "bemor" && <BemorVaAmallarGrid {...blockProps} />}
-        </>
+        </div>
       )}
-
-      <ConfirmDialog
-        open={Boolean(showConfirm)}
-        title="Tasdiqlash"
-        description={showConfirm === "test" ? "Bemor tahlilga yuborilsinmi?" : "Ko'rikni tugatish deb belgilansinmi?"}
-        confirmText="Tasdiqlash"
-        cancelText="Bekor qilish"
-        onConfirm={() => void confirmAction()}
-        onCancel={() => setShowConfirm(null)}
-        darkMode={darkMode}
-      />
     </div>
   );
 }

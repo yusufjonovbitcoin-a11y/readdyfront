@@ -4,12 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth, type UserRole } from "@/hooks/useAuth";
 
 export function RouteFallback() {
-  const { t } = useTranslation("common");
-  return (
-    <div className="flex min-h-[40vh] items-center justify-center text-sm text-gray-500">
-      {t("loading")}
-    </div>
-  );
+  return null;
 }
 
 export function AuthBootstrapFallback() {

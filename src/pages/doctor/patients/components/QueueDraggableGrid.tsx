@@ -68,7 +68,7 @@ export default function QueueDraggableGrid({
           onDrop={handleDrop(patient.id)}
           className={`rounded-xl transition-shadow duration-150 cursor-grab active:cursor-grabbing ${
             draggingId === patient.id ? "opacity-70" : ""
-          } ${ringOver && overId === patient.id ? `ring-2 ring-violet-500 ring-offset-2 ${offsetCls}` : ""}`}
+          } ${ringOver && overId === patient.id ? `ring-2 ring-emerald-500 ring-offset-2 ${offsetCls}` : ""}`}
         >
           <PatientCard patient={patient} darkMode={darkMode} />
         </div>

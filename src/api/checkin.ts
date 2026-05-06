@@ -8,6 +8,8 @@ import type {
   CreateCheckinTelegramLinkResult,
   CheckinDraft,
   CheckinQuestionDto,
+  CheckinSessionStartInput,
+  CheckinSessionStartResult,
   SubmitCheckinInput,
   SubmitCheckinResult,
 } from "@/api/types/checkin.types";
@@ -40,6 +42,12 @@ export function generateCheckinAiPreview(
   input: CheckinAiPreviewInput,
 ): Promise<CheckinAiPreviewResult> {
   return checkinAdapter.generateCheckinAiPreview(input);
+}
+
+export function createCheckinSession(
+  input: CheckinSessionStartInput,
+): Promise<CheckinSessionStartResult | null> {
+  return checkinAdapter.createCheckinSession(input);
 }
 
 export function createCheckinTelegramLink(

@@ -173,6 +173,18 @@ export async function getDoctorPatients(): Promise<DoctorPatientDto[]> {
   }
 }
 
+export async function getDoctorPatientById(
+  responseId: string,
+): Promise<DoctorPatientDto | null> {
+  try {
+    return await apiRequest<DoctorPatientDto>(
+      `/api/doctors/me/patients/${encodeURIComponent(responseId)}`,
+    );
+  } catch {
+    return null;
+  }
+}
+
 export async function updateDoctorPatientWorkflow(
   responseId: string,
   input: {
@@ -218,7 +230,7 @@ export async function getDoctorQuestions(): Promise<DoctorQuestionDto[]> {
 
 export async function getDoctorAnalytics(): Promise<DoctorAnalyticsDto[]> {
   try {
-    return await apiRequest<DoctorAnalyticsDto[]>("/api/doctor/analytics");
+    return await apiRequest<DoctorAnalyticsDto[]>("/api/doctors/me/analytics");
   } catch {
     return [];
   }

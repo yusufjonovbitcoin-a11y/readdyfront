@@ -26,6 +26,15 @@ interface NavItem {
   label: string;
 }
 
+const haRouteWarmupMap: Record<string, () => Promise<unknown>> = {
+  "/hospital-admin": () => import("@/pages/hospital-admin/dashboard/page"),
+  "/hospital-admin/doctors": () => import("@/pages/hospital-admin/doctors/page"),
+  "/hospital-admin/patients": () => import("@/pages/hospital-admin/patients/page"),
+  "/hospital-admin/analytics": () => import("@/pages/hospital-admin/analytics/page"),
+  "/hospital-admin/notifications": () => import("@/pages/notifications/page"),
+  "/hospital-admin/settings": () => import("@/pages/hospital-admin/settings/page"),
+};
+
 interface HASidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -66,11 +75,36 @@ export default function HASidebar({ collapsed, onToggle, darkMode, mobileOpen, o
   const [avatarUrl, setAvatarUrl] = useState<string | null>(getHaAdminStoredAvatar);
   const prefetchPath = (path: string) => {
     prefetchCoreQueriesForPath(queryClient, path);
+    void haRouteWarmupMap[path]?.();
   };
 
   useEffect(() => {
     setAvatarUrl(getHaAdminStoredAvatar());
   }, [location.pathname]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const warmup = () => {
+      if (cancelled) return;
+      Object.values(haRouteWarmupMap).forEach((loader) => {
+        void loader();
+      });
+    };
+    const idle = (globalThis as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    if (typeof idle === "function") {
+      const id = idle(warmup);
+      return () => {
+        cancelled = true;
+        const cancelIdle = (globalThis as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+        cancelIdle?.(id);
+      };
+    }
+    const timer = globalThis.setTimeout(warmup, 250);
+    return () => {
+      cancelled = true;
+      globalThis.clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     const sync = () => setAvatarUrl(getHaAdminStoredAvatar());

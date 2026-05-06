@@ -6,8 +6,17 @@ import LanguageStep from './components/LanguageStep';
 import type { CheckinLang } from './components/LanguageStep';
 import AIAssistStep from './components/AIAssistStep';
 import ResultStep from './components/ResultStep';
-import { clearCheckinDraft, getCheckinDoctorProfile, getCheckinDraft, submitCheckin } from "@/api/checkin";
-import type { SubmitCheckinResult } from "@/api/types/checkin.types";
+import {
+  clearCheckinDraft,
+  createCheckinSession,
+  getCheckinDoctorProfile,
+  getCheckinDraft,
+  submitCheckin,
+} from "@/api/checkin";
+import type {
+  CheckinChatMessageInput,
+  SubmitCheckinResult,
+} from "@/api/types/checkin.types";
 
 type FlowStep = 'phone' | 'language' | 'ai' | 'result';
 type SubmissionState = "idle" | "submitting" | "success" | "error";
@@ -33,22 +42,37 @@ function SubmittingState() {
         <div className="w-16 h-16 flex items-center justify-center rounded-full bg-teal-50 mx-auto mb-4">
           <i className="ri-loader-4-line text-teal-500 text-2xl always-spin" />
         </div>
-        <h2 className="text-lg font-bold text-gray-900 mb-2">So'rov yuborilmoqda...</h2>
-        <p className="text-sm text-gray-500">Iltimos, biroz kuting.</p>
+        <h2 className="text-lg font-bold text-gray-900 mb-2">Navbatga qo'shilmoqda...</h2>
+        <p className="text-sm text-gray-500">
+          Ma'lumotlaringiz yuborilmoqda (odatda bir necha soniya). AI xulosa serverda alohida tayyorlanadi — kutish shart emas.
+        </p>
       </div>
     </div>
   );
 }
 
-function SubmitErrorState({ onRetry, onBack }: { onRetry: () => void; onBack: () => void }) {
+function SubmitErrorState({
+  onRetry,
+  onBack,
+  detail,
+}: {
+  onRetry: () => void;
+  onBack: () => void;
+  detail?: string | null;
+}) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-white flex items-center justify-center p-4">
-      <div className="text-center max-w-xs">
+      <div className="text-center max-w-md w-full">
         <div className="w-16 h-16 flex items-center justify-center rounded-full bg-red-50 mx-auto mb-4">
           <i className="ri-error-warning-line text-red-500 text-2xl" />
         </div>
         <h2 className="text-lg font-bold text-gray-900 mb-2">So'rov yuborilmadi</h2>
-        <p className="text-sm text-gray-500 mb-5">Ulanishda xatolik yuz berdi. Ma'lumotlaringiz saqlab qolindi.</p>
+        <p className="text-sm text-gray-500 mb-2">Ulanishda xatolik yuz berdi. Ma'lumotlaringiz saqlab qolindi.</p>
+        {detail ? (
+          <p className="text-xs text-gray-600 mb-5 rounded-lg bg-gray-100 px-3 py-2 text-left leading-snug break-words">{detail}</p>
+        ) : (
+          <div className="mb-5" />
+        )}
         <div className="flex gap-2 justify-center">
           <button
             type="button"
@@ -113,8 +137,12 @@ export default function CheckInPage() {
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [usedAI, setUsedAI] = useState(false);
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [submissionResult, setSubmissionResult] = useState<SubmitCheckinResult | null>(null);
   const submitAiSummaryRef = useRef<string | undefined>(undefined);
+  const submitChatMessagesRef = useRef<CheckinChatMessageInput[] | undefined>(undefined);
+  const [potientResponseId, setPotientResponseId] = useState<string | undefined>(undefined);
+  const sessionStartInFlightRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     if (!resolvedDoctorId) return;
@@ -140,9 +168,16 @@ export default function CheckInPage() {
   const submitFlow = async () => {
     if (!resolvedDoctorId) {
       setSubmissionState("error");
+      setSubmissionError("Shifokor identifikatori topilmadi.");
+      return;
+    }
+    if (!doctor.checkinToken?.trim()) {
+      setSubmissionState("error");
+      setSubmissionError("Check-in token hali yuklanmadi. Internetni tekshirib, sahifani yangilang.");
       return;
     }
     setSubmissionState("submitting");
+    setSubmissionError(null);
     try {
       const result = await submitCheckin({
         phone,
@@ -150,6 +185,10 @@ export default function CheckInPage() {
         checkinToken: doctor.checkinToken,
         answers,
         aiSummary: submitAiSummaryRef.current,
+        potientResponseId,
+        patientLanguage: checkinLang,
+        doctorLanguage: checkinLang,
+        chatMessages: submitChatMessagesRef.current,
       });
       setSubmissionResult(result);
       try {
@@ -159,10 +198,49 @@ export default function CheckInPage() {
       }
       setSubmissionState("success");
       setStep('result');
-    } catch {
+    } catch (e: unknown) {
+      const msg =
+        typeof e === "object" &&
+        e !== null &&
+        "message" in e &&
+        typeof (e as { message?: unknown }).message === "string"
+          ? (e as { message: string }).message.trim()
+          : "";
+      setSubmissionError(msg || "Noma'lum xatolik.");
       setSubmissionState("error");
     }
   };
+
+  /**
+   * Allocate the structured PotientResponse session as soon as the AI step is
+   * about to render. We deliberately fire-and-forget; if the request fails the
+   * id stays undefined and the chat falls back to legacy mode (transcript will
+   * be one-shot dumped on submit).
+   */
+  useEffect(() => {
+    if (step !== 'ai') return;
+    if (!resolvedDoctorId || !phone || !doctor.checkinToken) return;
+    if (potientResponseId || sessionStartInFlightRef.current) return;
+    const promise = (async () => {
+      try {
+        const session = await createCheckinSession({
+          phone,
+          doctorId: resolvedDoctorId,
+          checkinToken: doctor.checkinToken,
+          patientLanguage: checkinLang,
+          doctorLanguage: checkinLang,
+        });
+        if (session?.potientResponseId) {
+          setPotientResponseId(session.potientResponseId);
+        }
+      } catch {
+        // Silent; the chat keeps working without transcript persistence.
+      } finally {
+        sessionStartInFlightRef.current = null;
+      }
+    })();
+    sessionStartInFlightRef.current = promise;
+  }, [step, resolvedDoctorId, phone, doctor.checkinToken, checkinLang, potientResponseId]);
 
   if (!hasValidDoctorIdentifier) {
     return (
@@ -176,11 +254,13 @@ export default function CheckInPage() {
   if (submissionState === "error") {
     return (
       <SubmitErrorState
+        detail={submissionError}
         onRetry={() => {
           void submitFlow();
         }}
         onBack={() => {
           setSubmissionState("idle");
+          setSubmissionError(null);
           setStep("ai");
         }}
       />
@@ -207,9 +287,14 @@ export default function CheckInPage() {
     setStep('ai');
   };
 
-  const handleAIFinish = (usedAssistant: boolean, aiSummary?: string) => {
+  const handleAIFinish = (
+    usedAssistant: boolean,
+    aiSummary?: string,
+    chatMessages?: CheckinChatMessageInput[],
+  ) => {
     setUsedAI(usedAssistant);
     submitAiSummaryRef.current = aiSummary;
+    submitChatMessagesRef.current = chatMessages?.length ? chatMessages : undefined;
     void submitFlow();
   };
 
@@ -219,7 +304,10 @@ export default function CheckInPage() {
     setAnswers({});
     setUsedAI(false);
     submitAiSummaryRef.current = undefined;
+    submitChatMessagesRef.current = undefined;
+    setPotientResponseId(undefined);
     setSubmissionResult(null);
+    setSubmissionError(null);
     setSubmissionState("idle");
   };
 
@@ -252,6 +340,7 @@ export default function CheckInPage() {
           patientLanguage={checkinLang}
           doctorLanguage={checkinLang}
           visitId={checkinVisitClientId}
+          potientResponseId={potientResponseId}
           onFinish={handleAIFinish}
         />
       )}

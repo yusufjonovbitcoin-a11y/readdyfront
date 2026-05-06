@@ -34,6 +34,12 @@ export function getDoctorPatients(): Promise<DoctorPatientDto[]> {
   return doctorAdapter.getDoctorPatients();
 }
 
+export function getDoctorPatientById(
+  responseId: string,
+): Promise<DoctorPatientDto | null> {
+  return doctorAdapter.getDoctorPatientById(responseId);
+}
+
 export function updateDoctorPatientWorkflow(
   responseId: string,
   input: {

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import DocLayout from "@/pages/doctor/components/DocLayout";
 import PatientCard from "./components/PatientCard";
@@ -9,6 +9,7 @@ import type { DoctorPatientDto as DocPatient } from "@/api/types/doctor.types";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useDocPatients } from "@/context/DocPatientsContext";
 import { formatLocalYMD } from "@/utils/date";
+import { compareDoctorPatientsByQueueChronology } from "@/utils/queueSort";
 import { layoutSystem } from "@/styles/layoutSystem";
 
 type TabType = "queue" | "in_progress" | "completed";
@@ -39,6 +40,8 @@ export function DocPatientsContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [search, setSearch] = useState("");
+  /** Surilgan tartib (faqat navbat + bugun + qidiruv bo‘sh); server ro‘yxati o‘zgarsa qayta tiklanadi */
+  const [queueOrderOverride, setQueueOrderOverride] = useState<string[] | null>(null);
   const { patients, transitionPatientStatus, reorderQueuePatients } = useDocPatients();
   const { darkMode } = useDoctorTheme();
   const rawTab = searchParams.get("tab");
@@ -61,16 +64,58 @@ export function DocPatientsContent() {
   const todayStr = formatLocalYMD();
   const todayPatients = patients.filter((p) => p.date === todayStr);
 
+  const todayQueueIdsKey = useMemo(
+    () =>
+      todayPatients
+        .filter((p) => p.status === "queue")
+        .map((p) => p.id)
+        .sort()
+        .join("|"),
+    [todayPatients],
+  );
+
+  useEffect(() => {
+    setQueueOrderOverride(null);
+  }, [todayQueueIdsKey]);
+
+  useEffect(() => {
+    if (search.trim()) setQueueOrderOverride(null);
+  }, [search]);
+
   const searchLower = search.toLowerCase();
   const filtered = (() => {
     const list = todayPatients.filter(
-      (p) => p.status === activeTab && p.name.toLowerCase().includes(searchLower)
+      (p) => p.status === activeTab && p.name.toLowerCase().includes(searchLower),
     );
     if (activeTab === "queue") {
-      return [...list].sort((a, b) => a.queueNumber - b.queueNumber);
+      const base = list;
+      const canUseOverride =
+        !search.trim() &&
+        queueOrderOverride &&
+        queueOrderOverride.length === base.length &&
+        base.length > 0 &&
+        base.every((p) => queueOrderOverride.includes(p.id));
+
+      let ordered: DocPatient[];
+      if (canUseOverride && queueOrderOverride) {
+        ordered = queueOrderOverride
+          .map((id) => base.find((p) => p.id === id))
+          .filter((p): p is DocPatient => Boolean(p));
+        if (ordered.length !== base.length) {
+          ordered = [...base].sort(compareDoctorPatientsByQueueChronology);
+        }
+      } else {
+        ordered = [...base].sort(compareDoctorPatientsByQueueChronology);
+      }
+      return ordered.map((p, idx) => ({ ...p, queueNumber: idx + 1 }));
     }
     return list;
   })();
+
+  const handleQueueReorder = (orderedIds: string[]) => {
+    setQueueOrderOverride(orderedIds);
+    reorderQueuePatients(orderedIds);
+  };
 
   const canReorderQueueCards = activeTab === "queue" && !search.trim();
 
@@ -87,14 +132,14 @@ export function DocPatientsContent() {
   const titleCls = darkMode ? "text-white" : "text-gray-900";
   const mutedCls = darkMode ? "text-gray-400" : "text-gray-500";
   const inputCls = darkMode
-    ? "pl-9 pr-4 py-2 text-sm rounded-lg bg-[#0D1117] border border-[#30363D] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 w-52"
-    : "pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-violet-400 w-52";
+    ? "pl-9 pr-4 py-2 text-sm rounded-lg bg-[#0D1117] border border-[#30363D] text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 w-52"
+    : "pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-emerald-400 w-52";
   const searchIconCls = darkMode ? "text-gray-500" : "text-gray-400";
   const segmentWrap = darkMode ? "bg-[#21262D]" : "bg-gray-100";
-  const segmentBtnActive = darkMode ? "bg-[#30363D] shadow-sm text-violet-400" : "bg-white shadow-sm text-violet-600";
+  const segmentBtnActive = darkMode ? "bg-[#30363D] shadow-sm text-emerald-400" : "bg-white shadow-sm text-emerald-600";
   const segmentBtnIdle = darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-400 hover:text-gray-600";
   const tabsWrap = darkMode ? "bg-[#21262D]" : "bg-gray-100";
-  const tabActive = darkMode ? "bg-[#30363D] text-violet-300 shadow-sm" : "bg-white text-violet-700 shadow-sm";
+  const tabActive = darkMode ? "bg-[#30363D] text-emerald-300 shadow-sm" : "bg-white text-emerald-700 shadow-sm";
   const tabIdle = darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700";
   const tableWrap = darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100";
   const tableHeadBorder = darkMode ? "border-[#30363D]" : "border-gray-100";
@@ -161,8 +206,8 @@ export function DocPatientsContent() {
                   activeTab === tab.id
                     ? tab.id === "queue"
                       ? darkMode
-                        ? "bg-violet-900/50 text-violet-300"
-                        : "bg-violet-100 text-violet-700"
+                        ? "bg-emerald-900/50 text-emerald-300"
+                        : "bg-emerald-100 text-emerald-800"
                       : tab.id === "in_progress"
                         ? darkMode
                           ? "bg-sky-900/40 text-sky-300"
@@ -210,7 +255,7 @@ export function DocPatientsContent() {
             <QueueDraggableGrid
               patients={filtered}
               darkMode={darkMode}
-              onReorder={reorderQueuePatients}
+              onReorder={handleQueueReorder}
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

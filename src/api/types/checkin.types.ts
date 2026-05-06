@@ -21,12 +21,41 @@ export interface CheckinDraft {
   updatedAt: string;
 }
 
+export interface CheckinChatMessageInput {
+  role: "patient" | "assistant" | "system";
+  text: string;
+  messageType?: string;
+  questionKey?: string;
+  answerValue?: string;
+  language?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface SubmitCheckinInput {
   phone: string;
   doctorId: string;
   checkinToken?: string;
   answers: Record<string, string | string[]>;
   aiSummary?: string;
+  /** Existing real-time session id (created via /session/start). */
+  potientResponseId?: string;
+  patientLanguage?: string;
+  doctorLanguage?: string;
+  /** One-shot transcript dump for clients that did not start a session. */
+  chatMessages?: CheckinChatMessageInput[];
+}
+
+export interface CheckinSessionStartInput {
+  phone: string;
+  doctorId: string;
+  checkinToken?: string;
+  patientLanguage?: string;
+  doctorLanguage?: string;
+}
+
+export interface CheckinSessionStartResult {
+  potientResponseId: string;
+  ai_status: "in_progress";
 }
 
 export interface SubmitCheckinResult {
@@ -48,6 +77,12 @@ export interface CheckinAiPreviewInput {
   doctorLanguage?: string;
   /** Brauzer sessiyasi UUID; yuborishdan keyin ixtiyoriy ravishda checkinId bilan almashtirish mumkin */
   visitId?: string;
+  /** Real-time transcript saqlash uchun /session/start orqali olingan id. */
+  potientResponseId?: string;
+  /** Bemor xabar turi (text|answer|question). */
+  messageType?: string;
+  questionKey?: string;
+  answerValue?: string;
 }
 
 export interface CheckinFollowUpOptionDto {

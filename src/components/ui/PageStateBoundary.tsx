@@ -14,15 +14,6 @@ type PageStateBoundaryProps<T> = {
 
 const defaultCardClassName = "rounded-xl border py-14 text-center";
 
-function DefaultLoadingFallback({ className }: { className: string }) {
-  return (
-    <div className={className}>
-      <i className="ri-loader-4-line always-spin text-2xl text-teal-500" aria-hidden="true" />
-      <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Ma'lumotlar yuklanmoqda...</p>
-    </div>
-  );
-}
-
 function DefaultErrorFallback({
   className,
   error,
@@ -72,7 +63,10 @@ export default function PageStateBoundary<T>({
       : className;
 
   if (state.status === "loading") {
-    return <>{loadingFallback ?? <DefaultLoadingFallback className={resolvedClassName} />}</>;
+    if (state.data !== null) {
+      return <>{children(state.data)}</>;
+    }
+    return <>{loadingFallback ?? null}</>;
   }
 
   if (state.status === "error") {

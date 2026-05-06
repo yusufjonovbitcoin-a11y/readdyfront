@@ -152,5 +152,62 @@
   "dashboard": {
     "title": "Панель врача",
     "subtitle": "Ежедневные задачи и управление пациентами"
+  },
+  "patientDetail": {
+    "tabs": {
+      "aiXulosa": "AI Резюме",
+      "javoblar": "Ответы",
+      "suhbat": "История диалога",
+      "izohlar": "Заметки",
+      "bemor": "Пациент"
+    },
+    "aiXulosa": {
+      "title": "AI Резюме",
+      "subtitle": "Структурированное клиническое intake резюме",
+      "empty": "AI резюме ещё не готово",
+      "legacyTitle": "Резюме в старом формате",
+      "oneLine": "Краткое резюме",
+      "priorityNote": "Заметка",
+      "checkFirst": "Проверить в первую очередь",
+      "chiefComplaint": "Основная жалоба",
+      "timeline": "Хронология",
+      "severity": "Тяжесть / локализация",
+      "positiveSymptoms": "Подтверждённые симптомы",
+      "negativeSymptoms": "Отрицаемые",
+      "redFlags": "Тревожные признаки",
+      "medications": "Лекарства",
+      "allergies": "Аллергии",
+      "chronic": "Хронические заболевания",
+      "previousHistory": "Анамнез",
+      "injury": "Травма / инородное тело",
+      "outOfScope": "Жалобы вне профиля ЛОР",
+      "contradictions": "Противоречия",
+      "missing": "Недостающая информация",
+      "followups": "Рекомендуемые вопросы",
+      "summaryForDoctor": "Резюме для врача",
+      "phrases": "Фразы пациента",
+      "dataQuality": "Качество данных"
+    },
+    "risk": {
+      "low": "Низкий риск",
+      "medium": "Средний риск",
+      "high": "Высокий риск"
+    },
+    "aiStatus": {
+      "completed": "Готово",
+      "in_progress": "В процессе",
+      "failed": "Ошибка AI",
+      "not_started": "Не начато",
+      "high_risk": "Высокий риск",
+      "incomplete": "Неполное"
+    },
+    "transcript": {
+      "title": "История диалога",
+      "empty": "Записей AI диалога с этим пациентом не найдено.",
+      "patient": "Пациент",
+      "assistant": "AI",
+      "system": "Система",
+      "messages": "{{count}} сообщений"
+    }
   }
 }

@@ -16,7 +16,6 @@ import type {
   DoctorQuestionDto as DocQuestion,
 } from "@/api/types/doctor.types";
 import { usePageState } from "@/hooks/usePageState";
-import PageStateBoundary from "@/components/ui/PageStateBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppToast } from "@/hooks/useAppToast";
 import AppToast from "@/components/ui/AppToast";
@@ -35,6 +34,8 @@ interface DoctorQuestionsPageData {
 }
 
 const MODAL_INERT_SELECTORS = ["header", "main", "aside"];
+const DOCTOR_QUESTIONS_CACHE_KEY = "medcore_doctor_questions_v1";
+const DOCTOR_QUESTION_CATEGORIES_CACHE_KEY = "medcore_doctor_question_categories_v1";
 
 function getDefaultQuestionFormData(categories: DoctorQuestionCategoryDto[]): QuestionFormData {
   const defaultCategory =
@@ -63,12 +64,32 @@ export function DocQuestionsContent() {
   const { darkMode } = useDoctorTheme();
   const { user } = useAuth();
   const canMutateQuestions = true;
-  const [questions, setQuestions] = useState<DocQuestion[]>([]);
+  const [questions, setQuestions] = useState<DocQuestion[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem(DOCTOR_QUESTIONS_CACHE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as DocQuestion[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<DocQuestion | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [categories, setCategories] = useState<DoctorQuestionCategoryDto[]>([]);
+  const [categories, setCategories] = useState<DoctorQuestionCategoryDto[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem(DOCTOR_QUESTION_CATEGORIES_CACHE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as DoctorQuestionCategoryDto[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [formData, setFormData] = useState<QuestionFormData>({
     questionnaireTitle: "",
     text: "",
@@ -105,6 +126,25 @@ export function DocQuestionsContent() {
   }, [pageState.data]);
 
   useEffect(() => {
+    try {
+      window.localStorage.setItem(DOCTOR_QUESTIONS_CACHE_KEY, JSON.stringify(questions));
+    } catch {
+      // ignore storage failures
+    }
+  }, [questions]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        DOCTOR_QUESTION_CATEGORIES_CACHE_KEY,
+        JSON.stringify(categories),
+      );
+    } catch {
+      // ignore storage failures
+    }
+  }, [categories]);
+
+  useEffect(() => {
     if (user?.role !== "DOCTOR" || !user.id || categories.length === 0) return;
     let cancelled = false;
     void (async () => {
@@ -133,21 +173,22 @@ export function DocQuestionsContent() {
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
   const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
-  const cardHover = darkMode ? "hover:border-violet-500/40" : "hover:border-violet-200";
+  const cardHover = darkMode ? "hover:border-emerald-500/40" : "hover:border-emerald-200";
   const borderSubtle = darkMode ? "border-[#30363D]" : "border-gray-100";
   const textBody = darkMode ? "text-gray-200" : "text-gray-800";
   const textMuted = darkMode ? "text-gray-500" : "text-gray-400";
   const inputBase = darkMode
-    ? "pl-9 pr-4 py-2 text-sm rounded-lg bg-[#0D1117] border border-[#30363D] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 w-52"
-    : "pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-violet-400 w-52";
+    ? "pl-9 pr-4 py-2 text-sm rounded-lg bg-[#0D1117] border border-[#30363D] text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 w-52"
+    : "pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-emerald-400 w-52";
   const searchIcon = darkMode ? "text-gray-500" : "text-gray-400";
   const btnGhost = darkMode
     ? "border border-[#30363D] bg-[#21262D] text-gray-200 hover:bg-[#30363D]"
     : "border border-gray-200 bg-white text-gray-700 hover:bg-gray-50";
   const statGreen = darkMode ? "text-emerald-400" : "text-green-600";
   const statGray = darkMode ? "text-gray-500" : "text-gray-400";
-  const statViolet = darkMode ? "text-violet-400" : "text-violet-600";
-  const badgeCat = darkMode ? "bg-violet-900/40 text-violet-300" : "bg-violet-100 text-violet-700";
+  /** Shaxsiy savollar soni — faol statistikadan biroz farq qiladi */
+  const statCustomAccent = darkMode ? "text-teal-400" : "text-teal-600";
+  const badgeCat = darkMode ? "bg-emerald-900/40 text-emerald-300" : "bg-emerald-100 text-emerald-800";
   const badgeCustom = darkMode ? "bg-blue-900/40 text-blue-300" : "bg-blue-100 text-blue-700";
   const iconBtn = darkMode
     ? "hover:bg-[#21262D] text-gray-400 hover:text-gray-200"
@@ -157,8 +198,8 @@ export function DocQuestionsContent() {
   const modalTitle = darkMode ? "text-white" : "text-gray-900";
   const labelCls = darkMode ? "text-gray-300" : "text-gray-700";
   const fieldBase = darkMode
-    ? "w-full text-sm border border-[#30363D] rounded-lg px-3 py-2.5 bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
-    : "w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-400";
+    ? "w-full text-sm border border-[#30363D] rounded-lg px-3 py-2.5 bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+    : "w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-400";
   const btnSecondary = darkMode
     ? "border border-[#30363D] text-gray-200 hover:bg-[#21262D]"
     : "border border-gray-200 text-gray-600 hover:bg-gray-50";
@@ -337,14 +378,14 @@ export function DocQuestionsContent() {
   return (
     <>
       <AppToast toast={toast} />
-      <PageStateBoundary state={pageState}>
-        {() => (
-          <div className="space-y-5">
+      <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className={`text-xl font-bold ${pageTitle}`}>{t("questions.title")}</h2>
-          <p className={`text-sm mt-0.5 ${pageMuted}`}>{t("questions.subtitle")} {questions.length}</p>
+          <p className={`text-sm mt-0.5 ${pageMuted}`}>
+            {t("questions.subtitle", { count: questions.length })}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -366,7 +407,7 @@ export function DocQuestionsContent() {
                 };
               });
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <i className="ri-add-line text-sm"></i>
             {t("questions.add")}
@@ -400,7 +441,7 @@ export function DocQuestionsContent() {
           <span className={`font-semibold ${statGray}`}>{questions.filter((q) => q.status === "inactive").length}</span> {t("questions.stats.inactive")}
         </span>
         <span className={`text-sm ${pageMuted}`}>
-          <span className={`font-semibold ${statViolet}`}>{questions.filter((q) => q.isCustom).length}</span> {t("questions.stats.custom")}
+          <span className={`font-semibold ${statCustomAccent}`}>{questions.filter((q) => q.isCustom).length}</span> {t("questions.stats.custom")}
         </span>
       </div>
 
@@ -447,8 +488,8 @@ export function DocQuestionsContent() {
               } ${
                 dragOverQuestionId === q.id && draggingQuestionId !== q.id
                   ? darkMode
-                    ? "ring-2 ring-violet-500/50"
-                    : "ring-2 ring-violet-300"
+                    ? "ring-2 ring-emerald-500/50"
+                    : "ring-2 ring-emerald-300"
                   : ""
               }`}
             >
@@ -456,7 +497,7 @@ export function DocQuestionsContent() {
                 <div className="flex min-w-0 flex-1 items-center gap-2 flex-wrap pr-2">
                   <span
                     className={`flex h-7 min-w-[1.75rem] shrink-0 items-center justify-center rounded-lg px-1.5 text-xs font-bold tabular-nums ${
-                      darkMode ? "bg-violet-900/45 text-violet-200" : "bg-violet-100 text-violet-700"
+                      darkMode ? "bg-emerald-900/45 text-emerald-200" : "bg-emerald-100 text-emerald-800"
                     }`}
                     title={t("questions.orderTitle", { order: i + 1 })}
                   >
@@ -475,7 +516,7 @@ export function DocQuestionsContent() {
                   aria-checked={q.status === "active"}
                   aria-label={q.status === "active" ? t("questions.aria.deactivate") : t("questions.aria.activate")}
                   onClick={() => handleToggleStatus(q.id)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                     darkMode ? "focus-visible:ring-offset-[#0D1117]" : "focus-visible:ring-offset-white"
                   } ${
                     q.status === "active"
@@ -576,8 +617,8 @@ export function DocQuestionsContent() {
                     className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
                       formData.answerMode === "boolean"
                         ? darkMode
-                          ? "border-violet-500 bg-violet-900/30 text-violet-200"
-                          : "border-violet-500 bg-violet-50 text-violet-700"
+                          ? "border-emerald-500 bg-emerald-900/30 text-emerald-200"
+                          : "border-emerald-500 bg-emerald-50 text-emerald-800"
                         : darkMode
                           ? "border-[#30363D] text-gray-300 hover:bg-[#21262D]"
                           : "border-gray-200 text-gray-700 hover:bg-gray-50"
@@ -591,8 +632,8 @@ export function DocQuestionsContent() {
                     className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
                       formData.answerMode === "text"
                         ? darkMode
-                          ? "border-violet-500 bg-violet-900/30 text-violet-200"
-                          : "border-violet-500 bg-violet-50 text-violet-700"
+                          ? "border-emerald-500 bg-emerald-900/30 text-emerald-200"
+                          : "border-emerald-500 bg-emerald-50 text-emerald-800"
                         : darkMode
                           ? "border-[#30363D] text-gray-300 hover:bg-[#21262D]"
                           : "border-gray-200 text-gray-700 hover:bg-gray-50"
@@ -639,7 +680,7 @@ export function DocQuestionsContent() {
                   !formData.text.trim() ||
                   (!editingQuestion && (!formData.questionnaireTitle.trim() || isSubmittingQuestion))
                 }
-                className="flex-1 py-2.5 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 cursor-pointer transition-colors disabled:opacity-50 whitespace-nowrap"
+                className="flex-1 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 cursor-pointer transition-colors disabled:opacity-50 whitespace-nowrap"
               >
                 {editingQuestion ? t("questions.save") : isSubmittingQuestion ? "Yaratilmoqda..." : t("questions.add")}
               </button>
@@ -685,9 +726,7 @@ export function DocQuestionsContent() {
               </div>
             </div>
           )}
-          </div>
-        )}
-      </PageStateBoundary>
+      </div>
     </>
   );
 }

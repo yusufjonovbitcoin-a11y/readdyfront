@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useMemo, type RefObject } from "react";
+import { useEffect, useMemo, type RefObject } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,15 @@ interface NavItem {
   label: string;
   exact?: boolean;
 }
+
+const doctorRouteWarmupMap: Record<string, () => Promise<unknown>> = {
+  "/doctor/patients": () => import("@/pages/doctor/patients/page"),
+  "/doctor/history": () => import("@/pages/doctor/history/page"),
+  "/doctor/analytics": () => import("@/pages/doctor/analytics/page"),
+  "/doctor/questions": () => import("@/pages/doctor/questions/page"),
+  "/doctor/notifications": () => import("@/pages/notifications/page"),
+  "/doctor/settings": () => import("@/pages/doctor/settings/page"),
+};
 
 interface DocSidebarProps {
   collapsed: boolean;
@@ -53,6 +62,9 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
     onCloseMobile();
     navigate("/login", { replace: true });
   };
+  const prewarmDoctorPath = (path: string) => {
+    void doctorRouteWarmupMap[path]?.();
+  };
   const navItems: NavItem[] = [
     { path: "/doctor/patients", icon: "ri-user-add-line", label: t("sidebar.newPatients") },
     { path: "/doctor/history", icon: "ri-history-line", label: t("sidebar.history") },
@@ -61,6 +73,34 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
     { path: "/doctor/notifications", icon: "ri-notification-3-line", label: t("sidebar.notifications") },
     { path: "/doctor/settings", icon: "ri-settings-3-line", label: t("sidebar.settings") },
   ];
+
+  useEffect(() => {
+    let cancelled = false;
+    const warmup = () => {
+      if (cancelled) return;
+      void import("@/pages/doctor/patients/page");
+      void import("@/pages/doctor/patients/detail/page");
+      void import("@/pages/doctor/history/page");
+      void import("@/pages/doctor/analytics/page");
+      void import("@/pages/doctor/questions/page");
+      void import("@/pages/doctor/settings/page");
+      void import("@/pages/notifications/page");
+    };
+    const idle = (globalThis as unknown as { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback;
+    if (typeof idle === "function") {
+      const id = idle(warmup);
+      return () => {
+        cancelled = true;
+        const cancelIdle = (globalThis as unknown as { cancelIdleCallback?: (id: number) => void }).cancelIdleCallback;
+        cancelIdle?.(id);
+      };
+    }
+    const timer = globalThis.setTimeout(warmup, 250);
+    return () => {
+      cancelled = true;
+      globalThis.clearTimeout(timer);
+    };
+  }, []);
 
   return (
     <aside
@@ -127,6 +167,8 @@ export default function DocSidebar({ collapsed, onToggle, mobileOpen, onCloseMob
                 to={item.to ?? item.path}
                 prefetch="none"
                 onClick={onCloseMobile}
+                onMouseEnter={() => prewarmDoctorPath(item.to ?? item.path)}
+                onFocus={() => prewarmDoctorPath(item.to ?? item.path)}
                 className={itemClass}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={item.label}

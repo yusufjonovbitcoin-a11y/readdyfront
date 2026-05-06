@@ -152,5 +152,62 @@
   "dashboard": {
     "title": "Shifokor paneli",
     "subtitle": "Kundalik ishlar va bemorlar boshqaruvi"
+  },
+  "patientDetail": {
+    "tabs": {
+      "aiXulosa": "AI Xulosa",
+      "javoblar": "Javoblar",
+      "suhbat": "Suhbat tarixi",
+      "izohlar": "Izohlar",
+      "bemor": "Bemor"
+    },
+    "aiXulosa": {
+      "title": "AI Xulosa",
+      "subtitle": "Strukturalangan klinik intake xulosasi",
+      "empty": "AI xulosa hali tayyor emas",
+      "legacyTitle": "Eski formatdagi xulosa",
+      "oneLine": "Bir qatorlik xulosa",
+      "priorityNote": "Eslatma",
+      "checkFirst": "Birinchi navbatda tekshirish",
+      "chiefComplaint": "Asosiy shikoyat",
+      "timeline": "Vaqt jadvali",
+      "severity": "Og'irlik / lokalizatsiya",
+      "positiveSymptoms": "Bor simptomlar",
+      "negativeSymptoms": "Inkor qilingan",
+      "redFlags": "Xavfli belgilar",
+      "medications": "Dorilar",
+      "allergies": "Allergiya",
+      "chronic": "Surunkali kasalliklar",
+      "previousHistory": "Oldingi tarix",
+      "injury": "Jarohat / yot jism",
+      "outOfScope": "LORga aloqasiz shikoyatlar",
+      "contradictions": "Qarama-qarshiliklar",
+      "missing": "Yetishmayotgan ma'lumotlar",
+      "followups": "Tavsiya etiladigan savollar",
+      "summaryForDoctor": "Shifokor uchun xulosa",
+      "phrases": "Bemor iboralari",
+      "dataQuality": "Ma'lumot sifati"
+    },
+    "risk": {
+      "low": "Past xavf",
+      "medium": "O'rta xavf",
+      "high": "Yuqori xavf"
+    },
+    "aiStatus": {
+      "completed": "Tayyor",
+      "in_progress": "Davom etyapti",
+      "failed": "AI xato",
+      "not_started": "Boshlanmagan",
+      "high_risk": "Yuqori xavf",
+      "incomplete": "To'liq emas"
+    },
+    "transcript": {
+      "title": "Suhbat tarixi",
+      "empty": "Bu bemor bilan AI suhbat yozuvi topilmadi.",
+      "patient": "Bemor",
+      "assistant": "AI",
+      "system": "Tizim",
+      "messages": "{{count}} ta xabar"
+    }
   }
 }

@@ -29,7 +29,7 @@ export default function PatientCard({ patient, darkMode = false, onStatusChange 
   return (
     <div
       className={`rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md ${
-        darkMode ? "bg-[#161B27] border-[#1C2333] hover:border-violet-800" : "bg-white border-gray-100 hover:border-violet-200"
+        darkMode ? "bg-[#161B27] border-[#1C2333] hover:border-emerald-800" : "bg-white border-gray-100 hover:border-emerald-200"
       } ${patient.riskLevel === 'critical' ? (darkMode ? 'border-red-900/50' : 'border-red-200') : ''}`}
       onClick={() => navigate(`/doctor/patients/${patient.id}`)}
     >
@@ -48,7 +48,7 @@ export default function PatientCard({ patient, darkMode = false, onStatusChange 
         </div>
         {patient.status === 'queue' && (
           <div className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold ${
-            darkMode ? "bg-violet-900/40 text-violet-400" : "bg-violet-100 text-violet-700"
+            darkMode ? "bg-emerald-900/40 text-emerald-400" : "bg-emerald-100 text-emerald-800"
           }`}>
             {patient.queueNumber}
           </div>
@@ -100,7 +100,7 @@ export default function PatientCard({ patient, darkMode = false, onStatusChange 
             e.stopPropagation();
             navigate(`/doctor/patients/${patient.id}`);
           }}
-          className="text-xs text-violet-600 font-medium hover:text-violet-700 cursor-pointer whitespace-nowrap"
+          className="text-xs text-emerald-600 font-medium hover:text-emerald-700 cursor-pointer whitespace-nowrap"
         >
           Ko'rish →
         </button>

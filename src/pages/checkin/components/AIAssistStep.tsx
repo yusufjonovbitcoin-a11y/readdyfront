@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { generateCheckinAiPreview } from '@/api/checkin';
 import type {
   CheckinAiPreviewResult,
+  CheckinChatMessageInput,
   CheckinFollowUpPollDto,
   CheckinInteractiveQuestionDto,
 } from '@/api/types/checkin.types';
@@ -21,7 +22,12 @@ interface AIAssistStepProps {
   patientLanguage?: string;
   doctorLanguage?: string;
   visitId?: string;
-  onFinish: (usedAI: boolean, aiSummary?: string) => void;
+  potientResponseId?: string;
+  onFinish: (
+    usedAI: boolean,
+    aiSummary?: string,
+    chatMessages?: CheckinChatMessageInput[],
+  ) => void;
 }
 
 function buildConversationPayload(list: Message[]): string {
@@ -206,6 +212,7 @@ export default function AIAssistStep({
   patientLanguage,
   doctorLanguage,
   visitId,
+  potientResponseId,
   onFinish,
 }: AIAssistStepProps) {
   const { t: tCheckin } = useTranslation('checkin');
@@ -220,6 +227,23 @@ export default function AIAssistStep({
   const inputRef = useRef<HTMLInputElement>(null);
   const triageSummaryForDoctorRef = useRef<string | undefined>(undefined);
   const fetchGenRef = useRef(0);
+  const busy = initialLoading || sending;
+
+  /**
+   * Build a backend-shaped transcript from the local chat state. Always sent
+   * along with onFinish; the backend only uses it when the DB transcript is
+   * empty (i.e. when /session/start failed or the chat ran in legacy mode).
+   */
+  const buildChatMessagesPayload = useCallback((): CheckinChatMessageInput[] => {
+    return messages
+      .filter((m) => m.text?.trim())
+      .map((m) => ({
+        role: m.role === 'user' ? 'patient' : 'assistant',
+        text: m.text,
+        messageType: 'text',
+        language: patientLanguage,
+      }));
+  }, [messages, patientLanguage]);
 
   /** Suhbat oxirida yuboriladigan xulosa: oxirgi muvaffaqiyatli AI matni (shifokor paneli `aiSummary`). */
   const setLatestDoctorSummary = (text: string) => {
@@ -231,18 +255,37 @@ export default function AIAssistStep({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, []);
 
+  const focusComposerInput = useCallback(() => {
+    const input = inputRef.current;
+    if (!input || input.disabled) return;
+    if (document.activeElement === input) return;
+    input.focus({ preventScroll: true });
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, initialLoading, sending, dockQuestion, scrollToBottom]);
 
   useEffect(() => {
     if (initialLoading) return;
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }, [initialLoading]);
+    const raf = globalThis.requestAnimationFrame(() => {
+      focusComposerInput();
+    });
+    return () => globalThis.cancelAnimationFrame(raf);
+  }, [initialLoading, focusComposerInput]);
+
+  useEffect(() => {
+    if (busy) return;
+    const raf = globalThis.requestAnimationFrame(() => {
+      focusComposerInput();
+    });
+    return () => globalThis.cancelAnimationFrame(raf);
+  }, [messages, sending, dockQuestion, busy, focusComposerInput]);
 
   const runPreview = useCallback(
     async (nextMessages: Message[]) => {
-      const payload = buildConversationPayload(nextMessages);
+      const lastUser = [...nextMessages].reverse().find((m) => m.role === 'user');
+      const payload = lastUser?.text ?? buildConversationPayload(nextMessages);
       const res = await generateCheckinAiPreview({
         doctorId,
         checkinToken,
@@ -251,6 +294,8 @@ export default function AIAssistStep({
         patientLanguage,
         doctorLanguage,
         visitId,
+        potientResponseId,
+        messageType: 'text',
       });
       const aiText = res.ai_analysis?.trim() ?? '';
       if (aiText) setLatestDoctorSummary(aiText);
@@ -282,7 +327,7 @@ export default function AIAssistStep({
       setDockQuestion(qUi);
       setDockSelectedValue(null);
     },
-    [doctorId, checkinToken, answers, patientLanguage, doctorLanguage, visitId],
+    [doctorId, checkinToken, answers, patientLanguage, doctorLanguage, visitId, potientResponseId],
   );
 
   useEffect(() => {
@@ -302,6 +347,8 @@ export default function AIAssistStep({
           patientLanguage,
           doctorLanguage,
           visitId,
+          potientResponseId,
+          messageType: 'text',
         });
         if (cancelled || id !== fetchGenRef.current) return;
         const text = res.ai_analysis?.trim() ?? '';
@@ -349,7 +396,7 @@ export default function AIAssistStep({
     return () => {
       cancelled = true;
     };
-  }, [doctorId, checkinToken, answers, patientLanguage, doctorLanguage, visitId]);
+  }, [doctorId, checkinToken, answers, patientLanguage, doctorLanguage, visitId, potientResponseId]);
 
   const sendMessage = async () => {
     const text = userInput.trim();
@@ -427,10 +474,8 @@ export default function AIAssistStep({
     }
   };
 
-  const busy = initialLoading || sending;
-
   return (
-    <div className="flex h-dvh max-h-dvh min-h-0 flex-col overflow-hidden bg-[#f7f7f8]">
+    <div className="fixed inset-0 z-[5] flex min-h-0 flex-col overflow-hidden bg-[#f7f7f8]">
       <header className="shrink-0 border-b border-slate-200/70 bg-white/75 backdrop-blur-md backdrop-saturate-150 supports-[backdrop-filter]:bg-white/65 px-4 py-3 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
         <div className="max-w-lg mx-auto flex items-start gap-3">
           <div className="relative shrink-0 pt-0.5">
@@ -452,7 +497,13 @@ export default function AIAssistStep({
           </div>
           <button
             type="button"
-            onClick={() => onFinish(true, triageSummaryForDoctorRef.current)}
+            onClick={() =>
+              onFinish(
+                true,
+                triageSummaryForDoctorRef.current,
+                buildChatMessagesPayload(),
+              )
+            }
             disabled={busy}
             aria-label={tCheckin('ai.finishGroupAria')}
             className="shrink-0 self-start pt-0.5 max-w-[11.5rem] rounded-xl border border-teal-200/90 bg-gradient-to-r from-teal-50 via-white to-emerald-50/90 px-2.5 py-2 text-center text-[11px] font-semibold leading-snug text-teal-900 shadow-sm ring-1 ring-teal-500/10 transition-all hover:from-teal-100/70 hover:to-emerald-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 whitespace-normal"
@@ -547,6 +598,12 @@ export default function AIAssistStep({
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              onBlur={() => {
+                if (busy) return;
+                globalThis.requestAnimationFrame(() => {
+                  focusComposerInput();
+                });
+              }}
               disabled={busy}
             />
             {userInput ? (

@@ -54,6 +54,9 @@ export default function ResultStep({
   const queueNumber = Math.max(1, submissionResult?.queueNumber ?? 1);
   const waitTime = Math.max(0, submissionResult?.waitMinutes ?? 0);
   const [notifSent, setNotifSent] = useState(false);
+  const [telegramError, setTelegramError] = useState<string | null>(null);
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  const [telegramOpenLink, setTelegramOpenLink] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(waitTime * 60);
   const riskLevel = getRiskLevel(answers);
   const risk = riskConfig[riskLevel];
@@ -71,34 +74,53 @@ export default function ResultStep({
     return () => clearInterval(timer);
   }, [resultCase]);
 
-  const countdownDisplay = (() => {
-    const totalSeconds = Math.max(0, countdown);
-    const totalMinutes = Math.ceil(totalSeconds / 60);
+  /** Qolgan vaqt (yakuniy daqiqa, taymer bilan yangilanadi) — kartadagi raqamlar bilan bir xil manba */
+  const minutesRemaining = Math.max(0, Math.ceil(Math.max(0, countdown) / 60));
 
-    if (totalMinutes >= 60) {
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-      return `${hours} soat ${minutes} daqiqa`;
-    }
-
-    return `${totalMinutes} daqiqa`;
-  })();
+  const countdownDisplay =
+    minutesRemaining >= 60
+      ? `${Math.floor(minutesRemaining / 60)} soat ${minutesRemaining % 60} daqiqa`
+      : `${minutesRemaining} daqiqa`;
 
   const handleNotify = () => {
-    if (!submissionResult?.checkinId) return;
+    setTelegramError(null);
+    setTelegramOpenLink(null);
+    if (!submissionResult?.checkinId) {
+      setTelegramError("Navbat ma'lumoti topilmadi. Sahifani yangilab qayta urinib ko'ring.");
+      return;
+    }
+    setTelegramLoading(true);
     void createCheckinTelegramLink({
       checkinId: submissionResult.checkinId,
       doctorId,
       phone,
     })
       .then((res) => {
-        if (!res.url) return;
+        const url = res?.url?.trim();
+        if (!url) {
+          setTelegramError("Server Telegram havolasini qaytarmadi. Keyinroq qayta urinib ko'ring.");
+          return;
+        }
+        const opened = window.open(url, "_blank", "noopener,noreferrer");
+        if (!opened) {
+          setTelegramOpenLink(url);
+          setTelegramError(
+            "Yangi oyna bloklangan bo'lishi mumkin. Quyidagi havola orqali Telegramni oching.",
+          );
+          setNotifSent(false);
+          return;
+        }
         setNotifSent(true);
-        window.open(res.url, "_blank", "noopener,noreferrer");
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         setNotifSent(false);
-      });
+        const msg =
+          err instanceof Error && err.message.trim()
+            ? err.message
+            : "Telegram ulanmadi. Internet va serverni tekshiring.";
+        setTelegramError(msg);
+      })
+      .finally(() => setTelegramLoading(false));
   };
 
   return (
@@ -144,7 +166,7 @@ export default function ResultStep({
                   <p className="text-xs text-gray-500 mt-1">Navbat raqami</p>
                 </div>
                 <div className="text-center p-3 bg-emerald-50 rounded-xl">
-                  <p className="text-2xl font-black text-emerald-600">{waitTime}</p>
+                  <p className="text-2xl font-black text-emerald-600">{minutesRemaining}</p>
                   <p className="text-xs text-gray-500 mt-1">Daqiqa kutish</p>
                 </div>
               </div>
@@ -180,21 +202,40 @@ export default function ResultStep({
             {/* Notification */}
             {!notifSent ? (
               <button
+                type="button"
                 onClick={handleNotify}
-                className="w-full h-12 rounded-xl border-2 border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-700 text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-2 mb-3"
+                disabled={telegramLoading}
+                className="w-full h-12 rounded-xl border-2 border-teal-200 bg-teal-50 hover:bg-teal-100 text-teal-700 text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-2 mb-3 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <i className="ri-notification-line text-base"></i>
-                Navbatim kelganda xabar bering
+                {telegramLoading ? "Tayyorlanmoqda…" : "Navbatim kelganda xabar bering"}
               </button>
             ) : (
               <button
+                type="button"
                 onClick={handleNotify}
-                className="w-full h-12 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center gap-2 mb-3"
+                disabled={telegramLoading}
+                className="w-full h-12 rounded-xl bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center gap-2 mb-3 disabled:opacity-60"
               >
                 <i className="ri-telegram-line text-emerald-600 text-base"></i>
                 <span className="text-sm font-medium text-emerald-700">Telegram bot ulandi</span>
               </button>
             )}
+            {telegramError ? (
+              <p className="text-xs text-center text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+                {telegramError}
+              </p>
+            ) : null}
+            {telegramOpenLink ? (
+              <a
+                href={telegramOpenLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center text-sm font-semibold text-teal-700 py-2 mb-3 underline"
+              >
+                Telegram havolasini ochish
+              </a>
+            ) : null}
           </>
         )}
 
