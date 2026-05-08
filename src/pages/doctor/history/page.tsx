@@ -5,6 +5,8 @@ import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useDocPatients } from "@/context/DocPatientsContext";
 import type { DoctorPatientRiskLevel as RiskLevel } from "@/api/types/doctor.types";
+import { useViewMode } from "@/hooks/useViewMode";
+import ViewModeToggle from "@/components/ui/ViewModeToggle";
 
 export default function DocHistoryPage() {
   const { t } = useTranslation("doctor");
@@ -25,7 +27,7 @@ export function DocHistoryContent() {
   };
   const { darkMode } = useDoctorTheme();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const { mode: viewMode, setMode: setViewMode } = useViewMode("doctor-history", "card");
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
 
@@ -38,9 +40,6 @@ export function DocHistoryContent() {
   const searchInput = darkMode
     ? "pl-9 pr-4 py-2 text-sm border border-[#30363D] rounded-lg bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 w-48"
     : "pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-violet-400 w-48";
-  const segmentWrap = darkMode ? "bg-[#21262D]" : "bg-gray-100";
-  const segmentActive = darkMode ? "bg-[#30363D] shadow-sm text-violet-300" : "bg-white shadow-sm text-violet-600";
-  const segmentIdle = darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-400 hover:text-gray-600";
   const diagBox = darkMode ? "bg-[#21262D]" : "bg-gray-50";
   const tableWrap = darkMode ? "bg-[#161B22] border-[#30363D]" : "bg-white border-gray-100";
   const thCls = darkMode ? "text-gray-400" : "text-gray-500";
@@ -101,32 +100,13 @@ export function DocHistoryContent() {
               className={searchInput}
             />
           </div>
-          <div className={`flex items-center rounded-lg p-1 ${segmentWrap}`}>
-            <button
-              onClick={() => setViewMode("card")}
-              className={`w-11 h-11 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
-                viewMode === "card" ? segmentActive : segmentIdle
-              }`}
-              type="button"
-              aria-label={t("history.aria.cardView", { defaultValue: "Karta ko'rinish" })}
-              title={t("history.aria.cardView", { defaultValue: "Karta ko'rinish" })}
-              aria-pressed={viewMode === "card"}
-            >
-              <i className="ri-layout-grid-line text-sm"></i>
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`w-11 h-11 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
-                viewMode === "table" ? segmentActive : segmentIdle
-              }`}
-              type="button"
-              aria-label={t("history.aria.tableView", { defaultValue: "Jadval ko'rinish" })}
-              title={t("history.aria.tableView", { defaultValue: "Jadval ko'rinish" })}
-              aria-pressed={viewMode === "table"}
-            >
-              <i className="ri-list-check text-sm"></i>
-            </button>
-          </div>
+          <ViewModeToggle
+            mode={viewMode}
+            darkMode={darkMode}
+            cardLabel={t("history.aria.cardView", { defaultValue: "Karta ko'rinish" })}
+            tableLabel={t("history.aria.tableView", { defaultValue: "Jadval ko'rinish" })}
+            onChange={setViewMode}
+          />
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useDocPatients } from "@/context/DocPatientsContext";
 import { getDoctorPatientById } from "@/api/doctor";
+import { getAiIntakeDashboard, type DoctorDashboardJson } from "@/api/services/medicalIntake.service";
 import type { DoctorPatientDto as DocPatient } from "@/api/types/doctor.types";
 import {
   AiXulosaCard,
@@ -97,34 +98,81 @@ function normalizeDoctorPatientsTab(raw: string | null): DoctorPatientsTab {
 }
 
 export function DocPatientDetailRouteContent() {
-  const { id } = useParams<{ id: string }>();
-  const { patients } = useDocPatients();
-  const patient = patients.find((p) => p.id === id);
-
-  if (!patient) {
-    return <PatientNotFoundContent />;
-  }
-
-  return <PatientDetailContent patient={patient} />;
+  return <PatientDetailGate withLayout={false} />;
 }
 
 export default function DocPatientDetailPage() {
+  return <PatientDetailGate withLayout />;
+}
+
+function PatientDetailGate({ withLayout }: { withLayout: boolean }) {
   const { id } = useParams<{ id: string }>();
   const { patients } = useDocPatients();
   const patient = patients.find((p) => p.id === id);
+  const [serverPatient, setServerPatient] = useState<DocPatient | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  if (!patient) {
-    return (
-      <DocLayout title="Bemor topilmadi">
-        <PatientNotFoundContent />
-      </DocLayout>
-    );
-  }
+  useEffect(() => {
+    if (!id || patient) {
+      setServerPatient(null);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    setServerPatient(null);
+
+    void (async () => {
+      try {
+        const detail = await getDoctorPatientById(id);
+        if (!cancelled) setServerPatient(detail);
+      } catch (err) {
+        if (!cancelled) {
+          console.warn("[doctor-detail] direct load failed", err);
+          setServerPatient(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, patient]);
+
+  const resolvedPatient = patient ?? serverPatient;
+  const content = resolvedPatient ? (
+    <PatientDetailContent patient={resolvedPatient} />
+  ) : loading ? (
+    <PatientDetailLoadingContent />
+  ) : (
+    <PatientNotFoundContent />
+  );
+
+  if (!withLayout) return content;
 
   return (
-    <DocLayout title="Bemor Tafsiloti">
-      <PatientDetailContent patient={patient} />
+    <DocLayout title={resolvedPatient ? "Bemor Tafsiloti" : "Bemor topilmadi"}>
+      {content}
     </DocLayout>
+  );
+}
+
+function PatientDetailLoadingContent() {
+  const { darkMode } = useDoctorTheme();
+  return (
+    <div className="flex flex-col items-center justify-center py-20">
+      <div
+        className={`h-10 w-10 animate-spin rounded-full border-2 border-t-transparent ${
+          darkMode ? "border-violet-400" : "border-violet-600"
+        }`}
+      />
+      <p className={`mt-4 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+        Bemor ma'lumotlari yuklanmoqda...
+      </p>
+    </div>
   );
 }
 
@@ -154,6 +202,7 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
   const [actionDone, setActionDone] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState<string | null>(null);
   const [detailFromServer, setDetailFromServer] = useState<DocPatient | null>(null);
+  const [doctorDashboard, setDoctorDashboard] = useState<DoctorDashboardJson | null>(null);
   const rawListTab = searchParams.get("tab");
   const canonicalListTab = normalizeDoctorPatientsTab(rawListTab);
 
@@ -166,6 +215,7 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
 
   useEffect(() => {
     setDetailFromServer(null);
+    setDoctorDashboard(null);
   }, [patient.id]);
 
   useEffect(() => {
@@ -179,6 +229,21 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
         if (!cancelled) {
           console.warn("[doctor-detail] hydrate failed", err);
         }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [patient.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const dashboard = await getAiIntakeDashboard(patient.id);
+        if (!cancelled) setDoctorDashboard(dashboard);
+      } catch (err) {
+        if (!cancelled) console.warn("[doctor-detail] ai-intake dashboard failed", err);
       }
     })();
     return () => {
@@ -263,6 +328,7 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
       aiStatus: detailFromServer?.aiStatus ?? patient.aiStatus ?? null,
       aiRiskLevel: detailFromServer?.aiRiskLevel ?? patient.aiRiskLevel ?? null,
       aiMessages: detailFromServer?.aiMessages ?? patient.aiMessages ?? [],
+      doctorDashboard,
     },
   );
 

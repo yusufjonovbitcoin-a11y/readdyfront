@@ -230,11 +230,21 @@ export default function CheckInPage() {
           patientLanguage: checkinLang,
           doctorLanguage: checkinLang,
         });
-        if (session?.potientResponseId) {
-          setPotientResponseId(session.potientResponseId);
+        const sessionId =
+          session?.patientResponseId ?? session?.potientResponseId;
+        if (sessionId) {
+          setPotientResponseId(sessionId);
+        } else {
+          if (typeof globalThis !== "undefined" && globalThis.console) {
+            globalThis.console.warn(
+              "[checkin] /session/start returned no patientResponseId; AI step will time out without it.",
+            );
+          }
         }
-      } catch {
-        // Silent; the chat keeps working without transcript persistence.
+      } catch (err) {
+        if (typeof globalThis !== "undefined" && globalThis.console) {
+          globalThis.console.warn("[checkin] /session/start failed", err);
+        }
       } finally {
         sessionStartInFlightRef.current = null;
       }

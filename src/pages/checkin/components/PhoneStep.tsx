@@ -17,6 +17,8 @@ const MODAL_INERT_SELECTORS = ["header", "main", "aside"];
 
 export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecialty, doctorAvatar }: PhoneStepProps) {
   const { t, i18n } = useTranslation("checkin");
+  const normalizedDoctorAvatar = doctorAvatar?.trim();
+  const doctorInitial = doctorName.trim().charAt(0).toUpperCase() || "D";
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -91,7 +93,7 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-4" translate="no">
       {/* Draft Resume Modal */}
       {showDraftModal && draft && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
@@ -155,7 +157,13 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
         {/* Doctor card */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-6 flex items-center gap-4 shadow-sm">
           <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
-            <img src={doctorAvatar} alt={doctorName} className="w-full h-full object-cover object-top" />
+            {normalizedDoctorAvatar ? (
+              <img src={normalizedDoctorAvatar} alt={doctorName} className="w-full h-full object-cover object-top" />
+            ) : (
+              <div className="w-full h-full bg-teal-100 text-teal-700 flex items-center justify-center text-base font-bold">
+                {doctorInitial}
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-gray-900 truncate">{doctorName}</p>
@@ -203,17 +211,14 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
             className="w-full h-13 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-70 text-white text-sm font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-2 mt-5 shadow-md shadow-teal-200"
             style={{ height: '52px' }}
           >
-            {loading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full always-spin"></div>
-                {t("phoneStep.checking")}
-              </>
-            ) : (
-              <>
-                {t("phoneStep.continue")}
-                <i className="ri-arrow-right-line text-base"></i>
-              </>
-            )}
+            <span className={`flex items-center justify-center gap-2 ${loading ? "" : "hidden"}`} aria-hidden={!loading}>
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full always-spin"></span>
+              <span>{t("phoneStep.checking")}</span>
+            </span>
+            <span className={`flex items-center justify-center gap-2 ${loading ? "hidden" : ""}`} aria-hidden={loading}>
+              <span>{t("phoneStep.continue")}</span>
+              <i className="ri-arrow-right-line text-base" aria-hidden></i>
+            </span>
           </button>
         </div>
 

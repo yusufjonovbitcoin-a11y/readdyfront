@@ -15,6 +15,8 @@ import { useAppToast } from "@/hooks/useAppToast";
 import UsersToolbar from "./components/UsersToolbar";
 import UserFormPanel from "./components/UserFormPanel";
 import UsersDataSection from "./components/UsersDataSection";
+import { useViewMode } from "@/hooks/useViewMode";
+import ViewModeToggle from "@/components/ui/ViewModeToggle";
 
 type User = UserDto;
 type RoleFilter = "all" | "HOSPITAL_ADMIN" | "DOCTOR";
@@ -25,6 +27,7 @@ export function UsersPageContent() {
   const [users, setUsers] = useState<User[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [search, setSearch] = useState("");
+  const { mode: viewMode, setMode: setViewMode } = useViewMode("admin-users", "card");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [showAdd, setShowAdd] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -239,6 +242,15 @@ export function UsersPageContent() {
             setShowAdd(true);
           }}
         />
+        <div className="flex justify-end">
+          <ViewModeToggle
+            mode={viewMode}
+            darkMode={dm}
+            cardLabel="Card view"
+            tableLabel="Table view"
+            onChange={setViewMode}
+          />
+        </div>
 
         <UserFormPanel
           darkMode={dm}
@@ -257,6 +269,7 @@ export function UsersPageContent() {
 
         <UsersDataSection
           darkMode={dm}
+          viewMode={viewMode}
           users={users}
           filteredCount={filtered.length}
           pageRows={pageRows}

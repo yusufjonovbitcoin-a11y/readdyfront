@@ -4,7 +4,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { formatAppRoleLabel, getUserInitials } from "@/lib/userDisplay";
-import { getNotifications as fetchNotifications, type Notification as AppNotification } from "@/api/services/notifications.service";
+import {
+  getNotifications as fetchNotifications,
+  type Notification as AppNotification,
+  NOTIFICATIONS_UPDATED_EVENT,
+} from "@/api/services/notifications.service";
 import medcoreLogoImage from "@/assets/medcore-logo.png";
 import { prefetchCoreQueriesForPath, prefetchSidebarWarmup } from "@/lib/coreQueryCache";
 
@@ -49,7 +53,7 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
     { path: "/analytics", icon: "ri-bar-chart-2-line", label: t("admin:sidebar.analytics") },
     { path: "/users", icon: "ri-team-line", label: t("admin:sidebar.users") },
     { path: "/audit-logs", icon: "ri-shield-check-line", label: t("admin:sidebar.auditLogs") },
-    { path: "/questions", icon: "ri-questionnaire-line", label: t("admin:sidebar.questions") },
+    { path: "/questions", icon: "ri-building-2-line", label: t("admin:sidebar.questions") },
     { path: "/notifications", icon: "ri-notification-3-line", label: t("admin:sidebar.notifications") },
     { path: "/settings", icon: "ri-settings-3-line", label: t("admin:sidebar.settings") },
   ];
@@ -123,11 +127,17 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
 
     void syncUnreadNotificationState();
     window.addEventListener("storage", syncUnreadNotificationState);
+    window.addEventListener("focus", syncUnreadNotificationState);
+    document.addEventListener("visibilitychange", syncUnreadNotificationState);
+    window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, syncUnreadNotificationState);
     return () => {
       cancelled = true;
       window.removeEventListener("storage", syncUnreadNotificationState);
+      window.removeEventListener("focus", syncUnreadNotificationState);
+      document.removeEventListener("visibilitychange", syncUnreadNotificationState);
+      window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, syncUnreadNotificationState);
     };
-  }, []);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     onCloseMobile();

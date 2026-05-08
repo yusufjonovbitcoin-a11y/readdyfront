@@ -20,6 +20,7 @@ export interface UserDto {
 export interface CreateUserInput {
   name: string;
   phone: string;
+  email?: string;
   role: UserRole;
   hospitalId: string;
   password: string;

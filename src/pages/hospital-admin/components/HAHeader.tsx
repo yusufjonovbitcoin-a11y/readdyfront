@@ -3,6 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import { useNavigate } from "react-router-dom";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { getModShortcut } from "@/utils/modShortcut";
+import {
+  emitNotificationsUpdated,
+  getNotifications as fetchNotifications,
+  type Notification as AppNotification,
+  updateNotification,
+} from "@/api/services/notifications.service";
 
 interface HAHeaderProps {
   title: string;
@@ -34,6 +40,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const notifTriggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
@@ -49,12 +56,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
     lockScroll: false,
   });
 
-  const notifications = [
-    { id: 1, text: t("header.notifications.newPatient"), time: t("header.notifications.fiveMin"), type: "info", to: "/hospital-admin/patients" },
-    { id: 2, text: t("header.notifications.doctorDone"), time: t("header.notifications.thirtyMin"), type: "success", to: "/hospital-admin/doctors" },
-    { id: 3, text: t("header.notifications.queueError"), time: t("header.notifications.twoHours"), type: "warning", to: "/hospital-admin/patients?tab=queue" },
-  ];
-  const unreadCount = notificationCount ?? notifications.length;
+  const unreadCount = notificationCount ?? notifications.filter((n) => !n.read).length;
 
   const allHits = useMemo((): SearchHit[] => {
     return [
@@ -152,6 +154,18 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
       notifTriggerRef.current?.focus();
     }
     previousNotificationsOpenRef.current = showNotifications;
+  }, [showNotifications]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const remote = await fetchNotifications();
+      if (cancelled) return;
+      setNotifications(remote.slice(0, 10));
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [showNotifications]);
 
   const onSearchKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
@@ -260,7 +274,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
               <div className="flex h-5 w-5 items-center justify-center">
                 <i className="ri-notification-3-line text-base" aria-hidden="true" />
               </div>
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" />
+              {notifications.some((n) => !n.read) ? <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500" /> : null}
               <span className="sr-only">{unreadCount} new notifications</span>
             </button>
 
@@ -288,13 +302,20 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
                   </button>
                 </div>
                 <div className="py-2">
-                  {notifications.map((n) => (
+                  {notifications.length === 0 ? (
+                    <p className={`px-4 py-4 text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Hozircha bildirishnoma yo'q</p>
+                  ) : notifications.map((n) => (
                     <button
                       key={n.id}
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         setShowNotifications(false);
-                        navigate(n.to);
+                        if (!n.read) {
+                          await updateNotification(n.id, { read: true });
+                          setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+                          emitNotificationsUpdated();
+                        }
+                        navigate(n.actionPath || "/hospital-admin/notifications");
                       }}
                       className={`w-full cursor-pointer px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50 ${
                         darkMode ? "hover:bg-[#1A2235]" : "hover:bg-gray-50"
@@ -303,14 +324,11 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
                       <div className="flex items-start gap-3">
                         <div
                           className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${
-                            n.type === "warning" ? "bg-yellow-400" : n.type === "success" ? "bg-teal-400" : "bg-blue-400"
+                            n.priority === "critical" ? "bg-red-400" : n.priority === "high" ? "bg-orange-400" : n.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"
                           }`}
                         />
                         <div>
-                          <p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{n.text}</p>
-                          <span className="sr-only">
-                            {n.type === "warning" ? "Ogohlantirish" : n.type === "success" ? "Muvaffaqiyat" : "Ma'lumot"}
-                          </span>
+                          <p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{n.title}</p>
                           <p className={`mt-0.5 text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{n.time}</p>
                         </div>
                       </div>

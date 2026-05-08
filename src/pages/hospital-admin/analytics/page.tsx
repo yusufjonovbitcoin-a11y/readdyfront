@@ -20,7 +20,7 @@ function BarChart({ data, valueKey, labelKey, color, darkMode, height = 140 }: {
   const barMax = Math.max(height - topReserve - bottomReserve, 32);
 
   return (
-    <div className="flex items-end gap-1.5 sm:gap-2" style={{ height }}>
+    <div className={`flex items-end gap-1.5 sm:gap-2 rounded-xl p-2 ${darkMode ? "bg-[#101623]" : "bg-gray-50"}`} style={{ height }}>
       {data.map((d, i) => {
         const isSelected = selected === i;
         const isHover = hovered === i;
@@ -57,7 +57,7 @@ function BarChart({ data, valueKey, labelKey, color, darkMode, height = 140 }: {
               )}
             </div>
             <div
-              className={`w-full max-w-[48px] rounded-t-md transition-all ${color} ${showValue ? "ring-2 ring-teal-400/45" : ""}`}
+              className={`w-full max-w-[48px] rounded-t-md transition-all ${color} ${showValue ? "ring-2 ring-teal-400/45 shadow-[0_0_0_1px_rgba(45,212,191,0.2)]" : ""}`}
               style={{ height: `${barH}px`, minHeight: barH > 0 ? 3 : 0 }}
             />
             <span
@@ -105,18 +105,19 @@ function LineChart({ data, darkMode }: { data: { id?: string; month: string; pat
     <svg
       viewBox={`0 0 ${w} ${h}`}
       preserveAspectRatio="xMidYMid meet"
-      className="aspect-[1000/220] h-auto w-full max-w-full select-none touch-manipulation"
+      className="aspect-[1000/220] h-auto w-full max-w-full select-none touch-manipulation rounded-xl"
       role="img"
       aria-label="Yillik bemorlar dinamikasi — nuqtani bosing yoki ustiga keltiring"
     >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#14b8a6" stopOpacity="0" />
+          <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.36" />
+          <stop offset="55%" stopColor="#22d3ee" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.03" />
         </linearGradient>
       </defs>
       <path d={areaD} fill={`url(#${gradId})`} />
-      <path d={pathD} fill="none" stroke="#14b8a6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={pathD} fill="none" stroke="#2dd4bf" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
       {pts.map((p, i) => {
         const showValue = hovered !== null ? hovered === i : selected === i;
         return (

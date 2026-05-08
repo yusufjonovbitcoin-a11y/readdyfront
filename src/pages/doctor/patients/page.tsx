@@ -11,6 +11,8 @@ import { useDocPatients } from "@/context/DocPatientsContext";
 import { formatLocalYMD } from "@/utils/date";
 import { compareDoctorPatientsByQueueChronology } from "@/utils/queueSort";
 import { layoutSystem } from "@/styles/layoutSystem";
+import { useViewMode } from "@/hooks/useViewMode";
+import ViewModeToggle from "@/components/ui/ViewModeToggle";
 
 type TabType = "queue" | "in_progress" | "completed";
 const VALID_TABS: readonly TabType[] = ["queue", "in_progress", "completed"];
@@ -38,7 +40,7 @@ export function DocPatientsContent() {
   ];
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const { mode: viewMode, setMode: setViewMode } = useViewMode("doctor-patients", "card");
   const [search, setSearch] = useState("");
   /** Surilgan tartib (faqat navbat + bugun + qidiruv bo‘sh); server ro‘yxati o‘zgarsa qayta tiklanadi */
   const [queueOrderOverride, setQueueOrderOverride] = useState<string[] | null>(null);
@@ -135,9 +137,6 @@ export function DocPatientsContent() {
     ? "pl-9 pr-4 py-2 text-sm rounded-lg bg-[#0D1117] border border-[#30363D] text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 w-52"
     : "pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-emerald-400 w-52";
   const searchIconCls = darkMode ? "text-gray-500" : "text-gray-400";
-  const segmentWrap = darkMode ? "bg-[#21262D]" : "bg-gray-100";
-  const segmentBtnActive = darkMode ? "bg-[#30363D] shadow-sm text-emerald-400" : "bg-white shadow-sm text-emerald-600";
-  const segmentBtnIdle = darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-400 hover:text-gray-600";
   const tabsWrap = darkMode ? "bg-[#21262D]" : "bg-gray-100";
   const tabActive = darkMode ? "bg-[#30363D] text-emerald-300 shadow-sm" : "bg-white text-emerald-700 shadow-sm";
   const tabIdle = darkMode ? "text-gray-400 hover:text-gray-200" : "text-gray-500 hover:text-gray-700";
@@ -163,30 +162,13 @@ export function DocPatientsContent() {
                 className={`${inputCls} w-full sm:w-52`}
               />
             </div>
-            <div className={`flex shrink-0 items-center rounded-lg p-1 ${segmentWrap}`}>
-              <button
-                type="button"
-                onClick={() => setViewMode("card")}
-                className={`w-11 h-11 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
-                  viewMode === "card" ? segmentBtnActive : segmentBtnIdle
-                }`}
-                aria-label="Kartochka ko'rinishiga o'tish"
-                aria-pressed={viewMode === "card"}
-              >
-                <i className="ri-layout-grid-line text-sm" aria-hidden="true"></i>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("table")}
-                className={`w-11 h-11 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
-                  viewMode === "table" ? segmentBtnActive : segmentBtnIdle
-                }`}
-                aria-label="Jadval ko'rinishiga o'tish"
-                aria-pressed={viewMode === "table"}
-              >
-                <i className="ri-list-check text-sm" aria-hidden="true"></i>
-              </button>
-            </div>
+            <ViewModeToggle
+              mode={viewMode}
+              darkMode={darkMode}
+              cardLabel="Kartochka ko'rinishiga o'tish"
+              tableLabel="Jadval ko'rinishiga o'tish"
+              onChange={setViewMode}
+            />
           </div>
         </div>
 

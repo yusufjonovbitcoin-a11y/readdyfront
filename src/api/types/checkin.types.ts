@@ -54,7 +54,10 @@ export interface CheckinSessionStartInput {
 }
 
 export interface CheckinSessionStartResult {
-  potientResponseId: string;
+  /** NestJS returns camelCase from Prisma/service shape */
+  patientResponseId?: string;
+  /** Legacy / typo alias — prefer patientResponseId */
+  potientResponseId?: string;
   ai_status: "in_progress";
 }
 

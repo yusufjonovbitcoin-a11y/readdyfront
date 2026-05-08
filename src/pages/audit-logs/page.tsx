@@ -14,15 +14,15 @@ import {
   resolveDateFilterRange,
 } from "./utils/date";
 import { usePageState } from "@/hooks/usePageState";
+import { useViewMode } from "@/hooks/useViewMode";
+import ViewModeToggle from "@/components/ui/ViewModeToggle";
 
 const PAGE_SIZE = 12;
-
-type ViewMode = "table" | "card";
 
 export function AuditLogsPageContent() {
   const { t } = useTranslation("admin");
   const darkMode = useMainLayoutDarkMode();
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const { mode: viewMode, setMode: setViewMode } = useViewMode("admin-audit-logs", "card");
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -220,34 +220,16 @@ export function AuditLogsPageContent() {
           </div>
           <div className="flex items-center gap-2">
             {/* View toggle */}
-            <div className={`flex items-center rounded-xl p-1 ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
-              <button
-                onClick={() => { setViewMode("table"); setPage(1); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                  viewMode === "table"
-                    ? "bg-emerald-500 text-white"
-                    : darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                <div className="w-4 h-4 flex items-center justify-center">
-                  <i className="ri-table-line text-sm"></i>
-                </div>
-                <span>{t("audit.tableView")}</span>
-              </button>
-              <button
-                onClick={() => { setViewMode("card"); setPage(1); }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
-                  viewMode === "card"
-                    ? "bg-emerald-500 text-white"
-                    : darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                <div className="w-4 h-4 flex items-center justify-center">
-                  <i className="ri-layout-grid-line text-sm"></i>
-                </div>
-                <span>{t("audit.cardsView")}</span>
-              </button>
-            </div>
+            <ViewModeToggle
+              mode={viewMode}
+              darkMode={darkMode}
+              cardLabel={t("audit.cardsView")}
+              tableLabel={t("audit.tableView")}
+              onChange={(next) => {
+                setViewMode(next);
+                setPage(1);
+              }}
+            />
 
             <button
               onClick={handleExport}

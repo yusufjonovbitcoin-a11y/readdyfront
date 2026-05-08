@@ -9,6 +9,7 @@ type PageItem = number | string;
 
 interface HospitalsDataSectionProps {
   darkMode: boolean;
+  viewMode: "card" | "table";
   hospitals: Hospital[];
   filtered: Hospital[];
   pageRows: Hospital[];
@@ -26,6 +27,7 @@ interface HospitalsDataSectionProps {
 
 export default function HospitalsDataSection({
   darkMode,
+  viewMode,
   hospitals,
   filtered,
   pageRows,
@@ -58,7 +60,8 @@ export default function HospitalsDataSection({
         ))}
       </div>
 
-      <div className="space-y-3 md:hidden">
+      {viewMode === "card" ? (
+      <div className="space-y-3">
         {pageRows.length === 0 ? (
           <div className={`${cardClass} text-center text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("hospitals.empty")}</div>
         ) : (
@@ -84,17 +87,19 @@ export default function HospitalsDataSection({
                 <p className={`col-span-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{t("hospitals.table.address")}: <span className={darkMode ? "text-gray-200" : "text-gray-700"}>{h.address}</span></p>
               </div>
               <div className="mt-3 flex items-center justify-end gap-1">
-                <button onClick={() => onNavigateDetail(h.id)} aria-label={`View hospital ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`} title={t("common:actions.view")}><i aria-hidden="true" className="ri-eye-line text-sm" /></button>
-                <button onClick={() => onToggleStatus(h.id)} disabled={togglingHospitalIds.has(h.id)} aria-label={`Toggle hospital status for ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${togglingHospitalIds.has(h.id) ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-yellow-400" : "hover:bg-gray-100 text-gray-400 hover:text-yellow-600"}`} title={t("common:actions.toggleStatus")}><i aria-hidden="true" className="ri-toggle-line text-sm" /></button>
-                <button onClick={(e) => onDeleteRequest(h.id, e.currentTarget)} disabled={Boolean(deletingHospitalId)} aria-label={`Delete hospital ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${deletingHospitalId ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-red-500/20 text-gray-400 hover:text-red-400" : "hover:bg-red-50 text-gray-400 hover:text-red-500"}`} title={t("common:buttons.delete")}><i aria-hidden="true" className="ri-delete-bin-line text-sm" /></button>
+                <button onClick={(e) => { e.stopPropagation(); onNavigateDetail(h.id); }} aria-label={`View hospital ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`} title={t("common:actions.view")}><i aria-hidden="true" className="ri-eye-line text-sm" /></button>
+                <button onClick={(e) => { e.stopPropagation(); onToggleStatus(h.id); }} disabled={togglingHospitalIds.has(h.id)} aria-label={`Toggle hospital status for ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${togglingHospitalIds.has(h.id) ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-yellow-400" : "hover:bg-gray-100 text-gray-400 hover:text-yellow-600"}`} title={t("common:actions.toggleStatus")}><i aria-hidden="true" className="ri-toggle-line text-sm" /></button>
+                <button onClick={(e) => { e.stopPropagation(); onDeleteRequest(h.id, e.currentTarget); }} disabled={Boolean(deletingHospitalId)} aria-label={`Delete hospital ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${deletingHospitalId ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-red-500/20 text-gray-400 hover:text-red-400" : "hover:bg-red-50 text-gray-400 hover:text-red-500"}`} title={t("common:buttons.delete")}><i aria-hidden="true" className="ri-delete-bin-line text-sm" /></button>
               </div>
             </article>
           ))
         )}
       </div>
+      ) : null}
 
+      {viewMode === "table" ? (
       <div className={`rounded-xl overflow-hidden ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
-        <div className="hidden overflow-x-auto md:block">
+        <div className="overflow-x-auto">
           <ResponsiveTable minWidthClassName="min-w-[860px]" caption={t("titles.hospitals")}>
             <thead><tr className={`${darkMode ? "bg-[#0F1117]" : "bg-gray-50"}`}>
               <th scope="col" className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("hospitals.table.hospital")}</th>
@@ -110,7 +115,20 @@ export default function HospitalsDataSection({
                 <tr><td colSpan={7} className={`px-4 py-12 text-center text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("hospitals.empty")}</td></tr>
               ) : (
                 pageRows.map((h, i) => (
-                  <tr key={h.id} className={`border-t cursor-pointer transition-colors ${darkMode ? `border-[#1E2130] ${i % 2 === 0 ? "bg-[#1A2235]" : "bg-[#161D2E]"} hover:bg-[#1E2A3A]` : `border-gray-50 hover:bg-gray-50`}`}>
+                  <tr
+                    key={h.id}
+                    className={`border-t cursor-pointer transition-colors ${darkMode ? `border-[#1E2130] ${i % 2 === 0 ? "bg-[#1A2235]" : "bg-[#161D2E]"} hover:bg-[#1E2A3A]` : `border-gray-50 hover:bg-gray-50`}`}
+                    onClick={() => onNavigateDetail(h.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onNavigateDetail(h.id);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open hospital ${h.name}`}
+                  >
                     <td className="px-4 py-3.5"><Link to={`/hospitals/${h.id}`} className="no-underline flex items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"><div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center flex-shrink-0"><i className="ri-hospital-line text-emerald-400 text-sm" /></div><div><p className={`text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{h.name}</p><p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{t("hospitals.table.adminPrefix")} {h.adminName}</p></div></Link></td>
                     <td className="hidden md:table-cell px-4 py-3.5"><p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{h.address}</p></td>
                     <td className="hidden lg:table-cell px-4 py-3.5"><p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{h.phone}</p></td>
@@ -118,9 +136,9 @@ export default function HospitalsDataSection({
                     <td className="hidden sm:table-cell px-4 py-3.5"><div className="flex items-center gap-1.5"><div className="w-4 h-4 flex items-center justify-center"><i className="ri-user-heart-line text-blue-400 text-sm" /></div><span className={`text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{h.dailyPatients}</span></div></td>
                     <td className="px-4 py-3.5"><StatusChip label={h.status === "active" ? t("common:status.active") : t("common:status.inactive")} tone={h.status === "active" ? "success" : "danger"} darkMode={darkMode} /></td>
                     <td className="px-4 py-3.5"><div className="flex items-center gap-1">
-                      <button onClick={() => onNavigateDetail(h.id)} aria-label={`View hospital ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`} title={t("common:actions.view")}><i aria-hidden="true" className="ri-eye-line text-sm" /></button>
-                      <button onClick={() => onToggleStatus(h.id)} disabled={togglingHospitalIds.has(h.id)} aria-label={`Toggle hospital status for ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${togglingHospitalIds.has(h.id) ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-yellow-400" : "hover:bg-gray-100 text-gray-400 hover:text-yellow-600"}`} title={t("common:actions.toggleStatus")}><i aria-hidden="true" className="ri-toggle-line text-sm" /></button>
-                      <button onClick={(e) => onDeleteRequest(h.id, e.currentTarget)} disabled={Boolean(deletingHospitalId)} aria-label={`Delete hospital ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${deletingHospitalId ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-red-500/20 text-gray-400 hover:text-red-400" : "hover:bg-red-50 text-gray-400 hover:text-red-500"}`} title={t("common:buttons.delete")}><i aria-hidden="true" className="ri-delete-bin-line text-sm" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); onNavigateDetail(h.id); }} aria-label={`View hospital ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-white" : "hover:bg-gray-100 text-gray-400 hover:text-gray-700"}`} title={t("common:actions.view")}><i aria-hidden="true" className="ri-eye-line text-sm" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); onToggleStatus(h.id); }} disabled={togglingHospitalIds.has(h.id)} aria-label={`Toggle hospital status for ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${togglingHospitalIds.has(h.id) ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-[#0F1117] text-gray-400 hover:text-yellow-400" : "hover:bg-gray-100 text-gray-400 hover:text-yellow-600"}`} title={t("common:actions.toggleStatus")}><i aria-hidden="true" className="ri-toggle-line text-sm" /></button>
+                      <button onClick={(e) => { e.stopPropagation(); onDeleteRequest(h.id, e.currentTarget); }} disabled={Boolean(deletingHospitalId)} aria-label={`Delete hospital ${h.name}`} className={`w-11 h-11 flex items-center justify-center rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${deletingHospitalId ? "" : "cursor-pointer"} ${darkMode ? "hover:bg-red-500/20 text-gray-400 hover:text-red-400" : "hover:bg-red-50 text-gray-400 hover:text-red-500"}`} title={t("common:buttons.delete")}><i aria-hidden="true" className="ri-delete-bin-line text-sm" /></button>
                     </div></td>
                   </tr>
                 ))
@@ -148,6 +166,7 @@ export default function HospitalsDataSection({
           )}
         </div>
       </div>
+      ) : null}
     </>
   );
 }

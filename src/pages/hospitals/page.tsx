@@ -15,6 +15,8 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import AppToast from "@/components/ui/AppToast";
 import { useAppToast } from "@/hooks/useAppToast";
 import { useHospitals } from "@/hooks/useHospitals";
+import { useViewMode } from "@/hooks/useViewMode";
+import ViewModeToggle from "@/components/ui/ViewModeToggle";
 
 export function HospitalsPageContent() {
   const { t } = useTranslation("admin");
@@ -23,6 +25,7 @@ export function HospitalsPageContent() {
   const dm = useMainLayoutDarkMode();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const { mode: viewMode, setMode: setViewMode } = useViewMode("admin-hospitals", "card");
   const [showAdd, setShowAdd] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isAddingHospital, setIsAddingHospital] = useState(false);
@@ -262,9 +265,19 @@ export function HospitalsPageContent() {
             onAddClick={() => setShowAdd(true)}
             addButtonRef={addHospitalTriggerRef}
           />
+          <div className="flex justify-end">
+            <ViewModeToggle
+              mode={viewMode}
+              darkMode={dm}
+              cardLabel="Card view"
+              tableLabel="Table view"
+              onChange={setViewMode}
+            />
+          </div>
 
           <HospitalsDataSection
             darkMode={dm}
+            viewMode={viewMode}
             hospitals={hospitals}
             filtered={filtered}
             pageRows={pageRows}

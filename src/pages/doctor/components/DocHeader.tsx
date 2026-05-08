@@ -6,6 +6,12 @@ import { getCurrentDoctorSession } from "@/api/services/doctorSession.service";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useAuth } from "@/hooks/useAuth";
 import { getModShortcut } from "@/utils/modShortcut";
+import {
+  emitNotificationsUpdated,
+  getNotifications as fetchNotifications,
+  type Notification as AppNotification,
+  updateNotification,
+} from "@/api/services/notifications.service";
 
 interface DocHeaderProps {
   title: string;
@@ -35,6 +41,7 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const notifTriggerRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTriggerRef = useRef<HTMLButtonElement>(null);
@@ -63,12 +70,7 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
     .slice(0, 2)
     .toUpperCase();
 
-  const notifications = [
-    { id: 1, text: t("header.notifications.newPatient"), time: t("header.notifications.twoMin"), type: "info", to: "/doctor/patients?tab=in_progress" },
-    { id: 2, text: t("header.notifications.critical"), time: t("header.notifications.fifteenMin"), type: "critical", to: "/doctor/patients?tab=in_progress" },
-    { id: 3, text: t("header.notifications.todayQueue"), time: t("header.notifications.oneHour"), type: "info", to: "/doctor/patients?tab=completed" },
-  ];
-  const unreadCount = notificationCount ?? notifications.length;
+  const unreadCount = notificationCount ?? notifications.filter((n) => !n.read).length;
 
   const allHits = useMemo((): SearchHit[] => {
     return [
@@ -167,6 +169,18 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
       notifTriggerRef.current?.focus();
     }
     previousNotificationsOpenRef.current = showNotif;
+  }, [showNotif]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const remote = await fetchNotifications();
+      if (cancelled) return;
+      setNotifications(remote.slice(0, 10));
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [showNotif]);
 
   const onSearchKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
@@ -276,7 +290,7 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
               }`}
             >
               <i className="ri-notification-3-line text-base" aria-hidden="true"></i>
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500"></span>
+              {notifications.some((n) => !n.read) ? <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500"></span> : null}
               <span className="sr-only">{unreadCount} new notifications</span>
             </button>
 
@@ -298,13 +312,20 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
                   <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">{unreadCount}</span>
                 </div>
                 <div className="max-h-64 overflow-y-auto py-2">
-                  {notifications.map((n) => (
+                  {notifications.length === 0 ? (
+                    <p className={`px-4 py-4 text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Hozircha bildirishnoma yo'q</p>
+                  ) : notifications.map((n) => (
                     <button
                       key={n.id}
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         setShowNotif(false);
-                        navigate(n.to);
+                        if (!n.read) {
+                          await updateNotification(n.id, { read: true });
+                          setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+                          emitNotificationsUpdated();
+                        }
+                        navigate(n.actionPath || "/doctor/notifications");
                       }}
                       className={`flex w-full cursor-pointer gap-3 px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 ${
                         darkMode ? "hover:bg-[#1C2333]" : "hover:bg-gray-50"
@@ -312,17 +333,17 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
                     >
                       <div
                         className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                          n.type === "critical" ? "bg-red-100" : "bg-violet-100"
+                          n.priority === "critical" ? "bg-red-100" : "bg-violet-100"
                         }`}
                       >
                         <i
-                          className={`text-sm ${n.type === "critical" ? "ri-alarm-warning-line text-red-500" : "ri-information-line text-violet-500"}`}
+                          className={`text-sm ${n.priority === "critical" ? "ri-alarm-warning-line text-red-500" : "ri-information-line text-violet-500"}`}
                           aria-hidden="true"
                         ></i>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-xs leading-relaxed ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{n.text}</p>
-                        <span className="sr-only">{n.type === "critical" ? "Kritik ogohlantirish" : "Ma'lumot"}</span>
+                        <p className={`text-xs leading-relaxed ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{n.title}</p>
+                        <span className="sr-only">{n.priority === "critical" ? "Kritik ogohlantirish" : "Ma'lumot"}</span>
                         <p className={`mt-1 text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{n.time}</p>
                       </div>
                     </button>

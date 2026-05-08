@@ -330,16 +330,16 @@ export function DocAnalyticsContent() {
             </div>
           </div>
           {hasChartData ? (
-            <div className="flex h-48 items-end gap-2">
+            <div className={`flex h-48 items-end gap-2 rounded-xl p-3 ${darkMode ? "bg-[#101623]" : "bg-gray-50"}`}>
               {chartData.map((d, i) => (
                 <div key={i} className="flex flex-1 flex-col items-center gap-1">
                   <div className="flex h-40 w-full items-end gap-0.5">
                     <div
-                      className="flex-1 rounded-t-md bg-violet-500 transition-all"
+                      className="flex-1 rounded-t-md bg-gradient-to-t from-violet-700 via-violet-500 to-violet-300 transition-all"
                       style={{ height: `${Math.max(6, (d.patients / maxVal) * 100)}%` }}
                     ></div>
                     <div
-                      className="flex-1 rounded-t-md bg-green-400 transition-all"
+                      className="flex-1 rounded-t-md bg-gradient-to-t from-emerald-700 via-emerald-500 to-teal-300 transition-all"
                       style={{ height: `${Math.max(6, (d.diagnoses / maxVal) * 100)}%` }}
                     ></div>
                   </div>
@@ -389,19 +389,19 @@ export function DocAnalyticsContent() {
         <h3 className={`mb-4 text-base font-semibold ${titleText}`}>{t("analytics.peakHours")}</h3>
         {hasPeakData ? (
           <>
-            <div className="flex h-32 items-end gap-2">
+            <div className={`flex h-36 items-end gap-2 rounded-xl p-2 ${darkMode ? "bg-[#101623]" : "bg-gray-50"}`}>
               {peakHours.map((h, i) => (
                 <div key={i} className="flex flex-1 flex-col items-center gap-1">
                   <span className={`text-xs font-medium ${mutedText}`}>{h.count}</span>
                   <div
                     className={`w-full rounded-t-md transition-all ${
                       h.count === maxPeak
-                        ? "bg-violet-500"
+                        ? "bg-gradient-to-t from-violet-700 via-violet-500 to-fuchsia-300"
                         : h.count >= maxPeak * 0.7
-                          ? "bg-violet-300"
-                          : "bg-violet-100"
+                          ? "bg-gradient-to-t from-violet-600 to-violet-300"
+                          : "bg-gradient-to-t from-violet-500/60 to-violet-300/50"
                     }`}
-                    style={{ height: `${Math.max(6, (h.count / maxPeak) * 80)}px` }}
+                    style={{ height: `${Math.max(8, (h.count / maxPeak) * 92)}px` }}
                   ></div>
                   <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{h.hour}</span>
                 </div>

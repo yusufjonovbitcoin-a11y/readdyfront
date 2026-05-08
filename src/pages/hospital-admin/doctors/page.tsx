@@ -16,6 +16,8 @@ import AppToast from "@/components/ui/AppToast";
 import { useAppToast } from "@/hooks/useAppToast";
 import { doctorsQueryOptions } from "@/lib/coreQueryCache";
 import type { ApiError } from "@/api/client";
+import { useViewMode } from "@/hooks/useViewMode";
+import ViewModeToggle from "@/components/ui/ViewModeToggle";
 
 export default function HADoctorsPage() {
   const { t } = useTranslation("hospital");
@@ -36,7 +38,7 @@ export function HADoctorsPageContent() {
     ...doctorsQueryOptions(),
     queryFn: getDoctors,
   });
-  const [view, setView] = useState<'card' | 'table'>('card');
+  const { mode: view, setMode: setView } = useViewMode("hospital-admin-doctors", "card");
   const [search, setSearch] = useState(qParam);
   useEffect(() => {
     setSearch(qParam);
@@ -242,22 +244,13 @@ export function HADoctorsPageContent() {
 
           <div className="flex items-center gap-2">
             {/* View toggle */}
-            <div className={`flex items-center rounded-lg p-1 ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
-              <button
-                onClick={() => setView('card')}
-                aria-label="Card view"
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md transition-colors cursor-pointer ${view === 'card' ? 'bg-white text-teal-600' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-              >
-                <i className="ri-layout-grid-line text-sm"></i>
-              </button>
-              <button
-                onClick={() => setView('table')}
-                aria-label="Table view"
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md transition-colors cursor-pointer ${view === 'table' ? 'bg-white text-teal-600' : darkMode ? 'text-gray-400' : 'text-gray-500'}`}
-              >
-                <i className="ri-list-check text-sm"></i>
-              </button>
-            </div>
+            <ViewModeToggle
+              mode={view}
+              darkMode={darkMode}
+              cardLabel="Card view"
+              tableLabel="Table view"
+              onChange={setView}
+            />
 
             <button
               onClick={() => { setEditingDoctor(null); setShowModal(true); }}

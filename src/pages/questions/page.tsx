@@ -18,7 +18,7 @@ export default function SuperAdminQuestionsPage() {
   const { t } = useTranslation("admin");
 
   return (
-    <MainLayout title={t("titles.questions", { defaultValue: "Savollar" })}>
+    <MainLayout title={t("titles.questions", { defaultValue: "Bo'limlar" })}>
       <SuperAdminQuestionsPageContent />
     </MainLayout>
   );

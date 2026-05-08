@@ -5,6 +5,7 @@ import { useModalA11y } from "@/hooks/useModalA11y";
 import { useHospitals } from "@/hooks/useHospitals";
 import { getModShortcut } from "@/utils/modShortcut";
 import {
+  emitNotificationsUpdated,
   getNotifications as fetchNotifications,
   type Notification as AppNotification,
   updateNotification,
@@ -40,12 +41,8 @@ function getNotificationRoute(item: AppNotification): string {
   return "/notifications";
 }
 
-function isSuperAdminSender(item: AppNotification): boolean {
-  return item.senderRole?.toLowerCase() === "super_admin";
-}
-
 function getHeaderNotifications(items: AppNotification[]): AppNotification[] {
-  return items.filter(isSuperAdminSender).slice(0, 10);
+  return items.slice(0, 10);
 }
 
 export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed, onToggleMobile }: HeaderProps) {
@@ -364,6 +361,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
                         setNotifications((prev) =>
                           prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)),
                         );
+                        emitNotificationsUpdated();
                       }
                       navigate(getNotificationRoute(n));
                     }}

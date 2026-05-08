@@ -86,11 +86,52 @@ export async function getCheckinDoctorProfile(doctorId: string): Promise<Checkin
 export async function generateCheckinAiPreview(
   input: CheckinAiPreviewInput,
 ): Promise<CheckinAiPreviewResult> {
-  return apiRequest<CheckinAiPreviewResult>("/api/checkin/ai-preview", {
+  if (!input.potientResponseId?.trim()) {
+    throw {
+      status: 400,
+      message: "AI sessiya hali tayyor emas (session/start).",
+      data: null,
+    };
+  }
+
+  if (input.message?.trim()) {
+    const res = await apiRequest<{
+      assistant_reply: string;
+      next_question?: unknown;
+    }>("/api/ai-intake/message", {
+      method: "POST",
+      body: JSON.stringify({
+        session_id: input.potientResponseId,
+        message: input.message,
+        language: input.patientLanguage,
+        doctor_id: input.doctorId,
+        checkin_token: input.checkinToken,
+      }),
+      timeoutMs: 60000,
+    });
+    return {
+      ai_analysis: res.assistant_reply ?? "",
+      question_ui: null,
+      follow_up_poll: null,
+    };
+  }
+
+  const startRes = await apiRequest<{
+    assistant_reply: string;
+  }>("/api/ai-intake/start", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      session_id: input.potientResponseId,
+      doctor_id: input.doctorId,
+      checkin_token: input.checkinToken,
+    }),
     timeoutMs: 20000,
   });
+  return {
+    ai_analysis: startRes.assistant_reply ?? "",
+    question_ui: null,
+    follow_up_poll: null,
+  };
 }
 
 export async function createCheckinSession(
@@ -105,7 +146,16 @@ export async function createCheckinSession(
         timeoutMs: 12000,
       },
     );
-  } catch {
+  } catch (err) {
+    /**
+     * Returning null keeps the chat usable in legacy mode, but the caller
+     * still needs the failure visible in dev tools — otherwise an HTTP error
+     * here looks identical to a slow network and "Sessiya hali tayyor emas"
+     * is the only signal the patient sees.
+     */
+    if (typeof globalThis !== "undefined" && globalThis.console) {
+      globalThis.console.warn("[checkin] createCheckinSession failed", err);
+    }
     return null;
   }
 }

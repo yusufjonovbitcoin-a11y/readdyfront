@@ -9,6 +9,12 @@ import type {
 export type Notification = NotificationDto;
 export type NotificationCategory = NotificationCategoryDto;
 export type NotificationPriority = NotificationPriorityDto;
+export const NOTIFICATIONS_UPDATED_EVENT = "medcore:notifications-updated";
+
+export function emitNotificationsUpdated() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(NOTIFICATIONS_UPDATED_EVENT));
+}
 
 export function getNotifications(): Promise<Notification[]> {
   return notificationsHttp.getNotifications();

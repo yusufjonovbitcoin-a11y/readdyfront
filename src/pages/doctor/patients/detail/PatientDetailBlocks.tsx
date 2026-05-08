@@ -5,6 +5,7 @@ import type {
   AiSummaryStatus,
   FinalAiSummary,
 } from "@/api/types/final-summary.types";
+import type { DoctorDashboardJson } from "@/api/services/medicalIntake.service";
 
 export type BlockStyles = {
   cardBase: string;
@@ -47,6 +48,7 @@ interface PatientDetailBlocksProps extends BlockStyles {
   aiRiskLevel?: "low" | "medium" | "high" | null;
   /** AI suhbat tarixi (faqat detail endpoint qaytaradi). */
   aiMessages?: AiCheckinMessageDto[];
+  doctorDashboard?: DoctorDashboardJson | null;
 }
 
 function buildAiTahlilYozuvi(patient: DocPatient): string {
@@ -423,6 +425,7 @@ export function patientDetailBlockProps(
     aiStatus?: AiSummaryStatus | string | null;
     aiRiskLevel?: "low" | "medium" | "high" | null;
     aiMessages?: AiCheckinMessageDto[];
+    doctorDashboard?: DoctorDashboardJson | null;
   },
 ): PatientDetailBlocksProps {
   return {
@@ -442,6 +445,7 @@ export function patientDetailBlockProps(
     aiStatus: extras?.aiStatus ?? patient.aiStatus ?? null,
     aiRiskLevel: extras?.aiRiskLevel ?? patient.aiRiskLevel ?? null,
     aiMessages: extras?.aiMessages ?? patient.aiMessages ?? [],
+    doctorDashboard: extras?.doctorDashboard ?? null,
   };
 }
 
@@ -543,9 +547,100 @@ export function AiXulosaCard(p: PatientDetailBlocksProps) {
     aiAnalysisStructured,
     aiStatus,
     aiRiskLevel,
+    doctorDashboard,
   } = p;
 
   const subBox = darkMode ? "bg-[#0D1117]/80 border border-[#30363D]" : "bg-slate-50 border border-slate-100";
+  if (doctorDashboard) {
+    const risk = doctorDashboard.xavf?.level ?? "low";
+    const riskCls =
+      risk === "urgent"
+        ? "bg-red-50 text-red-700 border-red-200"
+        : risk === "high"
+          ? "bg-orange-50 text-orange-700 border-orange-200"
+          : risk === "medium"
+            ? "bg-amber-50 text-amber-700 border-amber-200"
+            : "bg-emerald-50 text-emerald-700 border-emerald-200";
+    return (
+      <div className={`rounded-xl p-5 ${cardBase}`}>
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 flex items-center justify-center rounded-lg ${darkMode ? "bg-[#21262D]" : "bg-emerald-50"}`}>
+              <i className="ri-robot-line text-emerald-600 text-base"></i>
+            </div>
+            <div>
+              <h3 className={`text-lg font-semibold ${pageTitle}`}>AI Intake Dashboard</h3>
+              <p className={`text-sm ${pageMuted}`}>Yangi klinik JSON format</p>
+            </div>
+          </div>
+          <span className={`text-sm px-2.5 py-1 rounded-full font-semibold border ${riskCls}`}>
+            {risk}
+          </span>
+        </div>
+
+        <div className={`rounded-lg px-3 py-3 mb-4 ${subBox}`}>
+          <p className={`text-sm font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Bir qatorlik xulosa</p>
+          <p className={`text-base font-medium ${darkMode ? "text-gray-100" : "text-gray-900"}`}>
+            {doctorDashboard.bir_qatorlik_xulosa || "AI xulosa hali tayyor emas"}
+          </p>
+          {doctorDashboard.eslatma ? <p className={`text-sm mt-2 ${textBody}`}>{doctorDashboard.eslatma}</p> : null}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div className={`rounded-lg px-3 py-3 ${subBox}`}>
+            <p className={`text-base font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Asosiy shikoyat</p>
+            <SectionRow label="Matn" value={doctorDashboard.asosiy_shikoyat?.matn} muted={pageMuted} dark={darkMode} />
+            <SectionRow label="Soha" value={doctorDashboard.asosiy_shikoyat?.soha} muted={pageMuted} dark={darkMode} />
+            <SectionRow label="Questionnaire" value={doctorDashboard.asosiy_shikoyat?.questionnaire} muted={pageMuted} dark={darkMode} />
+          </div>
+          <div className={`rounded-lg px-3 py-3 ${subBox}`}>
+            <p className={`text-base font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Vaqt va og'irlik</p>
+            <SectionRow label="Davomiyligi" value={String(doctorDashboard.vaqt_jadvali?.davomiyligi ?? "")} muted={pageMuted} dark={darkMode} />
+            <SectionRow label="Og'irlik" value={String(doctorDashboard.ogirlik_lokalizatsiya?.ogirlik_bali ?? "")} muted={pageMuted} dark={darkMode} />
+            <SectionRow label="Lokalizatsiya" value={String(doctorDashboard.ogirlik_lokalizatsiya?.tafsilot ?? "")} muted={pageMuted} dark={darkMode} />
+          </div>
+        </div>
+
+        {doctorDashboard.xavfli_belgilar?.length ? (
+          <div className="rounded-lg px-3 py-3 mb-4 border border-red-200 bg-red-50/60">
+            <p className="text-base font-semibold mb-1.5 uppercase tracking-wide text-red-700">Xavfli belgilar</p>
+            <ChipList items={doctorDashboard.xavfli_belgilar} accent="bad" />
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div className={`rounded-lg px-3 py-3 ${subBox}`}>
+            <p className={`text-base font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Bor simptomlar</p>
+            <ChipList items={doctorDashboard.bor_simptomlar ?? []} accent="good" />
+          </div>
+          <div className={`rounded-lg px-3 py-3 ${subBox}`}>
+            <p className={`text-base font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Yetishmayotgan ma'lumotlar</p>
+            <ChipList items={doctorDashboard.yetishmayotgan_malumotlar ?? []} accent="warn" />
+          </div>
+        </div>
+
+        {doctorDashboard.tavsiya_etiladigan_savollar?.length ? (
+          <div className={`rounded-lg px-3 py-3 mb-4 ${subBox}`}>
+            <p className={`text-base font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Tavsiya etiladigan savollar</p>
+            <ul className="space-y-2 list-decimal pl-5">
+              {doctorDashboard.tavsiya_etiladigan_savollar.map((q, i) => (
+                <li key={i} className={`text-base ${textBody}`}>{q}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <div className={`rounded-lg px-3 py-3 ${subBox}`}>
+          <p className={`text-base font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Shifokor uchun AI xulosa</p>
+          <p className={`text-base leading-relaxed ${textBody}`}>{doctorDashboard.shifokor_uchun_ai_xulosa || "—"}</p>
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+            <SectionRow label="Ma'lumot sifati" value={`${doctorDashboard.malumot_sifati?.score ?? 0} / ${doctorDashboard.malumot_sifati?.level ?? "low"}`} muted={pageMuted} dark={darkMode} />
+            <SectionRow label="Xavf sababi" value={doctorDashboard.xavf?.sababi || "—"} muted={pageMuted} dark={darkMode} />
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (!aiAnalysisStructured) {
     const legacyText = (p.patient.aiSummary?.trim() || p.patient.aiSummaryText?.trim() || aiTahlilYozuvi || "").trim();
     return (
@@ -570,6 +665,50 @@ export function AiXulosaCard(p: PatientDetailBlocksProps) {
   }
 
   const s = aiAnalysisStructured;
+  const structuredRecord = s as unknown as Record<string, unknown>;
+  const hasFinalSummaryShape =
+    typeof structuredRecord.doctor_brief === "object" &&
+    structuredRecord.doctor_brief !== null &&
+    typeof structuredRecord.chief_complaint === "object" &&
+    structuredRecord.chief_complaint !== null;
+  if (!hasFinalSummaryShape) {
+    const dashboardLine =
+      typeof structuredRecord.bir_qatorlik_xulosa === "string"
+        ? structuredRecord.bir_qatorlik_xulosa
+        : "";
+    const dashboardDoctorSummary =
+      typeof structuredRecord.shifokor_uchun_ai_xulosa === "string"
+        ? structuredRecord.shifokor_uchun_ai_xulosa
+        : "";
+    const legacyText = (
+      dashboardLine ||
+      dashboardDoctorSummary ||
+      s.summary_for_doctor ||
+      p.patient.aiSummaryText ||
+      p.patient.aiSummary ||
+      aiTahlilYozuvi ||
+      ""
+    ).trim();
+    return (
+      <div className={`rounded-xl p-5 ${cardBase}`}>
+        <div className="flex items-center gap-2 mb-4">
+          <div className={`w-8 h-8 flex items-center justify-center rounded-lg ${darkMode ? "bg-[#21262D]" : "bg-emerald-50"}`}>
+            <i className="ri-robot-line text-emerald-600 text-base"></i>
+          </div>
+          <div>
+            <h3 className={`text-lg font-semibold ${pageTitle}`}>AI Xulosa</h3>
+            <p className={`text-sm ${pageMuted}`}>Yangi intake JSON hali yuklanmoqda yoki eski format</p>
+          </div>
+        </div>
+        <div className={`rounded-lg px-3 py-3 ${subBox}`}>
+          <p className={`text-sm font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Xulosa</p>
+          <p className={`text-base leading-relaxed ${textBody}`}>
+            {legacyText || "AI xulosa hali tayyor emas"}
+          </p>
+        </div>
+      </div>
+    );
+  }
   const risk = aiRiskLevel && RISK_BADGE[aiRiskLevel] ? RISK_BADGE[aiRiskLevel] : RISK_BADGE[s.risk_level] ?? RISK_BADGE.medium;
   const statusKey = aiStatus && typeof aiStatus === "string" ? aiStatus : s.summary_status;
   const status = STATUS_BADGE[statusKey] ?? STATUS_BADGE[s.summary_status] ?? STATUS_BADGE.incomplete;
@@ -599,18 +738,18 @@ export function AiXulosaCard(p: PatientDetailBlocksProps) {
       <div className={`rounded-lg px-3 py-3 mb-4 ${subBox}`}>
         <p className={`text-sm font-semibold mb-1.5 uppercase tracking-wide ${labelSm}`}>Bir qatorlik xulosa</p>
         <p className={`text-base font-medium ${darkMode ? "text-gray-100" : "text-gray-900"}`}>
-          {s.doctor_brief.one_line_summary || s.summary_for_doctor || "—"}
+          {s.doctor_brief?.one_line_summary || s.summary_for_doctor || "—"}
         </p>
-        {s.doctor_brief.priority_note ? (
+        {s.doctor_brief?.priority_note ? (
           <p className={`text-sm mt-2 ${textBody}`}>
             <span className="font-semibold">Eslatma: </span>
-            {s.doctor_brief.priority_note}
+            {s.doctor_brief?.priority_note}
           </p>
         ) : null}
-        {s.doctor_brief.what_to_check_first?.length ? (
+        {s.doctor_brief?.what_to_check_first?.length ? (
           <div className="mt-2">
             <p className={`text-base uppercase tracking-wide ${labelSm}`}>Birinchi navbatda tekshirish</p>
-            <ChipList items={s.doctor_brief.what_to_check_first} accent="warn" />
+            <ChipList items={s.doctor_brief?.what_to_check_first} accent="warn" />
           </div>
         ) : null}
       </div>
@@ -917,3 +1056,4 @@ export function SuhbatTarixiCard(p: PatientDetailBlocksProps) {
     </div>
   );
 }
+

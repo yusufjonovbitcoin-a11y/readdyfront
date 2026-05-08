@@ -173,7 +173,7 @@ export function AnalyticsPageContent() {
         </div>
 
         {/* Main Chart */}
-        <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+        <div className={`rounded-xl p-5 border ${dm ? "bg-[#1A2235] border-[#263245]" : "bg-white border-gray-100"}`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>{t("admin:analytics.flowDynamics")}</h3>
             <div className="flex items-center gap-4">
@@ -188,7 +188,7 @@ export function AnalyticsPageContent() {
             </div>
           </div>
 
-          <div className="relative select-none">
+          <div className={`relative select-none rounded-xl p-3 ${dm ? "bg-[#141a26]" : "bg-gray-50/70"}`}>
             {tooltipRow && tooltipPt && (
               <div
                 className="absolute z-20 pointer-events-none px-2 max-w-[calc(100%-8px)] transition-opacity duration-150"
@@ -218,8 +218,8 @@ export function AnalyticsPageContent() {
             )}
             <svg
               viewBox={`0 0 ${chartW} ${chartH}`}
-              className="w-full touch-none cursor-crosshair"
-              style={{ height: 200 }}
+              className="w-full touch-none cursor-crosshair rounded-lg"
+              style={{ height: 220 }}
               preserveAspectRatio="none"
               onMouseMove={applyPointerX}
               onMouseLeave={() => {
@@ -248,8 +248,9 @@ export function AnalyticsPageContent() {
             >
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.38" />
+                  <stop offset="45%" stopColor="#22d3ee" stopOpacity="0.18" />
+                  <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.02" />
                 </linearGradient>
               </defs>
               {[0.25, 0.5, 0.75].map((f) => (
@@ -267,8 +268,8 @@ export function AnalyticsPageContent() {
               <polyline
                 points={polyline}
                 fill="none"
-                stroke="#10b981"
-                strokeWidth="1.5"
+                stroke="#2dd4bf"
+                strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -291,8 +292,8 @@ export function AnalyticsPageContent() {
                   key={i}
                   cx={p.x}
                   cy={p.y}
-                  r={hoverIndex === i ? "2.8" : "1.5"}
-                  fill="#10b981"
+                  r={hoverIndex === i ? "3.2" : "1.9"}
+                  fill="#2dd4bf"
                   className="pointer-events-none"
                 />
               ))}
@@ -302,8 +303,8 @@ export function AnalyticsPageContent() {
                   cy={tooltipPt.y}
                   r={4}
                   fill="none"
-                  stroke="#6ee7b7"
-                  strokeWidth={0.5}
+                  stroke="#5eead4"
+                  strokeWidth={0.8}
                   opacity={0.95}
                   className="pointer-events-none"
                   vectorEffect="nonScalingStroke"
@@ -375,11 +376,19 @@ export function AnalyticsPageContent() {
 
             {/* Peak Hours */}
             <div className={`mt-5 pt-4 border-t ${dm ? "border-[#1E2130]" : "border-gray-100"}`}>
-              <p className={`text-xs font-semibold mb-3 ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("admin:analytics.peakHours")}</p>
-              <div className="flex items-end gap-1 h-12">
+              <div className="flex items-center justify-between mb-3">
+                <p className={`text-xs font-semibold ${dm ? "text-gray-300" : "text-gray-600"}`}>{t("admin:analytics.peakHours")}</p>
+                <span className={`text-[11px] px-2 py-0.5 rounded-full ${dm ? "bg-teal-900/40 text-teal-300" : "bg-teal-100 text-teal-700"}`}>
+                  Live trend
+                </span>
+              </div>
+              <div className={`flex items-end gap-1 h-16 rounded-lg p-2 ${dm ? "bg-[#101623]" : "bg-gray-50"}`}>
                 {normalizedPeakValues.map((v, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-                    <div className="w-full rounded-sm bg-emerald-500/60" style={{ height: `${v * 0.44}px` }}></div>
+                    <div
+                      className="w-full rounded-sm bg-gradient-to-t from-teal-600/80 via-emerald-400/70 to-cyan-300/70"
+                      style={{ height: `${v * 0.52}px` }}
+                    ></div>
                     <span className={`text-xs ${dm ? "text-gray-600" : "text-gray-400"}`}>{8 + i}</span>
                   </div>
                 ))}

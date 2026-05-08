@@ -6,6 +6,7 @@ import {
   createNotification,
   createNotificationByIds,
   deleteNotification,
+  emitNotificationsUpdated,
   getNotificationCategories,
   getNotificationPriorities,
   getNotifications,
@@ -14,6 +15,9 @@ import {
   type NotificationPriority,
   updateNotification,
 } from "@/api/services/notifications.service";
+import { useViewMode } from "@/hooks/useViewMode";
+import ViewModeToggle from "@/components/ui/ViewModeToggle";
+import ResponsiveTable from "@/components/ui/ResponsiveTable";
 
 const NOTIFICATIONS_STORAGE_KEY = "medcore_notifications_v1";
 
@@ -70,6 +74,7 @@ function getTodayLocalIsoDate(): string {
 
 export function SuperAdminNotificationsPageContent() {
   const dm = useAnyDarkMode();
+  const { mode: viewMode, setMode: setViewMode } = useViewMode("notifications", "card");
   const { user } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>(() => {
@@ -90,6 +95,7 @@ export function SuperAdminNotificationsPageContent() {
     } catch {
       // ignore storage failures
     }
+    emitNotificationsUpdated();
   };
 
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
@@ -410,6 +416,13 @@ export function SuperAdminNotificationsPageContent() {
                 Xabar jo'natish
               </button>
             ) : null}
+            <ViewModeToggle
+              mode={viewMode}
+              darkMode={dm}
+              cardLabel="Card view"
+              tableLabel="Table view"
+              onChange={setViewMode}
+            />
             <div className={`ml-auto flex items-center gap-1 text-xs ${dm ? "text-gray-500" : "text-gray-400"}`}>
               <i className="ri-filter-3-line" />
               {filtered.length} ta natija
@@ -528,8 +541,60 @@ export function SuperAdminNotificationsPageContent() {
             <p className={dm ? "text-gray-300 font-medium" : "text-gray-500 font-medium"}>Bildirishnomalar topilmadi</p>
             <p className={`text-sm mt-1 ${dm ? "text-gray-500" : "text-gray-400"}`}>Filtrlarni o'zgartiring yoki barchasi ko'rsatilsin</p>
           </div>
-        ) : (
+        ) : viewMode === "card" ? (
           <div className="space-y-3">{filtered.map(renderCard)}</div>
+        ) : (
+          <div className={`rounded-2xl border overflow-hidden ${dm ? "bg-[#121826] border-[#273041]" : "bg-white border-gray-100"}`}>
+            <ResponsiveTable minWidthClassName="min-w-[900px]" caption="Notifications table">
+              <thead>
+                <tr className={`text-xs border-b ${dm ? "border-[#273041] text-gray-400" : "border-gray-100 text-gray-500"}`}>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">Sarlavha</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">Xabar</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">Yuborgan</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">Vaqt</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">Holat</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">Amal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((n) => (
+                  <tr key={n.id} className={`border-b last:border-0 ${dm ? "border-[#273041] hover:bg-[#1A2235]" : "border-gray-50 hover:bg-gray-50"}`}>
+                    <td className={`px-4 py-3 text-sm font-medium ${dm ? "text-gray-200" : "text-gray-800"}`}>{n.title}</td>
+                    <td className={`px-4 py-3 text-sm ${dm ? "text-gray-400" : "text-gray-600"}`}>{n.message}</td>
+                    <td className={`px-4 py-3 text-sm ${dm ? "text-gray-400" : "text-gray-600"}`}>{n.senderName}</td>
+                    <td className={`px-4 py-3 text-sm ${dm ? "text-gray-500" : "text-gray-500"}`}>{n.time}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${n.read ? "bg-gray-100 text-gray-600" : "bg-emerald-100 text-emerald-700"}`}>
+                        {n.read ? "O'qilgan" : "Yangi"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        {!n.read ? (
+                          <button
+                            type="button"
+                            onClick={() => markRead(n.id)}
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer text-emerald-600 hover:bg-emerald-50"
+                            aria-label="O'qilgan deb belgilash"
+                          >
+                            <i className="ri-check-line text-sm" />
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => deleteNotif(n.id)}
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer text-red-500 hover:bg-red-50"
+                          aria-label="O'chirish"
+                        >
+                          <i className="ri-delete-bin-line text-sm" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </ResponsiveTable>
+          </div>
         )}
       </div>
     </div>

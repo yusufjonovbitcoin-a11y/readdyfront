@@ -1,12 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { generateCheckinAiPreview } from '@/api/checkin';
-import type {
-  CheckinAiPreviewResult,
-  CheckinChatMessageInput,
-  CheckinFollowUpPollDto,
-  CheckinInteractiveQuestionDto,
-} from '@/api/types/checkin.types';
+import type { QuestionDto } from '@/api/services/medicalIntake.service';
+import { postAiIntakeMessage, postAiIntakeStart } from '@/api/services/medicalIntake.service';
+import type { CheckinChatMessageInput, CheckinInteractiveQuestionDto } from '@/api/types/checkin.types';
 
 interface Message {
   id: string;
@@ -30,60 +26,35 @@ interface AIAssistStepProps {
   ) => void;
 }
 
-function buildConversationPayload(list: Message[]): string {
-  return list.map((m) => `${m.role === 'ai' ? 'AI' : 'Bemor'}: ${m.text}`).join('\n');
-}
+/** Map QuestionRules-linked DB question (+ options) to dock single-choice widget. */
+function mapDbQuestionToDock(q: QuestionDto | null | undefined): CheckinInteractiveQuestionDto | null {
+  if (!q?.text?.trim()) return null;
+  const qt = String(q.type ?? 'TEXT').toUpperCase();
+  const qAny = q as QuestionDto & {
+    allow_custom_input?: boolean;
+    custom_placeholder?: string;
+  };
+  const rawOpts = q.question_options ?? [];
+  const opts = [...rawOpts]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((o) => {
+      const label = (o.text ?? '').trim();
+      const value = ((o.value ?? o.text ?? '') as string).trim() || label;
+      return { value, label };
+    })
+    .filter((o) => o.label.length > 0 && o.value.length > 0);
 
-function normalizePoll(p: CheckinFollowUpPollDto | null | undefined): CheckinFollowUpPollDto | null {
-  if (!p?.question?.trim()) return null;
-  const raw = (p.options ?? []) as unknown[];
-  const options: Array<{ id: number; text: string }> = [];
-  raw.forEach((o, idx) => {
-    if (typeof o === 'string' && o.trim()) {
-      options.push({ id: idx + 1, text: o.trim() });
-    } else if (o && typeof o === 'object' && o !== null && 'text' in o) {
-      const rec = o as unknown as { id?: number; text?: string };
-      const text = typeof rec.text === 'string' ? rec.text.trim() : '';
-      if (!text) return;
-      const id =
-        typeof rec.id === 'number' && Number.isFinite(rec.id) ? Math.floor(rec.id) : idx + 1;
-      options.push({ id, text });
-    }
-  });
-  if (options.length < 2) return null;
-  return { question: p.question.trim(), options: options.slice(0, 6) };
-}
-
-function normalizeQuestionUi(res: CheckinAiPreviewResult): CheckinInteractiveQuestionDto | null {
-  const q = res.question_ui;
-  if (
-    q?.type === 'question' &&
-    q.inputType === 'single_choice' &&
-    Array.isArray(q.options) &&
-    q.options.length >= 2
-  ) {
-    const opts = q.options
-      .filter((o) => o && typeof o.value === 'string' && typeof o.label === 'string' && o.label.trim())
-      .map((o) => ({ value: o.value.trim(), label: o.label.trim() }));
-    if (opts.length < 2) return null;
-    const message = (q.message ?? '').trim() || 'Savol';
+  if ((qt === 'SELECT' || qt === 'RADIO') && opts.length >= 2) {
     return {
       type: 'question',
-      message,
+      message: q.text.trim(),
       inputType: 'single_choice',
       options: opts.slice(0, 12),
-      allowCustomAnswer: Boolean(q.allowCustomAnswer),
-      customPlaceholder: typeof q.customPlaceholder === 'string' ? q.customPlaceholder : undefined,
+      allowCustomAnswer: Boolean(qAny.allow_custom_input),
+      customPlaceholder: qAny.custom_placeholder?.trim() || undefined,
     };
   }
-  const legacy = normalizePoll(res.follow_up_poll ?? null);
-  if (!legacy) return null;
-  return {
-    type: 'question',
-    message: legacy.question,
-    inputType: 'single_choice',
-    options: legacy.options.map((o) => ({ value: `legacy_${o.id}`, label: o.text })),
-  };
+  return null;
 }
 
 function getAiErrorMessage(error: unknown, fallback: string): string {
@@ -97,6 +68,18 @@ function getAiErrorMessage(error: unknown, fallback: string): string {
     if (message) return message;
   }
   return fallback;
+}
+
+function toCompactChatQuestion(text: string): string {
+  const raw = text.trim();
+  if (!raw) return raw;
+  const normalized = raw.replace(/\s+/g, ' ').trim();
+  const firstSentence = normalized.split('?')[0]?.trim();
+  if (firstSentence && firstSentence.length >= 12) {
+    const compact = `${firstSentence}?`;
+    return compact.length > 95 ? `${compact.slice(0, 92).trim()}...` : compact;
+  }
+  return normalized.length > 95 ? `${normalized.slice(0, 92).trim()}...` : normalized;
 }
 
 function AiAvatar({ className = '' }: { className?: string }) {
@@ -144,16 +127,21 @@ function StructuredQuestionCard({
   onDismiss?: () => void;
 }) {
   const { t } = useTranslation('checkin');
-  const reversed = [...question.options].reverse();
+  const visibleOptions = question.options.slice(0, 3);
+  const reversed = [...visibleOptions].reverse();
   return (
     <div
       className={[
-        'border border-teal-100 bg-gradient-to-b from-teal-50/90 via-emerald-50/40 to-white touch-manipulation',
-        embedded ? 'rounded-xl p-3 shadow-sm shadow-teal-500/5' : 'rounded-2xl p-4 shadow-sm shadow-teal-500/5',
+        'relative overflow-hidden border border-teal-100 bg-gradient-to-b from-teal-50/95 via-white to-emerald-50/70 touch-manipulation',
+        embedded ? 'rounded-2xl p-3.5 shadow-lg shadow-teal-500/10 ring-1 ring-white/60' : 'rounded-2xl p-4 shadow-lg shadow-teal-500/10',
       ].join(' ')}
     >
+      <div className="pointer-events-none absolute -top-16 -right-14 h-36 w-36 rounded-full bg-teal-200/35 blur-2xl" />
       <div className="flex items-start justify-between gap-2 mb-3">
-        <p className="text-xs font-semibold text-teal-700 uppercase tracking-wide pt-0.5">{t('ai.poll.widgetTitle')}</p>
+        <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-teal-700 uppercase tracking-wide pt-0.5">
+          <i className="ri-survey-line text-sm" />
+          {t('ai.poll.widgetTitle')}
+        </p>
         {onDismiss ? (
           <button
             type="button"
@@ -166,10 +154,10 @@ function StructuredQuestionCard({
           </button>
         ) : null}
       </div>
-      <p className="text-sm font-medium text-gray-900 mb-3 leading-snug">{question.message}</p>
+      <p className="text-base font-medium text-gray-900 mb-3 leading-snug">{question.message}</p>
       <ul className="m-0 flex w-full list-none flex-col gap-2 p-0" role="list" aria-label={question.message}>
         {reversed.map((opt, idx) => {
-          const num = question.options.length - idx;
+          const num = visibleOptions.length - idx;
           const selected = selectedValue === opt.value;
           const locked = Boolean(selectedValue) && !selected;
           return (
@@ -220,14 +208,22 @@ export default function AIAssistStep({
   const [userInput, setUserInput] = useState('');
   const [initialLoading, setInitialLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [intakeComplete, setIntakeComplete] = useState(false);
   const [dockQuestion, setDockQuestion] = useState<CheckinInteractiveQuestionDto | null>(null);
   const [dockSelectedValue, setDockSelectedValue] = useState<string | null>(null);
+
+  void visitId;
+  void doctorLanguage;
+  void answers;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const triageSummaryForDoctorRef = useRef<string | undefined>(undefined);
   const fetchGenRef = useRef(0);
   const busy = initialLoading || sending;
+  const composerLocked = intakeComplete;
+  const preferInlineCustomInput =
+    Boolean(dockQuestion?.allowCustomAnswer) && (dockQuestion?.options.length ?? 0) >= 4;
 
   /**
    * Build a backend-shaped transcript from the local chat state. Always sent
@@ -267,67 +263,97 @@ export default function AIAssistStep({
   }, [messages, initialLoading, sending, dockQuestion, scrollToBottom]);
 
   useEffect(() => {
+    if (preferInlineCustomInput) return;
     if (initialLoading) return;
     const raf = globalThis.requestAnimationFrame(() => {
       focusComposerInput();
     });
     return () => globalThis.cancelAnimationFrame(raf);
-  }, [initialLoading, focusComposerInput]);
+  }, [initialLoading, focusComposerInput, preferInlineCustomInput]);
 
   useEffect(() => {
+    if (preferInlineCustomInput) return;
     if (busy) return;
     const raf = globalThis.requestAnimationFrame(() => {
       focusComposerInput();
     });
     return () => globalThis.cancelAnimationFrame(raf);
-  }, [messages, sending, dockQuestion, busy, focusComposerInput]);
+  }, [messages, sending, dockQuestion, busy, focusComposerInput, preferInlineCustomInput]);
 
-  const runPreview = useCallback(
+  const runIntakeTurn = useCallback(
     async (nextMessages: Message[]) => {
+      if (!potientResponseId?.trim()) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `ai-err-no-session-${Date.now()}`,
+            role: 'ai',
+            text: "Sessiya hali tayyor emas. Bir oz kutib, sahifani yangilang yoki telefon qadamidan qayta kiring.",
+            timestamp: new Date(),
+          },
+        ]);
+        return;
+      }
+      if (!checkinToken?.trim()) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `ai-err-token-${Date.now()}`,
+            role: 'ai',
+            text: "Check-in xavfsizlik kaliti topilmadi. Sahifani yangilab ko'ring.",
+            timestamp: new Date(),
+          },
+        ]);
+        return;
+      }
+
       const lastUser = [...nextMessages].reverse().find((m) => m.role === 'user');
-      const payload = lastUser?.text ?? buildConversationPayload(nextMessages);
-      const res = await generateCheckinAiPreview({
-        doctorId,
-        checkinToken,
-        answers,
-        message: payload || undefined,
-        patientLanguage,
-        doctorLanguage,
-        visitId,
-        potientResponseId,
-        messageType: 'text',
+      const outgoing = lastUser?.text?.trim();
+      if (!outgoing) return;
+
+      const res = await postAiIntakeMessage({
+        session_id: potientResponseId,
+        message: outgoing,
+        language: patientLanguage,
+        doctor_id: doctorId,
+        checkin_token: checkinToken,
       });
-      const aiText = res.ai_analysis?.trim() ?? '';
+
+      const aiText = res.assistant_reply?.trim() ?? '';
+      const nextQuestion = mapDbQuestionToDock(res.next_question);
+      const sameAsStructuredQuestion =
+        Boolean(nextQuestion) && nextQuestion?.message.trim() === aiText;
+      const bubbleText = sameAsStructuredQuestion ? toCompactChatQuestion(aiText) : aiText;
+      const shouldRenderAiBubble = Boolean(bubbleText);
       if (aiText) setLatestDoctorSummary(aiText);
+      if (res.intake_complete) setIntakeComplete(true);
 
-      const qUi = normalizeQuestionUi(res);
-
-      if (aiText) {
+      if (shouldRenderAiBubble) {
         setMessages((prev) => [
           ...prev,
           {
             id: `ai-${Date.now()}`,
             role: 'ai',
-            text: aiText,
+            text: bubbleText,
             timestamp: new Date(),
           },
         ]);
-      } else {
+      } else if (!aiText) {
         setMessages((prev) => [
           ...prev,
           {
             id: `ai-empty-${Date.now()}`,
             role: 'ai',
-            text: "AI aniq javob qaytara olmadi. Qisqaroq yozib qayta urinib ko'ring.",
+            text: "Javob boʻsh. Matnni qisqaroq yozib qayta yuboring.",
             timestamp: new Date(),
           },
         ]);
       }
 
-      setDockQuestion(qUi);
+      setDockQuestion(nextQuestion);
       setDockSelectedValue(null);
     },
-    [doctorId, checkinToken, answers, patientLanguage, doctorLanguage, visitId, potientResponseId],
+    [doctorId, checkinToken, patientLanguage, potientResponseId],
   );
 
   useEffect(() => {
@@ -336,44 +362,61 @@ export default function AIAssistStep({
 
     void (async () => {
       setInitialLoading(true);
+      setIntakeComplete(false);
       setDockQuestion(null);
       setDockSelectedValue(null);
       try {
-        const res = await generateCheckinAiPreview({
-          doctorId,
-          checkinToken,
-          answers,
-          message: undefined,
-          patientLanguage,
-          doctorLanguage,
-          visitId,
-          potientResponseId,
-          messageType: 'text',
-        });
-        if (cancelled || id !== fetchGenRef.current) return;
-        const text = res.ai_analysis?.trim() ?? '';
-        if (!text) {
+        if (!checkinToken?.trim()) {
+          if (cancelled || id !== fetchGenRef.current) return;
           setMessages([
             {
-              id: `ai-${Date.now()}`,
+              id: `ai-err-token-${Date.now()}`,
               role: 'ai',
-              text: "AI javob qaytarmadi. Iltimos, qayta urinib ko'ring yoki chatsiz davom eting.",
+              text: "Check-in kaliti yoʻq — AI sessiyasi ochilmadi.",
               timestamp: new Date(),
             },
           ]);
-          setDockQuestion(null);
           return;
         }
-        setLatestDoctorSummary(text);
-        setMessages([
-          {
-            id: `ai-main-${Date.now()}`,
-            role: 'ai',
-            text,
-            timestamp: new Date(),
-          },
-        ]);
-        setDockQuestion(normalizeQuestionUi(res));
+
+        if (!potientResponseId?.trim()) {
+          return;
+        }
+
+        const res = await postAiIntakeStart({
+          session_id: potientResponseId,
+          doctor_id: doctorId,
+          checkin_token: checkinToken,
+        });
+        if (cancelled || id !== fetchGenRef.current) return;
+
+        const text = res.assistant_reply?.trim() ?? '';
+        const nextQuestion = mapDbQuestionToDock(res.next_question);
+        const sameAsStructuredQuestion =
+          Boolean(nextQuestion) && nextQuestion?.message.trim() === text;
+        const bubbleText = sameAsStructuredQuestion ? toCompactChatQuestion(text) : text;
+        const shouldRenderAiBubble = Boolean(bubbleText);
+        if (text) setLatestDoctorSummary(text);
+        if (shouldRenderAiBubble) {
+          setMessages([
+            {
+              id: `ai-bootstrap-${Date.now()}`,
+              role: 'ai',
+              text: bubbleText,
+              timestamp: new Date(),
+            },
+          ]);
+        } else if (!text) {
+          setMessages([
+            {
+              id: `ai-empty-bootstrap-${Date.now()}`,
+              role: 'ai',
+              text: "Intake boshlanmadi — qayta urinib ko'ring.",
+              timestamp: new Date(),
+            },
+          ]);
+        }
+        setDockQuestion(nextQuestion);
       } catch (error) {
         if (cancelled || id !== fetchGenRef.current) return;
         setMessages([
@@ -382,25 +425,51 @@ export default function AIAssistStep({
             role: 'ai',
             text: getAiErrorMessage(
               error,
-              "AI serverga ulanib bo'lmadi. Internetni tekshiring yoki keyinroq qayta urinib ko'ring.",
+              "AI intake serverga ulanib bo‘lmadi. Internetni tekshiring yoki keyinroq qayta urinib ko‘ring.",
             ),
             timestamp: new Date(),
           },
         ]);
         setDockQuestion(null);
       } finally {
-        if (!cancelled && id === fetchGenRef.current) setInitialLoading(false);
+        if (cancelled || id !== fetchGenRef.current) return;
+        /** Keep spinner until `patient_response_id` exists — parent opens session async after AI step mounts. */
+        const waitingForSession =
+          Boolean(checkinToken?.trim()) && !potientResponseId?.trim();
+        if (!waitingForSession) {
+          setInitialLoading(false);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [doctorId, checkinToken, answers, patientLanguage, doctorLanguage, visitId, potientResponseId]);
+  }, [doctorId, checkinToken, patientLanguage, potientResponseId]);
+
+  /** Parent opens `/checkin/session/start` async; if it never completes, stop infinite spinner. */
+  useEffect(() => {
+    if (!checkinToken?.trim() || potientResponseId?.trim()) return;
+    const t = globalThis.setTimeout(() => {
+      setMessages((prev) => {
+        if (prev.length > 0) return prev;
+        return [
+          {
+            id: `session-timeout-${Date.now()}`,
+            role: 'ai',
+            text: "Sessiya ochilmadi. Sahifani yangilang yoki keyinroq qayta urinib ko‘ring.",
+            timestamp: new Date(),
+          },
+        ];
+      });
+      setInitialLoading(false);
+    }, 25000);
+    return () => globalThis.clearTimeout(t);
+  }, [checkinToken, potientResponseId]);
 
   const sendMessage = async () => {
     const text = userInput.trim();
-    if (!text || sending || initialLoading) return;
+    if (!text || sending || initialLoading || composerLocked) return;
 
     const userMsg: Message = {
       id: `user-${Date.now()}`,
@@ -416,7 +485,7 @@ export default function AIAssistStep({
     setDockSelectedValue(null);
 
     try {
-      await runPreview(nextMessages);
+      await runIntakeTurn(nextMessages);
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -434,7 +503,7 @@ export default function AIAssistStep({
   };
 
   const onStructuredOptionPick = async (_value: string, label: string) => {
-    if (sending || initialLoading || !dockQuestion) return;
+    if (sending || initialLoading || composerLocked || !dockQuestion) return;
     setDockSelectedValue(_value);
     setDockQuestion(null);
 
@@ -449,7 +518,7 @@ export default function AIAssistStep({
     setSending(true);
 
     try {
-      await runPreview(nextMessages);
+      await runIntakeTurn(nextMessages);
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -516,19 +585,21 @@ export default function AIAssistStep({
       <div
         className={
           dockQuestion && dockQuestion.options.length >= 2
-            ? 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 pb-[min(52vh,26rem)] scroll-pb-28'
-            : 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 pb-28 scroll-pb-28'
+            ? 'min-h-0 flex-1 select-text overflow-y-auto overscroll-contain px-4 py-5 pb-[min(46vh,24rem)] scroll-pb-28 [-webkit-user-select:text]'
+            : 'min-h-0 flex-1 select-text overflow-y-auto overscroll-contain px-4 py-5 pb-28 scroll-pb-28 [-webkit-user-select:text]'
         }
       >
-        <div className="max-w-lg mx-auto space-y-6">
+        <div className="max-w-lg mx-auto space-y-6 select-text">
           {messages.map((msg) => (
             <div key={msg.id}>
               {msg.role === 'ai' ? (
                 <div className="flex gap-3">
                   <AiAvatar className="mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <div className="inline-block max-w-full rounded-2xl rounded-tl-md bg-white border border-slate-200/90 px-4 py-3.5 shadow-md shadow-slate-200/50">
-                      <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                    <div className="inline-block max-w-full rounded-2xl rounded-tl-md bg-white border border-slate-200/90 px-4 py-3.5 shadow-md shadow-slate-200/50 select-text">
+                      <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap select-text cursor-text">
+                        {msg.text}
+                      </p>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-2 ml-0.5">
                       {msg.timestamp.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
@@ -538,8 +609,10 @@ export default function AIAssistStep({
               ) : (
                 <div className="flex gap-3 justify-end">
                   <div className="flex flex-col items-end max-w-[min(100%,20rem)]">
-                    <div className="rounded-2xl rounded-tr-md bg-gradient-to-br from-teal-500 to-emerald-600 text-white px-4 py-3.5 shadow-lg shadow-teal-500/25 ring-1 ring-white/10">
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                    <div className="rounded-2xl rounded-tr-md bg-gradient-to-br from-teal-500 to-emerald-600 text-white px-4 py-3.5 shadow-lg shadow-teal-500/25 ring-1 ring-white/10 select-text">
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap select-text cursor-text">
+                        {msg.text}
+                      </p>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-2 mr-0.5">
                       {msg.timestamp.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })}
@@ -574,7 +647,7 @@ export default function AIAssistStep({
             <StructuredQuestionCard
               embedded
               question={dockQuestion}
-              disabled={busy}
+              disabled={busy || composerLocked}
               selectedValue={dockSelectedValue}
               onSelectOption={(v, label) => void onStructuredOptionPick(v, label)}
               onDismiss={() => {
@@ -599,12 +672,12 @@ export default function AIAssistStep({
               onChange={(e) => setUserInput(e.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={() => {
-                if (busy) return;
+                if (busy || preferInlineCustomInput) return;
                 globalThis.requestAnimationFrame(() => {
                   focusComposerInput();
                 });
               }}
-              disabled={busy}
+              disabled={busy || composerLocked}
             />
             {userInput ? (
               <button
@@ -619,7 +692,7 @@ export default function AIAssistStep({
           <button
             type="button"
             onClick={() => void sendMessage()}
-            disabled={!userInput.trim() || busy}
+            disabled={!userInput.trim() || busy || composerLocked}
             className="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center cursor-pointer transition-all shadow-lg shadow-teal-500/25 ring-1 ring-white/10 active:scale-95 flex-shrink-0"
           >
             <i className="ri-send-plane-fill text-lg" />

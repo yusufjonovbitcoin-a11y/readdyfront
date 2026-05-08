@@ -16,6 +16,7 @@ const roleColors: Record<string, string> = {
 
 interface UsersDataSectionProps {
   darkMode: boolean;
+  viewMode: "card" | "table";
   users: User[];
   filteredCount: number;
   pageRows: User[];
@@ -34,6 +35,7 @@ interface UsersDataSectionProps {
 
 export default function UsersDataSection({
   darkMode,
+  viewMode,
   users,
   filteredCount,
   pageRows,
@@ -69,7 +71,8 @@ export default function UsersDataSection({
         ))}
       </div>
 
-      <div className="space-y-3 md:hidden">
+      {viewMode === "card" ? (
+      <div className="space-y-3">
         {pageRows.length === 0 ? (
           <div className={`${cardClass} text-center text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
             Jami 0 ta foydalanuvchi
@@ -143,9 +146,11 @@ export default function UsersDataSection({
           ))
         )}
       </div>
+      ) : null}
 
+      {viewMode === "table" ? (
       <div className={`rounded-xl overflow-hidden ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
-        <div className="hidden overflow-x-auto md:block">
+        <div className="overflow-x-auto">
           <ResponsiveTable minWidthClassName="min-w-[820px]" caption={t("titles.users")}>
             <thead>
               <tr className={darkMode ? "bg-[#0F1117]" : "bg-gray-50"}>
@@ -270,6 +275,7 @@ export default function UsersDataSection({
           )}
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

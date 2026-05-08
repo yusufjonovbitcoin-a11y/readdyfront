@@ -33,7 +33,7 @@ const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
 /** Dev: Vite proxy returns 502 if Nest is not listening on the proxy target — try API origin directly. */
 const PROXY_FALLBACK_STATUS_CODES = new Set([404, 502, 503, 504]);
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
-const AUTH_ENDPOINTS = new Set(["/api/auth/login", "/api/auth/logout"]);
+const AUTH_ENDPOINTS = new Set(["/api/auth/login", "/api/auth/refresh", "/api/auth/logout"]);
 let authRecoverySuppressed = false;
 let sessionFailureNotified = false;
 
@@ -146,8 +146,40 @@ async function parseResponse(response: Response): Promise<unknown> {
  * Muvaffaqiyatli bo‘lsa token yoziladi. Hech qachon throw qilmaydi.
  */
 export async function trySilentSessionRefresh(): Promise<boolean> {
-  // Temporarily disabled on frontend: /api/auth/refresh is not used.
-  return Boolean(getStoredAccessToken()?.trim());
+  if (getStoredAccessToken()?.trim()) return true;
+
+  const runFetch = (url: string) =>
+    fetch(url, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+    });
+
+  let response = await runFetch(buildUrl("/api/auth/refresh"));
+  if (
+    !response.ok &&
+    PROXY_FALLBACK_STATUS_CODES.has(response.status) &&
+    !configuredApiBaseUrl
+  ) {
+    response = await runFetch(buildUrlWithBase("/api/auth/refresh", API_FALLBACK_BASE_URL));
+  }
+
+  if (!response.ok) return false;
+
+  const data = await parseResponse(response);
+  const token =
+    typeof data === "object" &&
+    data !== null &&
+    ("accessToken" in data || "access_token" in data)
+      ? (data as { accessToken?: string; access_token?: string }).accessToken ??
+        (data as { access_token?: string }).access_token
+      : undefined;
+
+  if (typeof token === "string" && token.trim()) {
+    setStoredAccessToken(token.trim());
+    return true;
+  }
+  return false;
 }
 
 export async function apiRequest<TResponse>(
@@ -225,19 +257,40 @@ export async function apiRequest<TResponse>(
           const message = resolveErrorMessage(responseData, response.statusText || "Request failed");
 
           if (response.status === 401) {
-            const isAuthSessionProbe = false;
+            const isAuthSessionProbe = path === "/api/auth/me" || path === "/api/auth/refresh";
             if (suppressSessionFailureOn401) {
+              if (path === "/api/auth/me") {
+                clearStoredAccessToken();
+              }
               throw normalizeError(401, message, responseData);
             }
             const canTryRefresh =
               allowRefreshRetry &&
               !skipRefreshOn401 &&
               !authRecoverySuppressed &&
-              !AUTH_ENDPOINTS.has(path);
+              !AUTH_ENDPOINTS.has(path) &&
+              path !== "/api/auth/refresh";
 
             if (canTryRefresh) {
-              // Temporarily disabled on frontend: /api/auth/refresh is not used.
-              authRecoverySuppressed = true;
+              const refreshResponse = await fetch(buildUrl("/api/auth/refresh"), {
+                method: "POST",
+                credentials: "include",
+                signal: controller.signal,
+                headers,
+              });
+              if (refreshResponse.ok) {
+                const refreshPayload = (await parseResponse(refreshResponse)) as
+                  | { accessToken?: string; access_token?: string }
+                  | null;
+                const refreshedAccessToken =
+                  refreshPayload?.accessToken ?? refreshPayload?.access_token;
+                if (refreshedAccessToken) {
+                  setStoredAccessToken(refreshedAccessToken);
+                }
+                authRecoverySuppressed = false;
+                sessionFailureNotified = false;
+                return requestInternal(false);
+              }
             }
             if (!isAuthSessionProbe) {
               throw normalizeError(401, message, responseData);
@@ -291,7 +344,7 @@ export async function apiRequest<TResponse>(
     throw normalizeError(0, "So'rovni qayta yuborishda noma'lum xatolik yuz berdi.");
   };
 
-  if (path === "/api/auth/login") {
+  if (path === "/api/auth/login" || path === "/api/auth/refresh") {
     authRecoverySuppressed = false;
     sessionFailureNotified = false;
   }
