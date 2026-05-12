@@ -18,7 +18,7 @@ export default function HALayout({ children, title }: HALayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode] = usePersistedHospitalAdminTheme();
   const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
-  const isFullBleedRoute = pathname.includes("/notifications");
+  const isFullBleedRoute = pathname.includes("/notifications") || pathname.startsWith("/hospital-admin/chat");
 
   return (
     <HospitalAdminThemeProvider darkMode={darkMode}>

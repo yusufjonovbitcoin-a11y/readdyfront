@@ -89,6 +89,8 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
       { id: "page-analytics", kind: "page" as const, label: t("admin:header.pages.analytics"), to: "/analytics" },
       { id: "page-users", kind: "page" as const, label: t("admin:header.pages.users"), to: "/users" },
       { id: "page-audit-logs", kind: "page" as const, label: t("admin:header.pages.auditLogs"), to: "/audit-logs" },
+      { id: "page-news", kind: "page" as const, label: t("admin:sidebar.news"), to: "/news" },
+      { id: "page-admin-chat", kind: "page" as const, label: "Chat Guruhi", to: "/admin-chat" },
       { id: "page-settings", kind: "page" as const, label: t("admin:header.pages.settings"), to: "/settings" },
     ];
     return [...pages, ...hospitalHits];

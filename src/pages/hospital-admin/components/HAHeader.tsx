@@ -66,6 +66,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
       { id: "analytics", label: t("sidebar.analytics"), hint: "/hospital-admin/analytics", to: "/hospital-admin/analytics", icon: "ri-bar-chart-2-line" },
       { id: "notifications", label: t("sidebar.notifications"), hint: "/hospital-admin/notifications", to: "/hospital-admin/notifications", icon: "ri-notification-3-line" },
       { id: "settings", label: t("sidebar.settings"), hint: "/hospital-admin/settings", to: "/hospital-admin/settings", icon: "ri-settings-3-line" },
+      { id: "chat", label: "Chat Guruhi", hint: "/hospital-admin/chat", to: "/hospital-admin/chat", icon: "ri-chat-3-line" },
     ];
   }, [t]);
 

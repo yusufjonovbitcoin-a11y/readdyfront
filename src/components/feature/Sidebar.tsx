@@ -11,6 +11,7 @@ import {
 } from "@/api/services/notifications.service";
 import medcoreLogoImage from "@/assets/medcore-logo.png";
 import { prefetchCoreQueriesForPath, prefetchSidebarWarmup } from "@/lib/coreQueryCache";
+import { adminChatGroups } from "@/mocks/adminChatGroups";
 
 interface NavItem {
   path: string;
@@ -28,6 +29,8 @@ const adminRouteWarmupMap: Record<string, () => Promise<unknown>> = {
   "/audit-logs": () => import("@/pages/audit-logs/page"),
   "/questions": () => import("@/pages/questions/page"),
   "/notifications": () => import("@/pages/notifications/page"),
+  "/news": () => import("@/pages/news/page"),
+  "/admin-chat": () => import("@/pages/admin-chat/page"),
   "/settings": () => import("@/pages/settings/page"),
 };
 
@@ -55,6 +58,7 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
     { path: "/audit-logs", icon: "ri-shield-check-line", label: t("admin:sidebar.auditLogs") },
     { path: "/questions", icon: "ri-building-2-line", label: t("admin:sidebar.questions") },
     { path: "/notifications", icon: "ri-notification-3-line", label: t("admin:sidebar.notifications") },
+    { path: "/news", icon: "ri-newspaper-line", label: t("admin:sidebar.news") },
     { path: "/settings", icon: "ri-settings-3-line", label: t("admin:sidebar.settings") },
   ];
 
@@ -238,6 +242,76 @@ export default function Sidebar({ collapsed, onToggle, darkMode, mobileOpen, onC
           })}
         </div>
       </nav>
+
+      {(() => {
+        const isChatActive = location.pathname.startsWith("/admin-chat");
+        const chatUnread = adminChatGroups.reduce((acc, g) => acc + g.unreadCount, 0);
+        const totalGroups = adminChatGroups.length;
+        return (
+          <div className={`px-3 py-1.5 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+            <a
+              href="/admin-chat"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/admin-chat");
+                onCloseMobile();
+              }}
+              onMouseEnter={() => prefetchPath("/admin-chat")}
+              className={`block rounded-xl p-2.5 transition-all cursor-pointer no-underline ${
+                isChatActive
+                  ? darkMode
+                    ? "bg-emerald-900/30 border border-emerald-500/30"
+                    : "bg-emerald-50 border border-emerald-200"
+                  : darkMode
+                  ? "bg-[#1A2235] border border-[#1E2130] hover:border-emerald-500/30"
+                  : "bg-white border border-gray-100 hover:border-emerald-200 hover:shadow-sm"
+              }`}
+            >
+              {showExpanded ? (
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-shrink-0">
+                    <div className="flex -space-x-1.5">
+                      <div className="w-7 h-7 rounded-lg bg-rose-600 flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white dark:ring-[#1A2235]">Ka</div>
+                      <div className="w-7 h-7 rounded-lg bg-sky-600 flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white dark:ring-[#1A2235]">Ne</div>
+                      <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white dark:ring-[#1A2235]">Xi</div>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className={`text-sm font-semibold truncate ${isChatActive ? (darkMode ? "text-emerald-300" : "text-emerald-700") : darkMode ? "text-gray-200" : "text-gray-900"}`}>
+                        Chat Guruhi
+                      </p>
+                      {chatUnread > 0 && (
+                        <span className="flex-shrink-0 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">{chatUnread}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className={`text-[11px] ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
+                        {totalGroups} ta guruh
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                    <i className={`ri-arrow-right-s-line text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center">
+                      <i className="ri-chat-3-line text-white text-sm" />
+                    </div>
+                    {chatUnread > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] flex items-center justify-center bg-red-500 text-white text-[8px] font-bold rounded-full px-0.5">{chatUnread}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </a>
+          </div>
+        );
+      })()}
 
       {/* Profil (sozlamalar) + chiqish — boshqa rollar sidebar bilan bir xil */}
       <div className={`p-3 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>

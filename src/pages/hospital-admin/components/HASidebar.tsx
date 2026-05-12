@@ -8,6 +8,7 @@ import {
   haAdminInitialsFromName,
   HA_ADMIN_AVATAR_UPDATED_EVENT,
 } from "@/lib/haAdminProfile";
+import { haChatGroups } from "@/mocks/hospitalAdminChat";
 import { prefetchCoreQueriesForPath } from "@/lib/coreQueryCache";
 
 const HA_ADMIN_DISPLAY_NAME = "Aziz Rahimov";
@@ -32,6 +33,7 @@ const haRouteWarmupMap: Record<string, () => Promise<unknown>> = {
   "/hospital-admin/patients": () => import("@/pages/hospital-admin/patients/page"),
   "/hospital-admin/analytics": () => import("@/pages/hospital-admin/analytics/page"),
   "/hospital-admin/notifications": () => import("@/pages/notifications/page"),
+  "/hospital-admin/chat": () => import("@/pages/hospital-admin/chat/page"),
   "/hospital-admin/settings": () => import("@/pages/hospital-admin/settings/page"),
 };
 
@@ -206,6 +208,61 @@ export default function HASidebar({ collapsed, onToggle, darkMode, mobileOpen, o
           })}
         </div>
       </nav>
+
+      {/* Chat Guruhi Card */}
+      {(() => {
+        const isChatActive = location.pathname.startsWith("/hospital-admin/chat");
+        const chatUnread = haChatGroups.reduce((acc, g) => acc + g.unreadCount, 0);
+        const totalGroups = haChatGroups.length;
+        return (
+          <div className={`px-3 py-1.5 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+            <a
+              href="/hospital-admin/chat"
+              onClick={(e) => { e.preventDefault(); navigate("/hospital-admin/chat"); onCloseMobile(); }}
+              onMouseEnter={() => prefetchPath("/hospital-admin/chat")}
+              className={`block rounded-xl p-2.5 transition-all cursor-pointer no-underline ${
+                isChatActive
+                  ? darkMode ? "bg-teal-900/30 border border-teal-500/30" : "bg-teal-50 border border-teal-200"
+                  : darkMode ? "bg-[#1A2235] border border-[#1E2130] hover:border-teal-500/30" : "bg-white border border-gray-100 hover:border-teal-200 hover:shadow-sm"
+              }`}
+            >
+              {showExpanded ? (
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-shrink-0">
+                    <div className="flex -space-x-1.5">
+                      <div className="w-7 h-7 rounded-lg bg-rose-600 flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white dark:ring-[#1A2235]">Ka</div>
+                      <div className="w-7 h-7 rounded-lg bg-sky-600 flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white dark:ring-[#1A2235]">Ne</div>
+                      <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white dark:ring-[#1A2235]">Xi</div>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className={`text-sm font-semibold truncate ${isChatActive ? (darkMode ? "text-teal-300" : "text-teal-700") : darkMode ? "text-gray-200" : "text-gray-900"}`}>Chat Guruhi</p>
+                      {chatUnread > 0 && (<span className="flex-shrink-0 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">{chatUnread}</span>)}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal-500" />
+                      <span className={`text-[11px] ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{totalGroups} ta guruh</span>
+                    </div>
+                  </div>
+                  <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                    <i className={`ri-arrow-right-s-line text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center">
+                      <i className="ri-chat-3-line text-white text-sm" />
+                    </div>
+                    {chatUnread > 0 && (<span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] flex items-center justify-center bg-red-500 text-white text-[8px] font-bold rounded-full px-0.5">{chatUnread}</span>)}
+                  </div>
+                </div>
+              )}
+            </a>
+          </div>
+        );
+      })()}
 
       {/* Profil (sozlamalar) + chiqish — doctor sidebar bilan bir xil tuzilma */}
       <div className={`p-3 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>

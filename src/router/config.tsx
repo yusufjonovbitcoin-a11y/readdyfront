@@ -32,6 +32,9 @@ const SuperAdminNotificationsPageContent = lazy(() =>
 const SuperAdminQuestionsPageContent = lazy(() =>
   import("../pages/questions/page").then((m) => ({ default: m.SuperAdminQuestionsPageContent })),
 );
+const AdminNewsPageContent = lazy(() =>
+  import("../pages/news/page").then((m) => ({ default: m.AdminNewsPageContent })),
+);
 const SettingsPageContent = lazy(() =>
   import("../pages/settings/page").then((m) => ({ default: m.SettingsPageContent })),
 );
@@ -81,6 +84,18 @@ const DocQuestionsContent = lazy(() =>
 );
 const DocProfileContent = lazy(() =>
   import("../pages/doctor/profile/page").then((m) => ({ default: m.DocProfileContent })),
+);
+const DocNewsContent = lazy(() =>
+  import("../pages/doctor/news/page").then((m) => ({ default: m.DocNewsContent })),
+);
+const DocChatContent = lazy(() =>
+  import("../pages/doctor/chat/page").then((m) => ({ default: m.DocChatContent })),
+);
+const AdminChatPageContent = lazy(() =>
+  import("../pages/admin-chat/page").then((m) => ({ default: m.AdminChatPageContent })),
+);
+const HAChatContent = lazy(() =>
+  import("../pages/hospital-admin/chat/page").then((m) => ({ default: m.HAChatContent })),
 );
 const NotificationsPageContent = lazy(() =>
   import("../pages/notifications/page").then((m) => ({ default: m.SuperAdminNotificationsPageContent })),
@@ -196,6 +211,22 @@ const routes: RouteObject[] = [
         ),
       },
       {
+        path: "/news",
+        element: (
+          <WithSuspense>
+            <AdminNewsPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "/admin-chat",
+        element: (
+          <WithSuspense>
+            <AdminChatPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
         path: "/audit-logs",
         element: (
           <WithSuspense>
@@ -277,6 +308,14 @@ const routes: RouteObject[] = [
         ),
       },
       {
+        path: "/hospital-admin/chat",
+        element: (
+          <WithSuspense>
+            <HAChatContent />
+          </WithSuspense>
+        ),
+      },
+      {
         path: "/hospital-admin/notifications",
         element: (
           <WithSuspense>
@@ -347,6 +386,22 @@ const routes: RouteObject[] = [
         element: (
           <WithSuspense>
             <NotificationsPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "news",
+        element: (
+          <WithSuspense>
+            <DocNewsContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "chat",
+        element: (
+          <WithSuspense>
+            <DocChatContent />
           </WithSuspense>
         ),
       },

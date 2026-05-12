@@ -18,7 +18,7 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode, setDarkMode] = usePersistedSuperAdminTheme();
   const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
-  const isFullBleedRoute = pathname.includes("notifications");
+  const isFullBleedRoute = pathname.includes("notifications") || pathname.startsWith("/admin-chat");
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-[#0F1117]" : "bg-[#F5F6FA]"}`}>

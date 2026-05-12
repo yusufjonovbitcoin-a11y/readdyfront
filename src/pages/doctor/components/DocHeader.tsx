@@ -15,7 +15,6 @@ import {
 
 interface DocHeaderProps {
   title: string;
-  sidebarCollapsed: boolean;
   onToggleMobile: () => void;
   notificationCount?: number;
 }
@@ -34,7 +33,7 @@ function normalize(s: string) {
   return s.toLowerCase().trim();
 }
 
-export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, notificationCount }: DocHeaderProps) {
+export default function DocHeader({ title, onToggleMobile, notificationCount }: DocHeaderProps) {
   const { t, i18n } = useTranslation("doctor");
   const [showNotif, setShowNotif] = useState(false);
   const [avatarFailed, setAvatarFailed] = useState(false);
@@ -79,6 +78,8 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
       { id: "analytics", label: t("sidebar.analytics"), hint: "/doctor/analytics", to: "/doctor/analytics", icon: "ri-bar-chart-2-line" },
       { id: "questions", label: t("sidebar.questions"), hint: "/doctor/questions", to: "/doctor/questions", icon: "ri-questionnaire-line" },
       { id: "notifications", label: t("sidebar.notifications"), hint: "/doctor/notifications", to: "/doctor/notifications", icon: "ri-notification-3-line" },
+      { id: "news", label: t("sidebar.news"), hint: "/doctor/news", to: "/doctor/news", icon: "ri-newspaper-line" },
+      { id: "chat", label: t("sidebar.chatGroup"), hint: "/doctor/chat", to: "/doctor/chat", icon: "ri-chat-3-line" },
       { id: "settings", label: t("sidebar.settings"), hint: "/doctor/settings", to: "/doctor/settings", icon: "ri-settings-3-line" },
       { id: "profile", label: t("profile.title"), hint: "/doctor/profile", to: "/doctor/profile", icon: "ri-user-line" },
     ];
@@ -200,9 +201,9 @@ export default function DocHeader({ title, sidebarCollapsed, onToggleMobile, not
   return (
     <>
       <header
-        className={`fixed top-0 right-0 z-20 h-16 flex min-w-0 items-center px-4 md:px-6 transition-[left] duration-300 ease-out ${
-          sidebarCollapsed ? "left-0 md:left-16" : "left-0 md:left-64"
-        } ${darkMode ? "bg-[#0D1117] border-b border-[#1C2333]" : "bg-white border-b border-gray-100"}`}
+        className={`fixed top-0 right-0 z-20 h-16 flex min-w-0 items-center px-4 md:px-6 transition-[left] duration-300 ease-out left-0 md:left-[var(--doc-sidebar-w)] ${
+          darkMode ? "bg-[#0D1117] border-b border-[#1C2333]" : "bg-white border-b border-gray-100"
+        }`}
       >
         <button
           type="button"

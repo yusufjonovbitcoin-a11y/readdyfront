@@ -8,7 +8,9 @@ function getAdminTitle(pathname: string, t: (key: string) => string): string {
   if (pathname.startsWith("/analytics")) return t("titles.analytics");
   if (pathname.startsWith("/users")) return t("titles.users");
   if (pathname.startsWith("/notifications")) return t("sidebar.notifications");
+  if (pathname.startsWith("/news")) return t("sidebar.news");
   if (pathname.startsWith("/audit-logs")) return t("titles.auditLogs");
+  if (pathname.startsWith("/admin-chat")) return "Chat Guruhi";
   if (pathname.startsWith("/settings")) return t("titles.settings");
   return t("titles.dashboard");
 }

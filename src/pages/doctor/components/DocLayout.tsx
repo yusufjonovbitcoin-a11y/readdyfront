@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import DocSidebar from "./DocSidebar";
+import DocSidebar, { SIDEBAR_WIDTH } from "./DocSidebar";
 import DocHeader from "./DocHeader";
 import { usePersistedDoctorTheme } from "@/hooks/usePersistedDoctorTheme";
 import { usePersistedPatientDetailLayout } from "@/hooks/usePersistedPatientDetailLayout";
@@ -20,7 +20,9 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
   const [darkMode, toggleDarkMode, setDarkMode] = usePersistedDoctorTheme();
   const [patientDetailLayout, setPatientDetailLayout] = usePersistedPatientDetailLayout();
   const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
-  const isFullBleedRoute = pathname.startsWith("/doctor/notifications");
+  const isFullBleedRoute = pathname.startsWith("/doctor/notifications") || pathname.startsWith("/doctor/chat");
+
+  const sidebarW = collapsed ? SIDEBAR_WIDTH.collapsed : SIDEBAR_WIDTH.expanded;
 
   return (
     <DoctorThemeProvider
@@ -32,6 +34,7 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
     >
       <div
         className={`min-h-screen ${darkMode ? "bg-[#0D1117]" : "bg-[#F4F6FB]"}`}
+        style={{ "--doc-sidebar-w": `${sidebarW}px` } as React.CSSProperties}
       >
         <DocSidebar
           collapsed={collapsed}
@@ -42,7 +45,6 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
         />
         <DocHeader
           title={title}
-          sidebarCollapsed={collapsed}
           onToggleMobile={() =>
             setMobileSidebarOpen((v) => {
               const next = !v;
@@ -62,9 +64,7 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
         <main
           id="main-content"
           tabIndex={-1}
-          className={`min-w-0 transition-[margin-left] duration-300 ease-out pt-16 min-h-screen ${
-            collapsed ? "md:ml-16" : "md:ml-64"
-          }`}
+          className="min-w-0 transition-[margin-left] duration-300 ease-out pt-16 min-h-screen md:ml-[var(--doc-sidebar-w)]"
         >
           <div className={`min-w-0 ${isFullBleedRoute ? "" : layoutSystem.pagePadding}`}>{children}</div>
         </main>
