@@ -24,7 +24,7 @@ export default function AsyncFeedback<T>({ state, onRetry }: AsyncFeedbackProps<
     return (
       <div
         {...politeAnnouncementProps}
-        className="fixed top-20 right-6 z-50 px-4 py-3 rounded-lg text-sm font-medium shadow-lg bg-[#1A2235] text-white flex items-center gap-2"
+        className="fixed top-20 right-6 z-50 px-4 py-3 rounded-lg text-sm font-medium shadow-lg bg-[#21262D] text-white flex items-center gap-2"
       >
         <i className="ri-loader-4-line always-spin text-base" aria-hidden="true" />
         <span>Yuklanmoqda...</span>

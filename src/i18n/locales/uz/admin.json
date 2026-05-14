@@ -4,6 +4,8 @@
     "hospitals": "Kasalxonalar",
     "analytics": "Tahlil",
     "users": "Foydalanuvchilar",
+    "usersDoctorDetail": "Shifokor",
+    "usersMemberDetail": "Foydalanuvchi",
     "questions": "Bo'limlar",
     "auditLogs": "Audit Logs",
     "settings": "Sozlamalar"
@@ -17,7 +19,8 @@
     "auditLogs": "Audit Logs",
     "notifications": "Notifications",
     "news": "Yangiliklar",
-    "chatGroup": "Chat Guruhi",
+    "chatGuruhi": "Chat Guruhi",
+    "chatGuruhiSubtitle": "{{online}} onlayn · {{members}} a'zo",
     "settings": "Sozlamalar",
     "logout": "Chiqish",
     "superAdmin": "Super Admin",
@@ -80,6 +83,20 @@
       "patients": "+8.3% kecha",
       "visits": "-2.1% o'tgan oy"
     },
+    "activityChart": {
+      "brandShort": "MC",
+      "calendarHint": "Statistika sanalari (31 kungacha)",
+      "exportCsv": "CSV yuklab olish",
+      "dateRangeTitle": "Sana oralig'i",
+      "dateRangeFrom": "Dan",
+      "dateRangeTo": "Gacha",
+      "dateRangeApply": "Qo'llash",
+      "dateRangeClear": "Tozalash",
+      "dateRangeTooLong": "Oraliq 31 kundan oshmasligi kerak.",
+      "dateRangeHint": "Eng ko'pi 31 kun — grafik va CSV shu oralikka qisqartiriladi.",
+      "dateRangeFillBoth": "Boshlanish va tugash sanalarini tanlang.",
+      "dateRangeOrderInvalid": "\"Dan\" sanasi \"gacha\"dan katta bo'lmasligi kerak."
+    },
     "alerts": {
       "title": "Tizim Ogohlantirishlari",
       "items": {
@@ -94,6 +111,15 @@
         "oneHour": "1 soat oldin",
         "threeDays": "3 kun oldin"
       }
+    },
+    "charts": {
+      "bookingsByDay": "Kunlik qabul (yakunlangan / jarayonda)",
+      "distributionByRegion": "Hudud bo'yicha taqsimot",
+      "weeklyTrend": "Haftalik dinamika",
+      "successful": "Yakunlangan",
+      "failed": "Jarayonda",
+      "bookings": "Navbatlar",
+      "noData": "Ko'rsatish uchun ma'lumot yetarli emas"
     }
   },
   "hospitals": {
@@ -108,7 +134,8 @@
       "dailyPatients": "Kunlik bemorlar",
       "status": "Holat",
       "actions": "Amallar",
-      "adminPrefix": "Admin:"
+      "adminPrefix": "Admin:",
+      "viloyat": "Viloyat"
     },
     "deleteConfirm": {
       "title": "O'chirishni tasdiqlang",
@@ -137,6 +164,8 @@
       "completionRate": "Yakunlash darajasi"
     },
     "flowDynamics": "Bemor Oqimi Dinamikasi",
+    "flowDynamicsSubtitle": "Bemorlar bo'yicha jonli tahlil monitoringi",
+    "liveBadge": "JONLI",
     "patients": "Bemorlar",
     "appointments": "Uchrashuvlar",
     "appointmentShort": "Uchrashuv",
@@ -155,9 +184,18 @@
     "toast": {
       "added": "Foydalanuvchi muvaffaqiyatli qo'shildi!"
     },
+    "stats": {
+      "totalUsers": "Jami foydalanuvchilar"
+    },
     "roles": {
       "admins": "Adminlar",
-      "doctors": "Shifokorlar"
+      "doctors": "Shifokorlar",
+      "display": {
+        "superAdmin": "Super Admin",
+        "hospitalAdmin": "Hospital Admin",
+        "doctor": "Shifokor",
+        "reception": "Qabulxona"
+      }
     },
     "form": {
       "fullNameLabel": "To'liq Ism *",
@@ -180,6 +218,50 @@
       "toggleStatusTitle": "Holat o'zgartirish",
       "editTitle": "Tahrirlash",
       "deleteTitle": "O'chirish"
+    },
+    "detail": {
+      "sectionPersonal": "Shaxsiy ma'lumotlar",
+      "back": "Foydalanuvchilar ro'yxatiga qaytish",
+      "loading": "Yuklanmoqda…",
+      "notFound": "Foydalanuvchi topilmadi.",
+      "loadError": "Ma'lumotlarni yuklashda xatolik yuz berdi.",
+      "idMissing": "ID topilmadi.",
+      "fields": {
+        "phone": "Telefon",
+        "email": "Email",
+        "role": "Rol",
+        "lastLogin": "So'nggi kirish",
+        "createdAt": "Ro'yxatdan o'tgan",
+        "status": "Holat"
+      },
+      "tabs": {
+        "overview": "Umumiy",
+        "analytics": "Tahlil"
+      },
+      "stats": {
+        "lastAccess": "So'nggi kirish",
+        "memberSince": "Ro'yxatdan"
+      },
+      "statTiles": {
+        "hospital": "Kasalxona",
+        "role": "Rol",
+        "contact": "Aloqa",
+        "accountStatus": "Hisob holati"
+      },
+      "personal": {
+        "fullName": "To'liq ism"
+      },
+      "statisticsTitle": "Statistika",
+      "analytics": {
+        "activityTitle": "Faoliyat",
+        "chartHint": "Haftalik dinamika — tez orada to'liq ma'lumot",
+        "metricsTitle": "Ko'rsatkichlar",
+        "metricActivity": "Faollik",
+        "metricProfile": "Profil ma'lumotlari",
+        "systemTitle": "Tizim",
+        "systemSuper": "Barcha kasalxonalar va administratorlar bo'yicha global boshqaruv.",
+        "systemHospital": "Kasalxona bo'yicha batafsil tahlil alohida Tahlil bo'limida."
+      }
     }
   },
   "audit": {

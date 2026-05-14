@@ -15,6 +15,8 @@ export interface UserDto {
   lastLogin: string;
   createdAt: string;
   avatar: string;
+  /** `Admins.is_super` — kasalxona majburiy emas, UI da alohida */
+  isSuperAdmin?: boolean;
 }
 
 export interface CreateUserInput {

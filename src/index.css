@@ -34,3 +34,46 @@ aside nav a {
   animation: app-spin 1s linear infinite;
   display: inline-block;
 }
+
+/* Scrollbar — yorug‘ tema (default). `html.dark` ni layoutlar useDocumentThemeSync orqali qo‘shadi */
+:root {
+  color-scheme: light;
+  scrollbar-color: #b4bcc8 #eceef2;
+}
+
+html.dark {
+  color-scheme: dark;
+  scrollbar-color: #4b5368 #0f1117;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #eceef2;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #b4bcc8;
+  border-radius: 8px;
+  border: 2px solid #eceef2;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #9aa3b2;
+}
+
+html.dark *::-webkit-scrollbar-track {
+  background: #0f1117;
+}
+
+html.dark *::-webkit-scrollbar-thumb {
+  background: #3a4254;
+  border-color: #0f1117;
+}
+
+html.dark *::-webkit-scrollbar-thumb:hover {
+  background: #4d566b;
+}

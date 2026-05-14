@@ -207,15 +207,15 @@ export function HASettingsPageContent() {
   ];
 
   const inputClass = `w-full px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${
-    darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"
+    darkMode ? "bg-[#21262D] border-[#30363D] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"
   }`;
   const labelClass = `block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`;
-  const cardBase = `rounded-xl border p-6 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`;
+  const cardBase = `rounded-xl border p-6 ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`;
 
   return (
       <div className="max-w-3xl space-y-5">
         {/* Tabs */}
-        <div className={`flex gap-1 p-1 rounded-xl flex-wrap ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
+        <div className={`flex gap-1 p-1 rounded-xl flex-wrap ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
           {tabs.map(tab => (
             <button
               key={tab.key}
@@ -229,7 +229,7 @@ export function HASettingsPageContent() {
               }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === tab.key
-                  ? darkMode ? "bg-[#141824] text-teal-400" : "bg-white text-teal-600"
+                  ? darkMode ? "bg-[#21262D] text-teal-400" : "bg-white text-teal-600"
                   : darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-700"
               }`}
             >
@@ -255,8 +255,8 @@ export function HASettingsPageContent() {
                 />
                 <div
                   className={`w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 ring-2 ring-offset-2 ${
-                    darkMode ? "ring-offset-[#141824] ring-[#1E2130]" : "ring-offset-white ring-gray-200"
-                  } ${avatarUrl ? "bg-[#1A2235]" : "bg-teal-500"}`}
+                    darkMode ? "ring-offset-[#21262D] ring-[#30363D]" : "ring-offset-white ring-gray-200"
+                  } ${avatarUrl ? "bg-[#21262D]" : "bg-teal-500"}`}
                 >
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -269,7 +269,7 @@ export function HASettingsPageContent() {
                   onClick={() => setAvatarMenuOpen((prev) => !prev)}
                   className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
                     darkMode
-                      ? "bg-[#1A2235] border-[#141824] text-teal-400 hover:text-teal-300"
+                      ? "bg-[#21262D] border-[#30363D] text-teal-400 hover:text-teal-300"
                       : "bg-white border-gray-100 text-teal-600 hover:text-teal-700"
                   }`}
                   aria-label={t("settings.profile.avatarInputAria")}
@@ -280,7 +280,7 @@ export function HASettingsPageContent() {
                 {avatarMenuOpen && (
                   <div
                     className={`absolute top-[calc(100%+8px)] left-0 z-20 min-w-[11rem] rounded-lg border p-1.5 ${
-                      darkMode ? "bg-[#1A2235] border-[#1E2130]" : "bg-white border-gray-200"
+                      darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-200"
                     }`}
                   >
                     <button
@@ -290,7 +290,7 @@ export function HASettingsPageContent() {
                         avatarInputRef.current?.click();
                       }}
                       className={`w-full text-left px-2.5 py-2 rounded-md text-xs font-medium transition-colors ${
-                        darkMode ? "text-teal-300 hover:bg-[#141824]" : "text-teal-700 hover:bg-gray-50"
+                        darkMode ? "text-teal-300 hover:bg-[#21262D]" : "text-teal-700 hover:bg-gray-50"
                       }`}
                     >
                       {t("settings.profile.uploadPhoto")}
@@ -303,7 +303,7 @@ export function HASettingsPageContent() {
                       }}
                       disabled={!avatarUrl}
                       className={`w-full text-left px-2.5 py-2 rounded-md text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                        darkMode ? "text-gray-300 hover:bg-[#141824]" : "text-gray-700 hover:bg-gray-50"
+                        darkMode ? "text-gray-300 hover:bg-[#21262D]" : "text-gray-700 hover:bg-gray-50"
                       }`}
                     >
                       {t("settings.profile.removePhoto")}
@@ -391,7 +391,7 @@ export function HASettingsPageContent() {
               </button>
             </div>
 
-            <div className={`mt-6 pt-6 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+            <div className={`mt-6 pt-6 border-t ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
               <h4 className={`text-sm font-semibold mb-3 ${darkMode ? "text-white" : "text-gray-900"}`}>{t("settings.security.infoTitle")}</h4>
               <div className="space-y-2">
                 {[
@@ -399,7 +399,7 @@ export function HASettingsPageContent() {
                   { label: t("settings.security.info.ipAddress"), value: '192.168.1.105' },
                   { label: t("settings.security.info.device"), value: 'Chrome / Windows 11' },
                 ].map(item => (
-                  <div key={item.label} className={`flex items-center justify-between py-2 border-b last:border-0 ${darkMode ? "border-[#1E2130]" : "border-gray-50"}`}>
+                  <div key={item.label} className={`flex items-center justify-between py-2 border-b last:border-0 ${darkMode ? "border-[#30363D]" : "border-gray-50"}`}>
                     <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{item.label}</span>
                     <span className={`text-xs font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{item.value}</span>
                   </div>
@@ -430,7 +430,7 @@ export function HASettingsPageContent() {
                             ? "border-teal-500/70 bg-teal-900/25"
                             : "border-teal-500 bg-teal-50"
                           : darkMode
-                            ? "border-[#1E2130] hover:border-teal-500/50"
+                            ? "border-[#30363D] hover:border-teal-500/50"
                             : "border-gray-200 hover:border-teal-300"
                       }`}
                     >
@@ -471,7 +471,7 @@ export function HASettingsPageContent() {
                 { key: 'systemAlert', label: t("settings.notifications.items.systemAlert.label"), desc: t("settings.notifications.items.systemAlert.desc") },
                 { key: 'weeklyReport', label: t("settings.notifications.items.weeklyReport.label"), desc: t("settings.notifications.items.weeklyReport.desc") },
               ].map(item => (
-                <div key={item.key} className={`flex items-center justify-between p-4 rounded-xl ${darkMode ? "bg-[#1A2235]" : "bg-gray-50"}`}>
+                <div key={item.key} className={`flex items-center justify-between p-4 rounded-xl ${darkMode ? "bg-[#21262D]" : "bg-gray-50"}`}>
                   <div>
                     <p className={`text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{item.label}</p>
                     <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{item.desc}</p>

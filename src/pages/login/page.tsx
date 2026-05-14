@@ -4,7 +4,7 @@ import { useAuth, UserRole } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import loginBgImage from "@/assets/login-bg.jpg";
-import medcoreLogoImage from "@/assets/medcore-logo.png";
+import { AppLogoMark } from "@/components/branding/AppLogoMark";
 
 const ROLE_REDIRECT: Record<UserRole, string> = {
   SUPER_ADMIN: "/dashboard",
@@ -37,6 +37,17 @@ export default function LoginPage() {
     } catch {
       // Ignore storage read failures (e.g. private mode restrictions).
     }
+  }, []);
+
+  /**
+   * Logoutdan keyin `html.dark` / `color-scheme: dark` layout unmount bilan tozalanmaydi;
+   * login UI yorug‘, lekin native inputlar qorong‘i uslubda qoladi — matn "qora" ko‘rinadi.
+   * Keyingi sahifa o‘z layoutida useDocumentThemeSync orqali temani qayta qo‘llaydi.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("dark");
+    root.style.colorScheme = "light";
   }, []);
 
   const getRoleSafeRedirect = (role: UserRole, intendedPath?: string) => {
@@ -91,7 +102,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#F8F9FC]">
+    <div className="min-h-screen flex bg-[#F8F9FC] [color-scheme:light]">
       {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <img
@@ -103,13 +114,7 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center">
-              <img
-                src={medcoreLogoImage}
-                alt={t("auth:login.leftPanel.title")}
-                className="w-10 h-10 object-contain rounded-xl"
-              />
-            </div>
+            <AppLogoMark size={40} className="shrink-0" alt={t("auth:login.leftPanel.title")} />
             <span className="text-white text-2xl font-bold tracking-wide">MedCore</span>
           </div>
 
@@ -153,11 +158,7 @@ export default function LoginPage() {
           </div>
           {/* Mobile Logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <img
-              src={medcoreLogoImage}
-              alt={t("auth:login.leftPanel.title")}
-              className="w-8 h-8 object-contain rounded-lg"
-            />
+            <AppLogoMark size={32} className="shrink-0" alt={t("auth:login.leftPanel.title")} />
             <span className="text-gray-900 text-xl font-bold">MedCore</span>
           </div>
 

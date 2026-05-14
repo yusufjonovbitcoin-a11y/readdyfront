@@ -5,8 +5,17 @@ import DocLayout from "@/pages/doctor/components/DocLayout";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { getCurrentDoctorSession } from "@/api/services/doctorSession.service";
 import { changePassword } from "@/api/auth";
-import { updateDoctorAvatar } from "@/api/doctor";
+import { getMyDoctorProfile, updateDoctorAvatar } from "@/api/doctor";
 import { useAuth } from "@/hooks/useAuth";
+
+function uniquePhoneLine(...candidates: (string | undefined)[]): string {
+  const seen = new Set<string>();
+  for (const c of candidates) {
+    const v = typeof c === "string" ? c.trim() : "";
+    if (v) seen.add(v);
+  }
+  return [...seen].join(" · ");
+}
 
 type SettingsTab = 'profile' | 'security' | 'language' | 'notifications';
 
@@ -58,8 +67,17 @@ export function DocSettingsContent() {
   }, [avatarMenuOpen]);
   const { darkMode, setDarkMode, patientDetailLayout, setPatientDetailLayout } = useDoctorTheme();
   const currentDoctorSession = getCurrentDoctorSession();
+
+  const [profile, setProfile] = useState({
+    name: "",
+    department: "",
+    experience: "",
+    phone: "",
+  });
+
   const fallbackAvatar = (localAvatarUrl ?? currentDoctorSession?.avatar ?? user?.avatar ?? "").trim();
-  const fallbackName = currentDoctorSession?.name ?? user?.name ?? "Doctor";
+  const dash = t("settings.dash");
+  const fallbackName = (currentDoctorSession?.name ?? user?.name ?? profile.name).trim() || "Doctor";
   const fallbackInitials = fallbackName
     .split(" ")
     .filter(Boolean)
@@ -70,7 +88,7 @@ export function DocSettingsContent() {
 
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
-  const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
+  const cardBase = darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100";
   const cardTitle = darkMode ? "text-white" : "text-gray-900";
   const cardText = darkMode ? "text-gray-300" : "text-gray-700";
   const cardTextMuted = darkMode ? "text-gray-400" : "text-gray-600";
@@ -78,13 +96,6 @@ export function DocSettingsContent() {
   const inputBase = darkMode
     ? "w-full text-sm border border-[#30363D] rounded-lg px-3 py-2.5 bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
     : "w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-green-400";
-
-  const [profile, setProfile] = useState({
-    name: 'Dr. Alisher Karimov',
-    specialty: 'Kardiologiya',
-    phone: '+998 90 123 45 67',
-    experience: '8 yil',
-  });
 
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
   const [passError, setPassError] = useState('');
@@ -97,6 +108,27 @@ export function DocSettingsContent() {
     dailySummary: false,
     systemUpdates: true,
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const me = await getMyDoctorProfile();
+      if (cancelled) return;
+      const name = (me?.name || user?.name || "").trim() || "Doctor";
+      const department = (me?.departmentName || "").trim();
+      const specialty = (me?.specialty || "").trim();
+      const phoneLine = uniquePhoneLine(me?.phone, user?.phone);
+      setProfile({
+        name,
+        department,
+        experience: specialty,
+        phone: phoneLine,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.name, user?.phone]);
 
   const handleAvatarFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -263,7 +295,7 @@ export function DocSettingsContent() {
                       {fallbackAvatar && !avatarFailed ? (
                         <img
                           src={fallbackAvatar}
-                          alt={profile.name}
+                          alt={fallbackName}
                           width={64}
                           height={64}
                           className="h-full w-full object-cover"
@@ -278,7 +310,7 @@ export function DocSettingsContent() {
                       onClick={() => setAvatarMenuOpen((prev) => !prev)}
                       className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
                         darkMode
-                          ? "bg-[#21262D] border-[#161B22] text-green-300 hover:text-green-200"
+                          ? "bg-[#21262D] border-[#30363D] text-green-300 hover:text-green-200"
                           : "bg-white border-gray-100 text-green-600 hover:text-green-700"
                       }`}
                       aria-label="Profil rasmini boshqarish"
@@ -299,7 +331,7 @@ export function DocSettingsContent() {
                             avatarFileInputRef.current?.click();
                           }}
                           className={`w-full text-left px-2.5 py-2 rounded-md text-xs font-medium transition-colors ${
-                            darkMode ? "text-green-300 hover:bg-[#161B22]" : "text-green-700 hover:bg-gray-50"
+                            darkMode ? "text-green-300 hover:bg-[#21262D]" : "text-green-700 hover:bg-gray-50"
                           }`}
                         >
                           Rasmni o'zgartirish
@@ -316,7 +348,7 @@ export function DocSettingsContent() {
                           }}
                           disabled={!localAvatarUrl}
                           className={`w-full text-left px-2.5 py-2 rounded-md text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                            darkMode ? "text-gray-300 hover:bg-[#161B22]" : "text-gray-700 hover:bg-gray-50"
+                            darkMode ? "text-gray-300 hover:bg-[#21262D]" : "text-gray-700 hover:bg-gray-50"
                           }`}
                         >
                           Suratni olib tashlash
@@ -325,17 +357,19 @@ export function DocSettingsContent() {
                     )}
                   </div>
                   <div>
-                    <p className={`text-sm font-semibold ${cardTitle}`}>{profile.name}</p>
-                    <p className="text-xs text-green-600">{profile.specialty}</p>
-                    <p className={`text-xs mt-0.5 ${cardTextMuted}`}>{profile.phone}</p>
+                    <p className={`text-sm font-semibold ${cardTitle}`}>{profile.name.trim() || dash}</p>
+                    <p className="text-xs text-green-600">{profile.department.trim() || dash}</p>
+                    <p className={`mt-0.5 text-xs ${cardTextMuted}`}>{profile.phone.trim() || dash}</p>
                     {isUploadingAvatar && <p className={`text-xs mt-1 ${cardTextMuted}`}>Surat yuklanmoqda...</p>}
                     {avatarUploadError && <p className="text-xs mt-1 text-red-500">{avatarUploadError}</p>}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
-                    <label htmlFor="doctor-settings-name" className={`block text-sm font-medium mb-1.5 ${cardText}`}>To'liq ism</label>
+                    <label htmlFor="doctor-settings-name" className={`mb-1.5 block text-sm font-medium ${cardText}`}>
+                      {t("settings.fieldFullName")}
+                    </label>
                     <input
                       id="doctor-settings-name"
                       type="text"
@@ -345,7 +379,9 @@ export function DocSettingsContent() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="doctor-settings-experience" className={`block text-sm font-medium mb-1.5 ${cardText}`}>Tajriba</label>
+                    <label htmlFor="doctor-settings-experience" className={`mb-1.5 block text-sm font-medium ${cardText}`}>
+                      {t("settings.fieldExperience")}
+                    </label>
                     <input
                       id="doctor-settings-experience"
                       type="text"
@@ -626,7 +662,7 @@ export function DocSettingsContent() {
                         aria-label={`${item.label}: bildirishnoma`}
                         onClick={() => setNotifs({ ...notifs, [item.key]: !notifs[item.key as keyof typeof notifs] })}
                         className={`inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 ${
-                          darkMode ? "focus-visible:ring-offset-[#161B22]" : "focus-visible:ring-offset-white"
+                          darkMode ? "focus-visible:ring-offset-[#21262D]" : "focus-visible:ring-offset-white"
                         } ${
                           notifs[item.key as keyof typeof notifs]
                             ? "justify-end bg-green-600"

@@ -55,7 +55,7 @@ export function HospitalDetailContent() {
 
   if (pageState.status === "loading") {
     return (
-      <div className={`rounded-xl p-14 text-center ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+      <div className={`rounded-xl p-14 text-center ${dm ? "bg-[#21262D]" : "bg-white"}`}>
         <i className="ri-loader-4-line always-spin text-2xl text-emerald-500" />
         <p className={`mt-3 text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("hospitalDetail.loading")}</p>
       </div>
@@ -64,7 +64,7 @@ export function HospitalDetailContent() {
 
   if (pageState.status === "error") {
     return (
-      <div className={`rounded-xl p-14 text-center ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+      <div className={`rounded-xl p-14 text-center ${dm ? "bg-[#21262D]" : "bg-white"}`}>
         <i className="ri-error-warning-line text-2xl text-red-500" />
         <p className={`mt-3 text-sm ${dm ? "text-gray-300" : "text-gray-600"}`}>{pageState.error}</p>
         <button
@@ -139,7 +139,7 @@ export function HospitalDetailContent() {
             type="button"
             onClick={() => navigate("/hospitals")}
             aria-label={t("hospitalDetail.backToHospitals")}
-            className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${dm ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-white text-gray-400 hover:text-gray-700"}`}
+            className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${dm ? "bg-[#21262D] text-gray-400 hover:text-white" : "bg-white text-gray-400 hover:text-gray-700"}`}
           >
             <i className="ri-arrow-left-line text-sm" aria-hidden="true"></i>
           </button>
@@ -155,7 +155,7 @@ export function HospitalDetailContent() {
         </div>
 
         {/* Tabs */}
-        <div className={`flex items-center gap-1 border-b ${dm ? "border-[#1E2130]" : "border-gray-200"} overflow-x-auto`}>
+        <div className={`flex items-center gap-1 border-b ${dm ? "border-[#30363D]" : "border-gray-200"} overflow-x-auto`}>
           {tabs.map((t) => (
             <button
               key={t.key}
@@ -178,7 +178,7 @@ export function HospitalDetailContent() {
         {activeTab === "overview" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Info */}
-            <div className={`lg:col-span-2 rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div className={`lg:col-span-2 rounded-xl p-5 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
               <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>Umumiy Ma'lumot</h3>
               <div className="grid grid-cols-2 gap-4">
                 {[
@@ -203,7 +203,7 @@ export function HospitalDetailContent() {
             </div>
 
             {/* Today Stats */}
-            <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div className={`rounded-xl p-5 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
               <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>Bugungi Statistika</h3>
               <div className="space-y-3">
                 {[
@@ -240,7 +240,7 @@ export function HospitalDetailContent() {
             </p>
 
             {showAddDoctor && (
-              <div className={`rounded-xl p-5 border ${dm ? "bg-[#1A2235] border-emerald-500/30" : "bg-white border-emerald-200"}`}>
+              <div className={`rounded-xl p-5 border ${dm ? "bg-[#21262D] border-emerald-500/30" : "bg-white border-emerald-200"}`}>
                 <h4 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>{t("hospitalDetail.newDoctor")}</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {[
@@ -253,7 +253,7 @@ export function HospitalDetailContent() {
                       id={`hospital-detail-doctor-${f.key}`}
                       aria-invalid={Boolean(doctorFormErrors[f.key as keyof typeof doctorForm])}
                       aria-describedby={doctorFormErrors[f.key as keyof typeof doctorForm] ? `hospital-detail-doctor-${f.key}-error` : undefined}
-                      className={`px-3 py-2 rounded-lg text-sm outline-none ${dm ? "bg-[#0F1117] border border-[#1E2A3A] text-white placeholder-gray-600 focus:border-emerald-500" : "bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400"}`}
+                      className={`px-3 py-2 rounded-lg text-sm outline-none ${dm ? "bg-[#0F1117] border border-[#30363D] text-white placeholder-gray-600 focus:border-emerald-500" : "bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400"}`}
                       placeholder={f.placeholder}
                       value={doctorForm[f.key as keyof typeof doctorForm]}
                       onChange={(e) => {
@@ -287,7 +287,7 @@ export function HospitalDetailContent() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {doctors.map((d) => (
-                <div key={d.id} className={`rounded-xl p-4 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+                <div key={d.id} className={`rounded-xl p-4 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
@@ -302,7 +302,7 @@ export function HospitalDetailContent() {
                       {d.status === "active" ? "Faol" : "Nofaol"}
                     </span>
                   </div>
-                  <div className={`grid grid-cols-2 gap-2 pt-3 border-t ${dm ? "border-[#1E2130]" : "border-gray-100"}`}>
+                  <div className={`grid grid-cols-2 gap-2 pt-3 border-t ${dm ? "border-[#30363D]" : "border-gray-100"}`}>
                     <div>
                       <p className={`text-xs ${dm ? "text-gray-500" : "text-gray-400"}`}>Bugun</p>
                       <p className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>{d.todayPatients} bemor</p>
@@ -320,7 +320,7 @@ export function HospitalDetailContent() {
 
         {activeTab === "patients" && (
           <div className="space-y-4">
-            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-lg w-full sm:max-w-xs ${dm ? "bg-[#1A2235]" : "bg-white border border-gray-200"}`}>
+            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-lg w-full sm:max-w-xs ${dm ? "bg-[#21262D]" : "bg-white border border-gray-200"}`}>
               <div className="w-4 h-4 flex items-center justify-center">
                 <i className={`ri-search-line text-sm ${dm ? "text-gray-400" : "text-gray-400"}`}></i>
               </div>
@@ -332,12 +332,12 @@ export function HospitalDetailContent() {
               />
             </div>
 
-            <div className={`rounded-xl overflow-hidden ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div className={`rounded-xl overflow-hidden ${dm ? "bg-[#21262D]" : "bg-white"}`}>
               <div className="space-y-3 p-3 md:hidden">
                 {patients.map((p) => (
                   <article
                     key={p.id}
-                    className={`rounded-lg border p-3 ${dm ? "border-[#1E2130] bg-[#0F1117]/40" : "border-gray-100 bg-white"}`}
+                    className={`rounded-lg border p-3 ${dm ? "border-[#30363D] bg-[#0F1117]/40" : "border-gray-100 bg-white"}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -386,7 +386,7 @@ export function HospitalDetailContent() {
                   </thead>
                   <tbody>
                     {patients.map((p, i) => (
-                      <tr key={p.id} className={`border-t ${dm ? "border-[#1E2130]" : "border-gray-50"} ${i % 2 === 0 ? dm ? "bg-[#1A2235]" : "" : dm ? "bg-[#161D2E]" : "bg-gray-50/50"}`}>
+                      <tr key={p.id} className={`border-t ${dm ? "border-[#30363D]" : "border-gray-50"} ${i % 2 === 0 ? dm ? "bg-[#21262D]" : "" : dm ? "bg-[#0F1117]" : "bg-gray-50/50"}`}>
                         <td className="px-4 py-3">
                           <p className={`text-sm font-medium ${dm ? "text-white" : "text-gray-900"}`}>{p.name}</p>
                         </td>
@@ -414,7 +414,7 @@ export function HospitalDetailContent() {
 
         {activeTab === "analytics" && (
           <div className="space-y-4">
-            <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div className={`rounded-xl p-5 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
               <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>Kunlik Tashriflar (So'nggi 7 kun)</h3>
               <div className="flex items-end gap-2 h-40">
                 {dailyData.map((d, i) => (
@@ -436,7 +436,7 @@ export function HospitalDetailContent() {
                 { label: "Eng yuqori kun", value: "Apr 15 — 356", icon: "ri-arrow-up-line", color: "text-blue-400" },
                 { label: "Yakunlash darajasi", value: "87%", icon: "ri-checkbox-circle-line", color: "text-violet-400" },
               ].map((s, i) => (
-                <div key={i} className={`rounded-xl p-4 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+                <div key={i} className={`rounded-xl p-4 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-4 h-4 flex items-center justify-center">
                       <i className={`${s.icon} ${s.color} text-sm`}></i>
@@ -451,7 +451,7 @@ export function HospitalDetailContent() {
         )}
 
         {activeTab === "admins" && (
-          <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+          <div className={`rounded-xl p-5 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
             <div className="flex items-center justify-between mb-4">
               <h3 className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>{t("hospitalDetail.adminsTitle")}</h3>
               <button
@@ -484,7 +484,7 @@ export function HospitalDetailContent() {
         )}
 
         {activeTab === "settings" && (
-          <div className={`rounded-xl p-5 max-w-lg ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+          <div className={`rounded-xl p-5 max-w-lg ${dm ? "bg-[#21262D]" : "bg-white"}`}>
             <h3 className={`text-sm font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>{t("hospitalDetail.settingsTitle")}</h3>
             <p className={`text-xs mb-4 ${dm ? "text-amber-400" : "text-amber-600"}`}>
               {t("hospitalDetail.availabilityNotice.settings")}
@@ -522,7 +522,7 @@ export function HospitalDetailContent() {
                         if (settingsErrors.phone) setSettingsErrors((prev) => ({ ...prev, phone: undefined }));
                       }
                     }}
-                    className={`w-full px-3 py-2.5 rounded-lg text-sm outline-none ${dm ? "bg-[#0F1117] border border-[#1E2A3A] text-white focus:border-emerald-500" : "bg-gray-50 border border-gray-200 text-gray-900 focus:border-emerald-500"}`}
+                    className={`w-full px-3 py-2.5 rounded-lg text-sm outline-none ${dm ? "bg-[#0F1117] border border-[#30363D] text-white focus:border-emerald-500" : "bg-gray-50 border border-gray-200 text-gray-900 focus:border-emerald-500"}`}
                   />
                 </div>
               ))}
@@ -544,7 +544,7 @@ export function HospitalDetailContent() {
                     showToast(t("hospitalDetail.toast.statusLocal"), "info");
                   }}
                   className={`w-11 h-6 rounded-full cursor-pointer transition-colors ${
-                    statusSwitch === "active" ? "bg-emerald-500" : dm ? "bg-[#1E2A3A]" : "bg-gray-200"
+                    statusSwitch === "active" ? "bg-emerald-500" : dm ? "bg-[#30363D]" : "bg-gray-200"
                   }`}
                 >
                   <div className={`w-5 h-5 rounded-full bg-white mt-0.5 transition-transform ${statusSwitch === "active" ? "translate-x-5 ml-0.5" : "translate-x-0.5"}`}></div>

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, useMatch } from "react-router-dom";
 import { useQrPngDataUrl } from "@/hooks/useQrPngDataUrl";
 import HALayout from "@/pages/hospital-admin/components/HALayout";
-import { useHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
+import { useOptionalHospitalAdminDarkMode } from "@/context/HospitalAdminThemeContext";
+import { useOptionalMainLayoutTheme } from "@/context/LayoutThemeContext";
 import {
-  getDoctorAnalytics,
+  getDoctorAnalyticsByDoctorId,
   getDoctorById,
-  getDoctorPatients,
+  getDoctorPatientsByDoctorId,
 } from "@/api/doctor";
 import type {
   DoctorAnalyticsDto,
@@ -107,7 +108,7 @@ function QRCodeDisplay({ doctorId, doctorName, qrUrl, darkMode }: { doctorId: st
           </button>
           <button
             onClick={handleCopy}
-            className={`h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+            className={`h-9 px-4 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${darkMode ? "bg-[#21262D] text-gray-300 hover:bg-[#30363D]/50" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
           >
             <i className="ri-links-line text-sm"></i>
             Nusxa olish
@@ -126,11 +127,21 @@ export default function HADoctorDetailPage() {
   );
 }
 
+function useDoctorDetailDarkMode(): boolean {
+  const ha = useOptionalHospitalAdminDarkMode();
+  const main = useOptionalMainLayoutTheme();
+  if (ha !== null) return ha;
+  return main?.darkMode ?? false;
+}
+
 export function HADoctorDetailContent() {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const darkMode = useHospitalAdminDarkMode();
+  const darkMode = useDoctorDetailDarkMode();
+  const superAdminDoctorMatch = useMatch("/users/doctor/:id");
+  const doctorsListPath = superAdminDoctorMatch ? "/users" : "/hospital-admin/doctors";
+  const doctorsListBackLabel = superAdminDoctorMatch ? "Foydalanuvchilar ro'yxatiga qaytish" : "Shifokorlar ro'yxatiga qaytish";
   const rawTab = searchParams.get("tab");
   const activeTab: TabType = isValidTab(rawTab) ? rawTab : "overview";
   const [doctor, setDoctor] = useState<DoctorDto | null>(null);
@@ -160,14 +171,12 @@ export function HADoctorDetailContent() {
           throw new Error("Doctor not found");
         }
         const [patientsResponse, analyticsResponse] = await Promise.all([
-          getDoctorPatients().catch(() => [] as DoctorPatientDto[]),
-          getDoctorAnalytics().catch(() => [] as DoctorAnalyticsDto[]),
+          getDoctorPatientsByDoctorId(id),
+          getDoctorAnalyticsByDoctorId(id),
         ]);
         if (!mounted) return;
         setDoctor(doctorResponse);
-        setDoctorPatients(
-          patientsResponse.filter((patient) => patient.doctorId === id),
-        );
+        setDoctorPatients(patientsResponse);
         setDailyData(analyticsResponse);
       } catch {
         if (!mounted) return;
@@ -221,7 +230,10 @@ export function HADoctorDetailContent() {
     [doctorPatients],
   );
 
-  const max = Math.max(...dailyData.map((d) => d.patients), 1);
+  const chartPatientsMax = useMemo(
+    () => Math.max(...dailyData.map((d) => d.patients), 1),
+    [dailyData],
+  );
 
   if (loading) {
     return (
@@ -240,7 +252,7 @@ export function HADoctorDetailContent() {
         <p className={`text-sm ${darkMode ? "text-red-400" : "text-red-600"}`}>{loadError}</p>
         <button
           type="button"
-          onClick={() => navigate("/hospital-admin/doctors")}
+          onClick={() => navigate(doctorsListPath)}
           className="mt-4 text-teal-600 text-sm cursor-pointer"
         >
           Orqaga qaytish
@@ -253,12 +265,14 @@ export function HADoctorDetailContent() {
     return (
       <div className="text-center py-20">
         <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Shifokor topilmadi</p>
-        <button onClick={() => navigate('/hospital-admin/doctors')} className="mt-4 text-teal-600 text-sm cursor-pointer">Orqaga qaytish</button>
+        <button type="button" onClick={() => navigate(doctorsListPath)} className="mt-4 text-teal-600 text-sm cursor-pointer">Orqaga qaytish</button>
       </div>
     );
   }
 
   const headerDisplayName = doctor.name?.trim() || doctor.specialty?.trim() || "Doctor";
+
+  const phoneDisplay = doctor.phone?.trim() ? doctor.phone.trim() : "—";
 
   const tabs: { key: TabType; label: string; icon: string }[] = [
     { key: 'overview', label: 'Umumiy', icon: 'ri-user-line' },
@@ -271,18 +285,25 @@ export function HADoctorDetailContent() {
       <div className="space-y-5">
         {/* Back */}
         <button
-          onClick={() => navigate('/hospital-admin/doctors')}
+          type="button"
+          onClick={() => navigate(doctorsListPath)}
           className={`flex items-center gap-2 text-sm cursor-pointer ${darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"} transition-colors`}
         >
           <i className="ri-arrow-left-line text-base"></i>
-          Shifokorlar ro'yxatiga qaytish
+          {doctorsListBackLabel}
         </button>
 
         {/* Profile header */}
-        <div className={`rounded-xl p-6 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+        <div className={`rounded-xl p-6 ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"}`}>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0">
-              <img src={doctor.avatar} alt={headerDisplayName} className="w-full h-full object-cover object-top" />
+            <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-teal-900/30">
+              {doctor.avatar?.trim() ? (
+                <img src={doctor.avatar} alt={headerDisplayName} className="w-full h-full object-cover object-top" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-teal-200 text-lg font-bold">
+                  {headerDisplayName.slice(0, 2).toUpperCase()}
+                </div>
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 flex-wrap">
@@ -293,32 +314,18 @@ export function HADoctorDetailContent() {
               </div>
               <p className="text-teal-600 font-medium text-sm mt-0.5">{doctor.specialty}</p>
               <div className="flex flex-wrap gap-4 mt-3">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 flex items-center justify-center">
-                    <i className={`ri-phone-line text-xs ${darkMode ? "text-gray-400" : "text-gray-400"}`}></i>
-                  </div>
-                  <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{doctor.phone}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 flex items-center justify-center">
-                    <i className={`ri-mail-line text-xs ${darkMode ? "text-gray-400" : "text-gray-400"}`}></i>
-                  </div>
-                  <span className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{doctor.email}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 flex items-center justify-center">
-                    <i className="ri-star-fill text-amber-400 text-xs"></i>
-                  </div>
-                  <span className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{doctor.rating}</span>
+                <div className="flex items-center gap-2 min-w-0 max-w-full">
+                  <i className={`ri-phone-line text-sm shrink-0 ${darkMode ? "text-gray-400" : "text-gray-400"}`} aria-hidden />
+                  <span className={`text-sm truncate ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{phoneDisplay}</span>
                 </div>
               </div>
             </div>
             <div className="flex gap-3 flex-shrink-0">
-              <div className={`text-center px-4 py-3 rounded-xl ${darkMode ? "bg-[#1A2235]" : "bg-gray-50"}`}>
+              <div className={`text-center px-4 py-3 rounded-xl ${darkMode ? "bg-[#21262D]" : "bg-gray-50"}`}>
                 <p className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{doctor.todayPatients}</p>
                 <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Bugun</p>
               </div>
-              <div className={`text-center px-4 py-3 rounded-xl ${darkMode ? "bg-[#1A2235]" : "bg-gray-50"}`}>
+              <div className={`text-center px-4 py-3 rounded-xl ${darkMode ? "bg-[#21262D]" : "bg-gray-50"}`}>
                 <p className={`text-xl font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{doctor.totalPatients.toLocaleString()}</p>
                 <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Jami</p>
               </div>
@@ -327,14 +334,14 @@ export function HADoctorDetailContent() {
         </div>
 
         {/* Tabs */}
-        <div className={`flex gap-1 p-1 rounded-xl w-fit ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
+        <div className={`flex gap-1 p-1 rounded-xl w-fit ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
           {tabs.map(tab => (
             <button
               key={tab.key}
               onClick={() => handleTabChange(tab.key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === tab.key
-                  ? darkMode ? "bg-[#141824] text-teal-400" : "bg-white text-teal-600"
+                  ? darkMode ? "bg-[#21262D] text-teal-400" : "bg-white text-teal-600"
                   : darkMode ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-700"
               }`}
             >
@@ -347,34 +354,32 @@ export function HADoctorDetailContent() {
         {/* Tab content */}
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className={`rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+            <div className={`rounded-xl p-5 ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"}`}>
               <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>Shaxsiy ma'lumotlar</h3>
               <div className="space-y-3">
                 {[
                   { label: 'To\'liq ism', value: doctor.name?.trim() || "—" },
                   { label: 'Mutaxassislik', value: doctor.specialty },
-                  { label: 'Telefon', value: doctor.phone },
-                  { label: 'Email', value: doctor.email },
+                  { label: 'Telefon', value: phoneDisplay },
                   { label: 'Ishga kirgan sana', value: doctor.joinDate },
                   { label: 'Holat', value: doctor.status === 'active' ? 'Faol' : 'Nofaol' },
                 ].map(item => (
-                  <div key={item.label} className={`flex items-center justify-between py-2 border-b last:border-0 ${darkMode ? "border-[#1E2130]" : "border-gray-50"}`}>
+                  <div key={item.label} className={`flex items-center justify-between py-2 border-b last:border-0 ${darkMode ? "border-[#30363D]" : "border-gray-50"}`}>
                     <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{item.label}</span>
                     <span className={`text-xs font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{item.value}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className={`rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+            <div className={`rounded-xl p-5 ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"}`}>
               <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>Statistika</h3>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: 'Bugungi bemorlar', value: doctor.todayPatients, color: 'text-teal-600' },
                   { label: 'Jami bemorlar', value: doctor.totalPatients.toLocaleString(), color: 'text-indigo-600' },
-                  { label: 'Reyting', value: `${doctor.rating} / 5.0`, color: 'text-amber-600' },
-                  { label: 'Haftalik o\'rtacha', value: Math.round(doctor.totalPatients / 52), color: 'text-emerald-600' },
+                  { label: 'Haftalik o\'rtacha', value: doctor.weeklyAvgPatients, color: 'text-emerald-600' },
                 ].map(item => (
-                  <div key={item.label} className={`p-3 rounded-xl ${darkMode ? "bg-[#1A2235]" : "bg-gray-50"}`}>
+                  <div key={item.label} className={`p-3 rounded-xl ${darkMode ? "bg-[#21262D]" : "bg-gray-50"}`}>
                     <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
                     <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{item.label}</p>
                   </div>
@@ -385,8 +390,8 @@ export function HADoctorDetailContent() {
         )}
 
         {activeTab === 'patients' && (
-          <div className={`rounded-xl border overflow-hidden ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
-            <div className={`px-5 py-4 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+          <div className={`rounded-xl border overflow-hidden ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
+            <div className={`px-5 py-4 border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
               <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>
                 Bemorlar ({doctorPatients.length})
               </h3>
@@ -404,7 +409,7 @@ export function HADoctorDetailContent() {
               </thead>
               <tbody>
                 {normalizedPatients.map(p => (
-                  <tr key={p.id} className={`border-t ${darkMode ? "border-[#1E2130]" : "border-gray-50"}`}>
+                  <tr key={p.id} className={`border-t ${darkMode ? "border-[#30363D]" : "border-gray-50"}`}>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
@@ -440,7 +445,7 @@ export function HADoctorDetailContent() {
 
         {activeTab === 'analytics' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className={`rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+            <div className={`rounded-xl p-5 ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"}`}>
               <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>Haftalik bemor oqimi</h3>
               <div className="flex items-end gap-2 h-32">
                 {dailyData.map((d, i) => (
@@ -448,27 +453,26 @@ export function HADoctorDetailContent() {
                     <span className={`text-xs font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{d.patients}</span>
                     <div
                       className="w-full rounded-t-md bg-teal-500"
-                      style={{ height: `${(d.patients / max) * 96}px` }}
+                      style={{ height: `${(d.patients / chartPatientsMax) * 96}px` }}
                     ></div>
                     <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{d.date}</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div className={`rounded-xl p-5 ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+            <div className={`rounded-xl p-5 ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"}`}>
               <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>Ishlash ko'rsatkichlari</h3>
               <div className="space-y-4">
                 {[
                   { label: 'Bugungi bemorlar', value: doctor.todayPatients, max: 30, color: 'bg-teal-500' },
-                  { label: 'Reyting', value: doctor.rating * 10, max: 50, color: 'bg-amber-500' },
-                  { label: 'Haftalik o\'rtacha', value: Math.round(doctor.totalPatients / 52), max: 100, color: 'bg-indigo-500' },
+                  { label: 'Haftalik o\'rtacha', value: doctor.weeklyAvgPatients, max: 20, color: 'bg-indigo-500' },
                 ].map(item => (
                   <div key={item.label}>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{item.label}</span>
-                      <span className={`text-xs font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{item.label === 'Reyting' ? doctor.rating : item.value}</span>
+                      <span className={`text-xs font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{item.value}</span>
                     </div>
-                    <div className={`h-2 rounded-full ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
+                    <div className={`h-2 rounded-full ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
                       <div className={`h-full rounded-full ${item.color}`} style={{ width: `${Math.min((item.value / item.max) * 100, 100)}%` }}></div>
                     </div>
                   </div>
@@ -479,7 +483,7 @@ export function HADoctorDetailContent() {
         )}
 
         {activeTab === 'qr' && (
-          <div className={`rounded-xl p-8 flex justify-center ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}>
+          <div className={`rounded-xl p-8 flex justify-center ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"}`}>
             <QRCodeDisplay doctorId={doctor.id} doctorName={headerDisplayName} qrUrl={doctor.qrCode} darkMode={darkMode} />
           </div>
         )}

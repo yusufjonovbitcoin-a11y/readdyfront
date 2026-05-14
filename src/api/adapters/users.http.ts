@@ -11,20 +11,22 @@ type BackendAdminDto = {
   id: string;
   user_id: string;
   full_name?: string | null;
-  phone_number: string;
+  phone_number?: string | null;
   is_super: boolean;
   hospital_id: string | null;
   created_at?: string;
   hospital?: BackendHospitalDto | null;
+  users?: { phone_number?: string | null } | null;
 };
 
 type BackendDoctorDto = {
   id: string;
-  phone_number: string;
+  phone_number?: string | null;
   specialization: string;
   hospital_id: string;
   created_at?: string;
   hospital?: BackendHospitalDto | null;
+  users?: { phone_number?: string | null } | null;
 };
 
 type BackendDepartmentDto = {
@@ -74,12 +76,18 @@ function toIsoOrNow(value?: string) {
   return value ?? new Date().toISOString();
 }
 
+function coercePhone(value: unknown): string {
+  if (value == null) return "";
+  const s = String(value).trim();
+  return s;
+}
+
 function normalizeAdmin(admin: BackendAdminDto): UserDto {
   const displayName = admin.full_name?.trim();
   return {
     id: admin.id,
     name: displayName || (admin.is_super ? "Super Admin" : "Hospital Admin"),
-    phone: admin.phone_number,
+    phone: coercePhone(admin.phone_number ?? admin.users?.phone_number),
     email: "",
     role: "HOSPITAL_ADMIN",
     hospitalId: admin.hospital_id ?? "",
@@ -88,6 +96,7 @@ function normalizeAdmin(admin: BackendAdminDto): UserDto {
     lastLogin: toIsoOrNow(admin.created_at),
     createdAt: toIsoOrNow(admin.created_at),
     avatar: "",
+    isSuperAdmin: admin.is_super,
   };
 }
 
@@ -95,7 +104,7 @@ function normalizeDoctor(doctor: BackendDoctorDto): UserDto {
   return {
     id: doctor.id,
     name: doctor.specialization || `Doctor ${doctor.id.slice(0, 6)}`,
-    phone: doctor.phone_number,
+    phone: coercePhone(doctor.phone_number ?? doctor.users?.phone_number),
     email: "",
     role: "DOCTOR",
     hospitalId: doctor.hospital_id,
@@ -104,6 +113,7 @@ function normalizeDoctor(doctor: BackendDoctorDto): UserDto {
     lastLogin: toIsoOrNow(doctor.created_at),
     createdAt: toIsoOrNow(doctor.created_at),
     avatar: "",
+    isSuperAdmin: false,
   };
 }
 

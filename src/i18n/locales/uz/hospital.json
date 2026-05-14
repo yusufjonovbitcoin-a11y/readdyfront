@@ -9,7 +9,8 @@
     "questions": "Savollar",
     "analytics": "Tahlil",
     "notifications": "Bildirishnomalar",
-    "chatGroup": "Chat Guruhi",
+    "chatGuruhi": "Chat Guruhi",
+    "chatGuruhiSubtitle": "{{online}} onlayn · {{members}} a'zo",
     "settings": "Sozlamalar",
     "hospitalName": "Toshkent Klinikasi",
     "hospitalAdmin": "Hospital Admin",
@@ -73,6 +74,7 @@
       "todayPatientsPrefix": "Bugun:",
       "patientUnit": "bemor",
       "qrCodeLabel": "QR Kod",
+      "openQrTabButton": "QR bo'limi",
       "viewButton": "Ko'rish",
       "status": {
         "active": "Faol",
@@ -161,6 +163,21 @@
       "todayPatients": "Bugungi bemorlar",
       "rating": "Reyting",
       "activity": "Faollik"
+    },
+    "flowCard": {
+      "chartAria": "Bemor oqimi dinamikasi — grafik",
+      "brandShort": "MC",
+      "calendarHint": "Statistika sanalari (31 kungacha)",
+      "exportCsv": "CSV yuklab olish",
+      "dateRangeTitle": "Sana oralig'i",
+      "dateRangeFrom": "Dan",
+      "dateRangeTo": "Gacha",
+      "dateRangeApply": "Qo'llash",
+      "dateRangeClear": "Tozalash",
+      "dateRangeTooLong": "Oraliq 31 kundan oshmasligi kerak.",
+      "dateRangeHint": "Eng ko'pi 31 kun — grafik va CSV shu oralikka qisqartiriladi.",
+      "dateRangeFillBoth": "Boshlanish va tugash sanalarini tanlang.",
+      "dateRangeOrderInvalid": "\"Dan\" sanasi \"gacha\"dan katta bo'lmasligi kerak."
     }
   },
   "questions": {
@@ -352,7 +369,8 @@
     },
     "topDoctors": {
       "title": "Top shifokorlar",
-      "patientUnit": "bemor"
+      "patientUnit": "bemor",
+      "viewAll": "Barcha shifokorlar"
     },
     "yearlyTrend": {
       "title": "Yillik bemor dinamikasi",

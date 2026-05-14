@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { PatientDetailLayoutMode } from "@/hooks/usePersistedPatientDetailLayout";
+import { useDocumentThemeSync } from "@/hooks/useDocumentThemeSync";
 
 interface DoctorThemeContextValue {
   darkMode: boolean;
@@ -23,6 +24,7 @@ export function DoctorThemeProvider({
   setPatientDetailLayout,
   children,
 }: DoctorThemeProviderProps) {
+  useDocumentThemeSync(darkMode);
   const value = useMemo(
     () => ({
       darkMode,

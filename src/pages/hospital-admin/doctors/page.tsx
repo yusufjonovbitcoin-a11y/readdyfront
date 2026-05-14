@@ -167,20 +167,20 @@ export function HADoctorsPageContent() {
   };
 
   const inputClass = `px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${
-    darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"
+    darkMode ? "bg-[#21262D] border-[#30363D] text-white placeholder-gray-500 focus:border-teal-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"
   }`;
 
   return (
     <>
       <AppToast toast={toast} />
       {pageState.isLoading ? (
-        <div className={`rounded-xl border py-16 text-center ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
+        <div className={`rounded-xl border py-16 text-center ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
           <i className="ri-loader-4-line always-spin text-2xl text-teal-500" />
           <p className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Shifokorlar yuklanmoqda...</p>
         </div>
       ) : null}
       {pageState.isError ? (
-        <div className={`rounded-xl border py-14 text-center ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
+        <div className={`rounded-xl border py-14 text-center ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
           <i className="ri-error-warning-line text-2xl text-red-500" />
           <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{pageState.error instanceof Error ? pageState.error.message : "Shifokorlarni yuklashda xatolik yuz berdi."}</p>
           <button
@@ -193,7 +193,7 @@ export function HADoctorsPageContent() {
         </div>
       ) : null}
       {pageState.isSuccess && doctors.length === 0 && !showModal ? (
-        <div className={`rounded-xl border py-14 text-center ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
+        <div className={`rounded-xl border py-14 text-center ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
           <i className={`ri-stethoscope-line text-3xl ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
           <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{t("doctors.empty")}</p>
           <div className="mt-4 flex items-center justify-center gap-2">
@@ -207,7 +207,7 @@ export function HADoctorsPageContent() {
             <button
               type="button"
               onClick={() => { void pageState.refetch(); }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${darkMode ? "bg-[#21262D] text-gray-300" : "bg-gray-100 text-gray-700"}`}
             >
               Qayta tekshirish
             </button>
@@ -296,16 +296,15 @@ export function HADoctorsPageContent() {
 
         {/* Table View */}
         {view === 'table' && (
-          <div className={`rounded-xl border overflow-hidden ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
+          <div className={`rounded-xl border overflow-hidden ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
             <div className="overflow-x-auto">
               <ResponsiveTable minWidthClassName="min-w-[860px]" caption="Hospital admin doctors table">
                 <thead>
-                  <tr className={`text-xs border-b ${darkMode ? "border-[#1E2130] text-gray-400" : "border-gray-100 text-gray-500"}`}>
+                  <tr className={`text-xs border-b ${darkMode ? "border-[#30363D] text-gray-400" : "border-gray-100 text-gray-500"}`}>
                     <th scope="col" className="text-left px-5 py-3 font-medium">{t("doctors.table.doctor")}</th>
                     <th scope="col" className="text-left px-5 py-3 font-medium">{t("doctors.table.specialty")}</th>
                     <th scope="col" className="hidden md:table-cell text-left px-5 py-3 font-medium">{t("doctors.table.phone")}</th>
                     <th scope="col" className="text-left px-5 py-3 font-medium">{t("doctors.table.todayPatients")}</th>
-                    <th scope="col" className="hidden sm:table-cell text-left px-5 py-3 font-medium">{t("doctors.table.rating")}</th>
                     <th scope="col" className="text-left px-5 py-3 font-medium">{t("doctors.table.status")}</th>
                     <th scope="col" className="text-left px-5 py-3 font-medium">{t("doctors.table.actions")}</th>
                   </tr>
@@ -314,7 +313,7 @@ export function HADoctorsPageContent() {
                   {filtered.map((doc) => {
                     const rowDisplayName = doc.name?.trim() || doc.specialty?.trim() || "Doctor";
                     return (
-                    <tr key={doc.id} className={`border-b last:border-0 ${darkMode ? "border-[#1E2130] hover:bg-[#1A2235]" : "border-gray-50 hover:bg-gray-50"} transition-colors`}>
+                    <tr key={doc.id} className={`border-b last:border-0 ${darkMode ? "border-[#30363D] hover:bg-[#21262D]" : "border-gray-50 hover:bg-gray-50"} transition-colors`}>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
@@ -329,14 +328,6 @@ export function HADoctorsPageContent() {
                       <td className={`px-5 py-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{doc.specialty}</td>
                       <td className={`hidden md:table-cell px-5 py-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{doc.phone}</td>
                       <td className={`px-5 py-3 text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{doc.todayPatients}</td>
-                      <td className="hidden sm:table-cell px-5 py-3">
-                        <div className="flex items-center gap-1">
-                          <div className="w-4 h-4 flex items-center justify-center">
-                            <i className="ri-star-fill text-amber-400 text-xs"></i>
-                          </div>
-                          <span className={`text-sm ${darkMode ? "text-white" : "text-gray-900"}`}>{doc.rating}</span>
-                        </div>
-                      </td>
                       <td className="px-5 py-3">
                         <StatusChip
                           label={doc.status === 'active' ? t("common:status.active") : t("common:status.inactive")}
@@ -354,7 +345,7 @@ export function HADoctorsPageContent() {
                           <button aria-label={`View doctor ${rowDisplayName}`} onClick={() => navigate(`/hospital-admin/doctors/${doc.id}`)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-teal-50 text-teal-600 transition-colors">
                             <i className="ri-eye-line text-sm"></i>
                           </button>
-                          <button aria-label={`Edit doctor ${rowDisplayName}`} onClick={() => { setEditingDoctor(doc); setShowModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+                          <button aria-label={`Edit doctor ${rowDisplayName}`} onClick={() => { setEditingDoctor(doc); setShowModal(true); }} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#30363D]/50 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                             <i className="ri-edit-line text-sm"></i>
                           </button>
                           <button aria-label={`Delete doctor ${rowDisplayName}`} onClick={() => setDeleteConfirm(doc.id)} className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer hover:bg-red-50 text-red-500 transition-colors">

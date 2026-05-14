@@ -38,7 +38,7 @@ export function HospitalsPageContent() {
   const deleteTriggerRef = useRef<HTMLElement | null>(null);
 
   const PAGE_SIZE = 3;
-  const cardClass = `rounded-xl p-4 border ${dm ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`;
+  const cardClass = `rounded-xl p-4 border ${dm ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`;
 
   const filtered = hospitals.filter((h) => {
     const matchSearch = h.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -128,7 +128,7 @@ export function HospitalsPageContent() {
         {Array.from({ length: 6 }).map((_, idx) => (
           <div
             key={`hospital-skeleton-${idx}`}
-            className={`h-14 rounded-lg animate-pulse ${dm ? "bg-[#1A2235]" : "bg-gray-100"}`}
+            className={`h-14 rounded-lg animate-pulse ${dm ? "bg-[#21262D]" : "bg-gray-100"}`}
           />
         ))}
       </div>
@@ -251,7 +251,7 @@ export function HospitalsPageContent() {
         {error || (isLoading && hospitals.length === 0) ? null : (
         <>
           {isFetching ? (
-            <div className={`h-1 w-full rounded-full overflow-hidden ${dm ? "bg-[#1A2235]" : "bg-gray-100"}`}>
+            <div className={`h-1 w-full rounded-full overflow-hidden ${dm ? "bg-[#21262D]" : "bg-gray-100"}`}>
               <div className="h-full w-1/3 bg-emerald-500 animate-pulse" />
             </div>
           ) : null}

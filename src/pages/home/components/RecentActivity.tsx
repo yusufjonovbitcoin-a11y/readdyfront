@@ -13,8 +13,8 @@ const roleColors: Record<string, string> = {
 
 export default function RecentActivity({ darkMode, logs }: RecentActivityProps) {
   return (
-    <div className={`rounded-xl p-5 ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
-      <h3 className={`text-base font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>So'nggi Faoliyat</h3>
+    <div className={`rounded-xl border p-4 md:p-5 ${darkMode ? "border-[#30363D] bg-[#21262D]" : "border-gray-100 bg-white"}`}>
+      <h3 className={`mb-3 text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>So'nggi Faoliyat</h3>
       <div className="space-y-3">
         {logs.slice(0, 5).map((log) => (
           <div key={log.id} className="flex items-start gap-3">

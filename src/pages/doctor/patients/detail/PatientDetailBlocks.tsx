@@ -1036,7 +1036,7 @@ export function SuhbatTarixiCard(p: PatientDetailBlocksProps) {
                               key={`${o.value}-${i}`}
                               className={`text-[11px] px-2 py-0.5 rounded border ${
                                 darkMode
-                                  ? "bg-[#161B22] border-[#30363D] text-gray-300"
+                                  ? "bg-[#21262D] border-[#30363D] text-gray-300"
                                   : "bg-slate-50 border-slate-200 text-slate-700"
                               }`}
                             >

@@ -9,7 +9,8 @@
     "questions": "Вопросы",
     "analytics": "Аналитика",
     "notifications": "Уведомления",
-    "chatGroup": "Чат Группа",
+    "chatGuruhi": "Chat Guruhi",
+    "chatGuruhiSubtitle": "{{online}} онлайн · {{members}} участников",
     "settings": "Настройки",
     "hospitalName": "Ташкентская клиника",
     "hospitalAdmin": "Админ клиники",
@@ -73,6 +74,7 @@
       "todayPatientsPrefix": "Сегодня:",
       "patientUnit": "пациент",
       "qrCodeLabel": "QR-код",
+      "openQrTabButton": "Раздел QR",
       "viewButton": "Просмотр",
       "status": {
         "active": "Активный",
@@ -161,6 +163,21 @@
       "todayPatients": "Пациенты сегодня",
       "rating": "Рейтинг",
       "activity": "Активность"
+    },
+    "flowCard": {
+      "chartAria": "График динамики потока пациентов",
+      "brandShort": "MC",
+      "calendarHint": "Даты статистики (до 31 дня)",
+      "exportCsv": "Скачать CSV",
+      "dateRangeTitle": "Диапазон дат",
+      "dateRangeFrom": "С",
+      "dateRangeTo": "По",
+      "dateRangeApply": "Применить",
+      "dateRangeClear": "Сбросить",
+      "dateRangeTooLong": "Интервал не может превышать 31 день.",
+      "dateRangeHint": "Не более 31 календарного дня — график и CSV сужаются до выбранного периода.",
+      "dateRangeFillBoth": "Выберите даты начала и окончания.",
+      "dateRangeOrderInvalid": "Дата «С» не может быть позже даты «По»."
     }
   },
   "questions": {
@@ -352,7 +369,8 @@
     },
     "topDoctors": {
       "title": "Топ врачи",
-      "patientUnit": "пациент"
+      "patientUnit": "пациент",
+      "viewAll": "Все врачи"
     },
     "yearlyTrend": {
       "title": "Годовая динамика пациентов",

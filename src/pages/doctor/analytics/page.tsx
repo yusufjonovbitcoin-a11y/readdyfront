@@ -7,6 +7,8 @@ import type { DoctorAnalyticsDto, DoctorAnalyticsPeriod } from "@/api/types/doct
 import { usePageState } from "@/hooks/usePageState";
 import PageStateBoundary from "@/components/ui/PageStateBoundary";
 import { useAuth } from "@/hooks/useAuth";
+import { PatientFlowRechartsCard } from "@/components/charts/PatientFlowRechartsCard";
+import { PeakHoursRechartsBar } from "@/components/charts/PeakHoursRechartsBar";
 
 type Period = DoctorAnalyticsPeriod;
 
@@ -14,8 +16,7 @@ interface DoctorAnalyticsPageData {
   analytics: DoctorAnalyticsDto[];
 }
 
-type ChartPoint = { label: string; patients: number; diagnoses: number; avgDuration: number };
-type PeakPoint = { hour: string; count: number };
+type ChartPoint = { label: string; isoDate: string; patients: number; diagnoses: number; avgDuration: number };
 
 function formatPercentTrend(current: number, previous: number): string {
   if (previous <= 0) return current > 0 ? "+100%" : "0%";
@@ -59,19 +60,33 @@ function mondayOf(value: Date): Date {
 
 function bucketByPeriod(rows: DoctorAnalyticsDto[], period: Period): ChartPoint[] {
   if (period === "daily") {
-    const byDay = new Map(rows.map((row) => [row.date, row]));
+    const byDay = new Map<string, { patients: number; diagnoses: number; durationWeighted: number; weight: number }>();
+    for (const row of rows) {
+      const d = parseDateOnly(row.date);
+      if (!d) continue;
+      const key = formatYmd(d);
+      const cur = byDay.get(key) ?? { patients: 0, diagnoses: 0, durationWeighted: 0, weight: 0 };
+      cur.patients += row.patients;
+      cur.diagnoses += row.diagnoses;
+      const w = Math.max(row.patients, 0);
+      cur.durationWeighted += row.avgDuration * w;
+      cur.weight += w;
+      byDay.set(key, cur);
+    }
     const now = new Date();
     const points: ChartPoint[] = [];
     for (let i = 6; i >= 0; i -= 1) {
       const day = new Date(now);
       day.setDate(now.getDate() - i);
       const key = formatYmd(day);
-      const row = byDay.get(key);
+      const agg = byDay.get(key);
       points.push({
         label: formatMd(day),
-        patients: row?.patients ?? 0,
-        diagnoses: row?.diagnoses ?? 0,
-        avgDuration: row?.avgDuration ?? 0,
+        isoDate: key,
+        patients: agg?.patients ?? 0,
+        diagnoses: agg?.diagnoses ?? 0,
+        avgDuration:
+          agg && agg.weight > 0 ? Math.round(agg.durationWeighted / agg.weight) : 0,
       });
     }
     return points;
@@ -112,6 +127,7 @@ function bucketByPeriod(rows: DoctorAnalyticsDto[], period: Period): ChartPoint[
       const item = bucketMap.get(key);
       points.push({
         label: formatMd(monday),
+        isoDate: key,
         patients: item?.patients ?? 0,
         diagnoses: item?.diagnoses ?? 0,
         avgDuration:
@@ -131,6 +147,7 @@ function bucketByPeriod(rows: DoctorAnalyticsDto[], period: Period): ChartPoint[
     const item = bucketMap.get(key);
     points.push({
       label: key,
+      isoDate: `${key}-01`,
       patients: item?.patients ?? 0,
       diagnoses: item?.diagnoses ?? 0,
       avgDuration:
@@ -178,15 +195,6 @@ export function DocAnalyticsContent() {
     const efficiencyPct =
       totalPatients > 0 ? Math.round((totalDiagnoses / totalPatients) * 100) : 0;
 
-    const maxVal = Math.max(...chartData.map((d) => d.patients), 1);
-
-    const peakHours: PeakPoint[] = chartData.map((d) => ({ hour: d.label, count: d.patients }));
-    const maxPeak = Math.max(...peakHours.map((h) => h.count), 1);
-    const peakSlot =
-      peakHours.length > 0
-        ? peakHours.reduce((best, current) => (current.count > best.count ? current : best), peakHours[0])
-        : { hour: "--:--", count: 0 };
-
     const diagnosisList = chartData
       .filter((row) => row.diagnoses > 0)
       .slice(0, 6)
@@ -219,10 +227,6 @@ export function DocAnalyticsContent() {
       totalDiagnoses,
       avgMinutes,
       efficiencyPct,
-      maxVal,
-      peakHours,
-      maxPeak,
-      peakSlot,
       diagnosisList,
       totalDiagListed,
       trends,
@@ -235,16 +239,22 @@ export function DocAnalyticsContent() {
     totalDiagnoses,
     avgMinutes,
     efficiencyPct,
-    maxVal,
-    peakHours,
-    maxPeak,
-    peakSlot,
     diagnosisList,
     totalDiagListed,
     trends,
   } = analytics;
 
-  const cardBase = darkMode ? "bg-[#161B22] border-[#30363D]" : "bg-white border-gray-100";
+  const docAnalytics = pageState.data?.analytics ?? [];
+  const peakRanges = useMemo(() => {
+    const toBar = (pts: ChartPoint[]) => pts.map((p) => ({ label: p.label, count: p.patients }));
+    return {
+      "24h": toBar(bucketByPeriod(docAnalytics, "daily")),
+      "7d": toBar(bucketByPeriod(docAnalytics, "weekly")),
+      "30d": toBar(bucketByPeriod(docAnalytics, "monthly")),
+    };
+  }, [docAnalytics]);
+
+  const cardBase = darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100";
   const mutedText = darkMode ? "text-gray-400" : "text-gray-500";
   const titleText = darkMode ? "text-white" : "text-gray-900";
 
@@ -255,15 +265,43 @@ export function DocAnalyticsContent() {
     { label: "Samaradorlik", value: `${efficiencyPct}%`, icon: "ri-bar-chart-line", color: "text-amber-600", bg: "bg-amber-50", trend: trends.efficiency },
   ];
 
-  const trendClass = (t: string) => {
-    if (t.startsWith("-")) return darkMode ? "text-rose-400" : "text-rose-600";
-    if (t.includes("daq")) return darkMode ? "text-emerald-400" : "text-emerald-600";
+  const trendClass = (trend: string) => {
+    if (trend.startsWith("-")) return darkMode ? "text-rose-400" : "text-rose-600";
+    if (trend.includes("daq")) return darkMode ? "text-emerald-400" : "text-emerald-600";
     return darkMode ? "text-emerald-400" : "text-emerald-600";
   };
   const hasChartData = chartData.length > 0;
-  const hasPeakData = peakHours.length > 0;
   const flowEmptyText = t("analytics.emptyFlow", "Ma'lumot hali mavjud emas");
   const peakEmptyText = t("analytics.emptyPeakHours", "Soatlik ma'lumot hali mavjud emas");
+
+  const doctorFlowSeries = useMemo(
+    () => chartData.map((d) => ({ date: d.label, sortDate: d.isoDate, patients: d.patients, diagnoses: d.diagnoses })),
+    [chartData],
+  );
+
+  const doctorFlowLabels = useMemo(
+    () => ({
+      periodDaily: t("analytics.period.daily"),
+      periodWeekly: t("analytics.period.weekly"),
+      periodMonthly: t("analytics.period.monthly"),
+      patients: t("analytics.patients"),
+      diagnoses: t("analytics.diagnoses"),
+      chartAria: t("analytics.flowCard.chartAria"),
+      calendarHint: t("analytics.flowCard.calendarHint"),
+      dateRangeTitle: t("analytics.flowCard.dateRangeTitle"),
+      dateRangeFrom: t("analytics.flowCard.dateRangeFrom"),
+      dateRangeTo: t("analytics.flowCard.dateRangeTo"),
+      dateRangeApply: t("analytics.flowCard.dateRangeApply"),
+      dateRangeClear: t("analytics.flowCard.dateRangeClear"),
+      dateRangeTooLong: t("analytics.flowCard.dateRangeTooLong"),
+      dateRangeHint: t("analytics.flowCard.dateRangeHint"),
+      dateRangeFillBoth: t("analytics.flowCard.dateRangeFillBoth"),
+      dateRangeOrderInvalid: t("analytics.flowCard.dateRangeOrderInvalid"),
+      exportCsv: t("analytics.flowCard.exportCsv"),
+      brandShort: t("analytics.flowCard.brandShort"),
+    }),
+    [t],
+  );
 
   return (
     <PageStateBoundary state={pageState}>
@@ -312,44 +350,20 @@ export function DocAnalyticsContent() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <div
-          key={`${period}-${darkMode ? "dark" : "light"}`}
-          className={`rounded-xl border p-5 lg:col-span-2 ${cardBase}`}
-        >
-          <div className="mb-5 flex items-center justify-between">
-            <h3 className={`text-base font-semibold ${titleText}`}>{t("analytics.flow")}</h3>
-            <div className={`flex items-center gap-3 text-xs ${mutedText}`}>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-3 w-3 rounded-full bg-violet-500"></span>
-                {t("analytics.patients")}
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="inline-block h-3 w-3 rounded-full bg-green-400"></span>
-                {t("analytics.diagnoses")}
-              </span>
-            </div>
-          </div>
+        <div key={`${period}-${darkMode ? "dark" : "light"}`} className="lg:col-span-2">
           {hasChartData ? (
-            <div className={`flex h-48 items-end gap-2 rounded-xl p-3 ${darkMode ? "bg-[#101623]" : "bg-gray-50"}`}>
-              {chartData.map((d, i) => (
-                <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                  <div className="flex h-40 w-full items-end gap-0.5">
-                    <div
-                      className="flex-1 rounded-t-md bg-gradient-to-t from-violet-700 via-violet-500 to-violet-300 transition-all"
-                      style={{ height: `${Math.max(6, (d.patients / maxVal) * 100)}%` }}
-                    ></div>
-                    <div
-                      className="flex-1 rounded-t-md bg-gradient-to-t from-emerald-700 via-emerald-500 to-teal-300 transition-all"
-                      style={{ height: `${Math.max(6, (d.diagnoses / maxVal) * 100)}%` }}
-                    ></div>
-                  </div>
-                  <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{d.label}</span>
-                </div>
-              ))}
-            </div>
+            <PatientFlowRechartsCard
+              darkMode={darkMode}
+              showPeriodTabs={false}
+              flowSeries={doctorFlowSeries}
+              title={t("analytics.flow")}
+              csvFilenamePrefix="shifokor-tahlil-oqim"
+              chartHeightClassName="h-[320px] w-full md:h-[360px]"
+              labels={doctorFlowLabels}
+            />
           ) : (
             <div
-              className={`flex h-48 items-center justify-center rounded-lg border border-dashed ${
+              className={`flex h-64 items-center justify-center rounded-2xl border border-dashed p-5 ${
                 darkMode ? "border-[#30363D] text-gray-400" : "border-gray-200 text-gray-500"
               }`}
             >
@@ -385,45 +399,30 @@ export function DocAnalyticsContent() {
         </div>
       </div>
 
-      <div className={`rounded-xl border p-5 ${cardBase}`}>
-        <h3 className={`mb-4 text-base font-semibold ${titleText}`}>{t("analytics.peakHours")}</h3>
-        {hasPeakData ? (
+      <PeakHoursRechartsBar
+        key={`peak-${darkMode ? "dark" : "light"}-${docAnalytics.length}`}
+        darkMode={darkMode}
+        ranges={peakRanges}
+        rangeTabLabels={{
+          "24h": t("analytics.peakRange24h"),
+          "7d": t("analytics.peakRange7d"),
+          "30d": t("analytics.peakRange30d"),
+        }}
+        defaultRange="7d"
+        title={t("analytics.peakHours")}
+        subtitle={t("analytics.peakHoursSubtitle")}
+        emptyText={peakEmptyText}
+        seriesName={t("analytics.patients")}
+        chartHeightClassName="h-[300px] w-full md:h-[340px]"
+        summaryFormatter={(slot) => (
           <>
-            <div className={`flex h-36 items-end gap-2 rounded-xl p-2 ${darkMode ? "bg-[#101623]" : "bg-gray-50"}`}>
-              {peakHours.map((h, i) => (
-                <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                  <span className={`text-xs font-medium ${mutedText}`}>{h.count}</span>
-                  <div
-                    className={`w-full rounded-t-md transition-all ${
-                      h.count === maxPeak
-                        ? "bg-gradient-to-t from-violet-700 via-violet-500 to-fuchsia-300"
-                        : h.count >= maxPeak * 0.7
-                          ? "bg-gradient-to-t from-violet-600 to-violet-300"
-                          : "bg-gradient-to-t from-violet-500/60 to-violet-300/50"
-                    }`}
-                    style={{ height: `${Math.max(8, (h.count / maxPeak) * 92)}px` }}
-                  ></div>
-                  <span className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{h.hour}</span>
-                </div>
-              ))}
-            </div>
-            <p className={`mt-3 text-xs ${mutedText}`}>
-              {t("analytics.peakTime")}{" "}
-              <span className="font-semibold text-violet-600">
-                {peakSlot.hour} ({peakSlot.count} bemor)
-              </span>
-            </p>
+            {t("analytics.peakTime")}{" "}
+            <span className={darkMode ? "font-semibold text-emerald-300" : "font-semibold text-emerald-600"}>
+              {slot.label} ({t("analytics.peakSlotPatients", { count: slot.count })})
+            </span>
           </>
-        ) : (
-          <div
-            className={`flex h-32 items-center justify-center rounded-lg border border-dashed ${
-              darkMode ? "border-[#30363D] text-gray-400" : "border-gray-200 text-gray-500"
-            }`}
-          >
-            <span className="text-sm">{peakEmptyText}</span>
-          </div>
         )}
-      </div>
+      />
         </div>
       )}
     </PageStateBoundary>

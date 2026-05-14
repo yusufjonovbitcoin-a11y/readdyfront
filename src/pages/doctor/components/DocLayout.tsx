@@ -20,7 +20,8 @@ export default function DocLayout({ children, title }: DocLayoutProps) {
   const [darkMode, toggleDarkMode, setDarkMode] = usePersistedDoctorTheme();
   const [patientDetailLayout, setPatientDetailLayout] = usePersistedPatientDetailLayout();
   const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
-  const isFullBleedRoute = pathname.startsWith("/doctor/notifications") || pathname.startsWith("/doctor/chat");
+  const isFullBleedRoute =
+    pathname.startsWith("/doctor/notifications") || pathname.startsWith("/doctor/chat");
 
   const sidebarW = collapsed ? SIDEBAR_WIDTH.collapsed : SIDEBAR_WIDTH.expanded;
 

@@ -33,7 +33,7 @@ export function DocHistoryContent() {
 
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
-  const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
+  const cardBase = darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100";
   const inputBase = darkMode
     ? "text-sm border border-[#30363D] rounded-lg px-3 py-2 bg-[#0D1117] text-white focus:outline-none focus:border-violet-500 cursor-pointer"
     : "text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-violet-400 cursor-pointer";
@@ -41,7 +41,7 @@ export function DocHistoryContent() {
     ? "pl-9 pr-4 py-2 text-sm border border-[#30363D] rounded-lg bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 w-48"
     : "pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-violet-400 w-48";
   const diagBox = darkMode ? "bg-[#21262D]" : "bg-gray-50";
-  const tableWrap = darkMode ? "bg-[#161B22] border-[#30363D]" : "bg-white border-gray-100";
+  const tableWrap = darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100";
   const thCls = darkMode ? "text-gray-400" : "text-gray-500";
   const tbodyDivide = darkMode ? "divide-[#30363D]" : "divide-gray-50";
   const rowHover = darkMode ? "hover:bg-[#21262D]" : "hover:bg-gray-50";

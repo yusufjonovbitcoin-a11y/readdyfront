@@ -9,7 +9,8 @@
     "analytics": "Tahlil",
     "notifications": "Bildirishnomalar",
     "news": "Yangiliklar",
-    "chatGroup": "Chat Guruhi",
+    "chatGuruhi": "Chat Guruhi",
+    "chatGuruhiSubtitle": "{{online}} onlayn · {{members}} a'zo",
     "settings": "Sozlamalar",
     "doctorName": "Dr. Alisher Karimov",
     "specialty": "Kardiologiya",
@@ -19,6 +20,31 @@
     "completed": "Tugallandi",
     "expand": "Yon panelni kengaytirish",
     "collapse": "Yon panelni yig'ish"
+  },
+  "chat": {
+    "pageTitle": "Mutaxassislar guruhi",
+    "groupSubtitle": "Shu yo'nalishdagi barcha hamkasblar bitta guruhda muloqot qiladi",
+    "membersCount": "Jami {{count}} ta a'zo (siz ham)",
+    "membersListTitle": "Guruh a'zolari",
+    "groupFeedHint": "Yagona lentada {{count}} kishiga ko'rinadi",
+    "groupMessagePlaceholder": "Guruhga xabar yozing...",
+    "onlineShort": "{{count}} onlayn",
+    "groupMetaLine": "{{count}} ta a'zo · {{description}}",
+    "toggleMembers": "A'zolar ro'yxati",
+    "memberCountBadge": "{{count}} a'zo",
+    "today": "Bugun",
+    "yearsShort": "{{years}} yil",
+    "youShort": "siz",
+    "specialtyChat": "{{specialty}} chat",
+    "doctorCount": "{{count}} ta shifokor",
+    "newCount": "{{count}} yangi",
+    "searchPlaceholder": "Shifokor yoki shifoxona...",
+    "statsOnline": "Onlayn",
+    "statsBusy": "Band",
+    "statsOffline": "Offlayn",
+    "notFound": "A'zo topilmadi",
+    "messagePlaceholder": "Xabar yozing... (Enter — yuborish)",
+    "back": "Orqaga"
   },
   "header": {
     "actions": {
@@ -131,7 +157,27 @@
     "diagnoses": "Tashxislar",
     "totalDiagnoses": "Jami tashxislar:",
     "peakHours": "Eng Yuqori Soatlar",
-    "peakTime": "Eng band vaqt:"
+    "peakHoursSubtitle": "Tanlangan davr bo'yicha har bir vaqt oralig'idagi bemorlar soni.",
+    "peakRange24h": "24H",
+    "peakRange7d": "7D",
+    "peakRange30d": "30D",
+    "peakTime": "Eng band vaqt:",
+    "peakSlotPatients": "{{count}} bemor",
+    "flowCard": {
+      "chartAria": "Bemor oqimi dinamikasi — grafik",
+      "brandShort": "MC",
+      "calendarHint": "Statistika sanalari (31 kungacha)",
+      "exportCsv": "CSV yuklab olish",
+      "dateRangeTitle": "Sana oralig'i",
+      "dateRangeFrom": "Dan",
+      "dateRangeTo": "Gacha",
+      "dateRangeApply": "Qo'llash",
+      "dateRangeClear": "Tozalash",
+      "dateRangeTooLong": "Oraliq 31 kundan oshmasligi kerak.",
+      "dateRangeHint": "Eng ko'pi 31 kun — grafik va CSV shu oralikka qisqartiriladi.",
+      "dateRangeFillBoth": "Boshlanish va tugash sanalarini tanlang.",
+      "dateRangeOrderInvalid": "\"Dan\" sanasi \"gacha\"dan katta bo'lmasligi kerak."
+    }
   },
   "profile": {
     "title": "Profil",
@@ -150,7 +196,10 @@
       "security": "Xavfsizlik",
       "languageTheme": "Til & Tema",
       "notifications": "Bildirishnomalar"
-    }
+    },
+    "fieldFullName": "To'liq ism",
+    "fieldExperience": "Tajriba",
+    "dash": "—"
   },
   "dashboard": {
     "title": "Shifokor paneli",

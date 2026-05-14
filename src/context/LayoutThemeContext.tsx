@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
+import { useDocumentThemeSync } from "@/hooks/useDocumentThemeSync";
 
 export type LayoutThemeValue = {
   darkMode: boolean;
@@ -16,6 +17,7 @@ export function LayoutThemeProvider({
   setDarkMode: (dark: boolean) => void;
   children: ReactNode;
 }) {
+  useDocumentThemeSync(darkMode);
   return (
     <LayoutThemeContext.Provider value={{ darkMode, setDarkMode }}>
       {children}

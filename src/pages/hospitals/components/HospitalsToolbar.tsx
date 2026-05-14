@@ -27,7 +27,7 @@ export default function HospitalsToolbar({
 
   return (
     <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 min-w-0">
-      <div className={`flex min-w-0 w-full lg:flex-1 items-center gap-2 px-3 py-2.5 rounded-lg ${darkMode ? "bg-[#1A2235]" : "bg-white border border-gray-200"}`}>
+      <div className={`flex min-w-0 w-full lg:flex-1 items-center gap-2 px-3 py-2.5 rounded-lg ${darkMode ? "bg-[#21262D]" : "bg-white border border-gray-200"}`}>
         <div className="w-4 h-4 flex items-center justify-center">
           <i className={`ri-search-line text-sm ${darkMode ? "text-gray-400" : "text-gray-400"}`} />
         </div>
@@ -39,7 +39,7 @@ export default function HospitalsToolbar({
         />
       </div>
 
-      <div className={`flex shrink-0 max-w-full overflow-x-auto items-center gap-1 p-1 rounded-lg ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
+      <div className={`flex shrink-0 max-w-full overflow-x-auto items-center gap-1 p-1 rounded-lg ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
         {(["all", "active", "inactive"] as const).map((s) => (
           <button
             key={s}

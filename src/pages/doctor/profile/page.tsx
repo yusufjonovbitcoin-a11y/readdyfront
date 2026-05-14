@@ -40,7 +40,7 @@ export function DocProfileContent() {
   const [doctor, setDoctor] = useState<DoctorDto | null>(null);
   const [patients, setPatients] = useState<DoctorPatientDto[]>([]);
 
-  const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
+  const cardBase = darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100";
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
   const bodyText = darkMode ? "text-gray-300" : "text-gray-600";
@@ -239,7 +239,7 @@ export function DocProfileContent() {
                 <div className={`mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl ${stat.bg}`}>
                   <i className={`${stat.icon} text-xl ${stat.color}`}></i>
                 </div>
-                <p className={`text-3xl font-bold tabular-nums ${pageTitle}`}>{stat.value}</p>
+                <p className={`text-2xl font-bold tabular-nums ${pageTitle}`}>{stat.value}</p>
                 <p className={`mt-1 text-sm ${pageMuted}`}>{stat.label}</p>
               </div>
             ))}

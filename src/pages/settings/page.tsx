@@ -176,7 +176,7 @@ export function SettingsPageContent() {
     { key: "notifications", label: t("settings.tabs.notifications"), icon: "ri-notification-3-line" },
   ];
 
-  const inputClass = `w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors ${dm ? "bg-[#0F1117] border border-[#1E2A3A] text-white placeholder-gray-600 focus:border-emerald-500" : "bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-emerald-500"}`;
+  const inputClass = `w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors ${dm ? "bg-[#0F1117] border border-[#30363D] text-white placeholder-gray-600 focus:border-emerald-500" : "bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-emerald-500"}`;
   const labelClass = `block text-xs font-medium mb-1.5 ${dm ? "text-gray-400" : "text-gray-600"}`;
 
   const handleChangePassword = async () => {
@@ -259,7 +259,7 @@ export function SettingsPageContent() {
 
       <div className="space-y-5">
         {/* Top Tabs */}
-        <div className={`rounded-xl p-3 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+        <div className={`rounded-xl p-3 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
           <div className="flex flex-wrap gap-2">
             {tabs.map((t) => (
               <button
@@ -291,7 +291,7 @@ export function SettingsPageContent() {
         {/* Content */}
         <div>
           {activeTab === "profile" && (
-            <div className={`rounded-xl p-6 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div className={`rounded-xl p-6 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
               <h3 className={`text-base font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>{t("settings.profile.title")}</h3>
 
               {/* Avatar */}
@@ -320,7 +320,7 @@ export function SettingsPageContent() {
                     onClick={() => setAvatarMenuOpen((prev) => !prev)}
                     className={`absolute -bottom-1 -right-1 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
                       dm
-                        ? "bg-[#1A2235] border-[#0F1117] text-emerald-400 hover:text-emerald-300"
+                        ? "bg-[#21262D] border-[#0F1117] text-emerald-400 hover:text-emerald-300"
                         : "bg-white border-gray-100 text-emerald-600 hover:text-emerald-700"
                     }`}
                     aria-label={t("settings.profile.changePhoto")}
@@ -331,7 +331,7 @@ export function SettingsPageContent() {
                   {avatarMenuOpen && (
                     <div
                       className={`absolute top-[calc(100%+8px)] left-0 z-20 min-w-[11rem] rounded-lg border p-1.5 ${
-                        dm ? "bg-[#1A2235] border-[#1E2130]" : "bg-white border-gray-200"
+                        dm ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-200"
                       }`}
                     >
                       <button
@@ -415,7 +415,7 @@ export function SettingsPageContent() {
           )}
 
           {activeTab === "security" && (
-            <div className={`rounded-xl p-6 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div className={`rounded-xl p-6 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
               <h3 className={`text-base font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>{t("settings.security.title")}</h3>
 
               <div className="space-y-4 max-w-md">
@@ -464,7 +464,7 @@ export function SettingsPageContent() {
                 </button>
               </div>
 
-              <div className={`mt-6 pt-5 border-t ${dm ? "border-[#1E2130]" : "border-gray-100"}`}>
+              <div className={`mt-6 pt-5 border-t ${dm ? "border-[#30363D]" : "border-gray-100"}`}>
                 <h4 className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>
                   {t("settings.security.activeSessionsTitle")}
                 </h4>
@@ -512,7 +512,7 @@ export function SettingsPageContent() {
           )}
 
           {activeTab === "language" && (
-            <div className={`rounded-xl p-6 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div className={`rounded-xl p-6 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
               <h3 className={`text-base font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>{t("settings.languageTitle")}</h3>
               <div className="grid grid-cols-2 gap-3 max-w-sm">
                 {[
@@ -525,7 +525,7 @@ export function SettingsPageContent() {
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       lang === l.code
                         ? "border-emerald-500 bg-emerald-500/10"
-                        : dm ? "border-[#1E2A3A] hover:border-emerald-500/50" : "border-gray-200 hover:border-emerald-300"
+                        : dm ? "border-[#30363D] hover:border-emerald-500/50" : "border-gray-200 hover:border-emerald-300"
                     }`}
                   >
                     <span className="text-2xl">{l.flag}</span>
@@ -540,7 +540,7 @@ export function SettingsPageContent() {
           )}
 
           {activeTab === "appearance" && (
-            <div className={`rounded-xl p-6 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div className={`rounded-xl p-6 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
               <h3 className={`text-base font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>{t("settings.appearance.title")}</h3>
               <div className="grid grid-cols-2 gap-3 max-w-sm">
                 {[
@@ -557,7 +557,7 @@ export function SettingsPageContent() {
                     className={`flex flex-col items-center gap-2 p-5 rounded-xl border-2 cursor-pointer transition-all ${
                       dm === m.mode
                         ? "border-emerald-500 bg-emerald-500/10"
-                        : dm ? "border-[#1E2A3A] hover:border-emerald-500/50" : "border-gray-200 hover:border-emerald-300"
+                        : dm ? "border-[#30363D] hover:border-emerald-500/50" : "border-gray-200 hover:border-emerald-300"
                     }`}
                   >
                     <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20">
@@ -573,7 +573,7 @@ export function SettingsPageContent() {
           )}
 
           {activeTab === "notifications" && (
-            <div className={`rounded-xl p-6 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div className={`rounded-xl p-6 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
               <h3 className={`text-base font-semibold mb-5 ${dm ? "text-white" : "text-gray-900"}`}>{t("settings.notifications.title")}</h3>
               <div className="space-y-4">
                 {[
@@ -608,7 +608,7 @@ export function SettingsPageContent() {
                           "success",
                         );
                       }}
-                      className={`w-11 h-6 rounded-full cursor-pointer transition-colors flex-shrink-0 relative ${notifications[n.key] ? "bg-emerald-500" : dm ? "bg-[#1E2A3A]" : "bg-gray-200"}`}
+                      className={`w-11 h-6 rounded-full cursor-pointer transition-colors flex-shrink-0 relative ${notifications[n.key] ? "bg-emerald-500" : dm ? "bg-[#30363D]" : "bg-gray-200"}`}
                     >
                       <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${notifications[n.key] ? "translate-x-5 left-0.5" : "translate-x-0 left-0.5"}`}></div>
                     </button>

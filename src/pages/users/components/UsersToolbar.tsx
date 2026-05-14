@@ -26,7 +26,7 @@ export default function UsersToolbar({
     <div className="flex flex-col md:flex-row md:flex-wrap items-start md:items-center min-w-0 gap-3">
       <div
         className={`flex min-w-0 w-full md:w-auto md:flex-1 items-center gap-2 px-3 py-2.5 rounded-lg ${
-          darkMode ? "bg-[#1A2235]" : "bg-white border border-gray-200"
+          darkMode ? "bg-[#21262D]" : "bg-white border border-gray-200"
         }`}
       >
         <div className="w-4 h-4 flex items-center justify-center">
@@ -44,7 +44,7 @@ export default function UsersToolbar({
 
       <div
         className={`flex max-w-full overflow-x-auto items-center gap-1 p-1 rounded-lg ${
-          darkMode ? "bg-[#1A2235]" : "bg-gray-100"
+          darkMode ? "bg-[#21262D]" : "bg-gray-100"
         }`}
       >
         {(["all", "HOSPITAL_ADMIN", "DOCTOR"] as RoleFilter[]).map((r) => (

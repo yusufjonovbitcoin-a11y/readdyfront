@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { DoctorDto as HADoctor } from "@/api/types/doctor.types";
@@ -8,11 +9,14 @@ interface DoctorCardProps {
   darkMode: boolean;
   onEdit: (doc: HADoctor) => void;
   onDelete: (id: string) => void;
+  /** Shifokor kartasini bosganda ochiladigan yo'l (masalan super-admin `/users/doctor/:id`) */
+  detailTo?: (doctorId: string) => string;
 }
 
-export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: DoctorCardProps) {
+export default function DoctorCard({ doctor, darkMode, onEdit, onDelete, detailTo }: DoctorCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("hospital");
+  const toDetail = detailTo ?? ((id: string) => `/hospital-admin/doctors/${id}`);
   const displayName = doctor.name?.trim() || doctor.specialty?.trim() || "Doctor";
   const avatarSrc = doctor.avatar?.trim() ? doctor.avatar : null;
   const qrPreview = doctor.qrCode?.trim() || `/checkin?doctor_id=${doctor.id}`;
@@ -30,8 +34,18 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
     .slice(0, 2)
     .toUpperCase();
 
+  const goDetail = () => navigate(toDetail(doctor.id));
+
+  const handleCardClick = (e: MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button, a")) return;
+    goDetail();
+  };
+
   return (
-    <div className={`rounded-xl overflow-hidden border transition-all hover:border-teal-300 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
+    <div
+      className={`rounded-xl overflow-hidden border transition-all hover:border-teal-300 cursor-pointer ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}
+      onClick={handleCardClick}
+    >
       {/* Gradient banner + radial — surat shu blok ichida */}
       <div className="relative h-24 sm:h-28 bg-gradient-to-br from-teal-400 to-teal-600 shrink-0 overflow-hidden">
         <div className="absolute inset-0 opacity-20 pointer-events-none">
@@ -54,12 +68,6 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
               {initials || "DR"}
             </div>
           )}
-        </div>
-        <div className="absolute right-3 top-1/2 z-10 flex -translate-y-1/2 items-center gap-1 sm:right-4">
-          <div className="w-4 h-4 flex items-center justify-center">
-            <i className="ri-star-fill text-amber-300 text-xs drop-shadow-sm"></i>
-          </div>
-          <span className="text-xs font-semibold text-white drop-shadow-sm">{doctor.rating}</span>
         </div>
       </div>
 
@@ -85,8 +93,8 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
         </div>
 
         {/* QR preview */}
-        <div className={`flex items-center gap-2 p-2 rounded-lg mb-4 ${darkMode ? "bg-[#1A2235]" : "bg-gray-50"}`}>
-          <div className={`w-10 h-10 rounded-md overflow-hidden border flex items-center justify-center flex-shrink-0 ${darkMode ? "border-[#273041] bg-[#0F1117]" : "border-gray-200 bg-white"}`}>
+        <div className={`flex items-center gap-2 p-2 rounded-lg mb-4 ${darkMode ? "bg-[#21262D]" : "bg-gray-50"}`}>
+          <div className={`w-10 h-10 rounded-md overflow-hidden border flex items-center justify-center flex-shrink-0 ${darkMode ? "border-[#30363D] bg-[#0F1117]" : "border-gray-200 bg-white"}`}>
             {miniQrUrl ? (
               <img src={miniQrUrl} alt={`${displayName} QR`} className="w-full h-full object-contain" />
             ) : (
@@ -98,31 +106,35 @@ export default function DoctorCard({ doctor, darkMode, onEdit, onDelete }: Docto
             <p className={`text-xs truncate ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{qrPreview}</p>
           </div>
           <button
-            onClick={() => navigate(`/hospital-admin/doctors/${doctor.id}?tab=qr`)}
+            type="button"
+            onClick={() => navigate(`${toDetail(doctor.id)}?tab=qr`)}
             className="text-xs text-teal-600 hover:text-teal-700 font-medium cursor-pointer whitespace-nowrap"
           >
-            {t("doctors.card.viewButton")}
+            {t("doctors.card.openQrTabButton")}
           </button>
         </div>
 
         {/* Actions */}
         <div className="flex gap-2">
           <button
-            onClick={() => navigate(`/hospital-admin/doctors/${doctor.id}`)}
-            className="flex-1 h-8 flex items-center justify-center gap-1.5 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-xs font-medium transition-colors cursor-pointer whitespace-nowrap"
+            type="button"
+            onClick={() => goDetail()}
+            className="flex-1 h-[44px] flex items-center justify-center gap-1.5 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-xs font-medium transition-colors cursor-pointer whitespace-nowrap px-2"
           >
-            <i className="ri-eye-line text-xs"></i>
+            <i className="ri-eye-line text-xs" aria-hidden />
             {t("doctors.card.viewButton")}
           </button>
           <button
+            type="button"
             onClick={() => onEdit(doctor)}
-            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-gray-100 text-gray-500 hover:text-gray-700"}`}
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "bg-[#21262D] text-gray-400 hover:text-white" : "bg-gray-100 text-gray-500 hover:text-gray-700"}`}
           >
             <i className="ri-edit-line text-xs"></i>
           </button>
           <button
+            type="button"
             onClick={() => onDelete(doctor.id)}
-            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "bg-[#1A2235] text-gray-400 hover:text-red-400" : "bg-gray-100 text-gray-500 hover:text-red-500"}`}
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer ${darkMode ? "bg-[#21262D] text-gray-400 hover:text-red-400" : "bg-gray-100 text-gray-500 hover:text-red-500"}`}
           >
             <i className="ri-delete-bin-line text-xs"></i>
           </button>

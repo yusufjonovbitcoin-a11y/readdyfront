@@ -54,9 +54,11 @@ export default function TopHospitals({ darkMode, topHospitals, hospitals }: TopH
 
   return (
     <>
-      <div className={`rounded-xl p-5 ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>Top Kasalxonalar</h3>
+      <div
+        className={`rounded-xl border p-4 md:p-5 ${darkMode ? "border-[#30363D] bg-[#21262D]" : "border-gray-100 bg-white"}`}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>Top Kasalxonalar</h3>
           <button
             ref={openPanelButtonRef}
             type="button"
@@ -97,20 +99,20 @@ export default function TopHospitals({ darkMode, topHospitals, hospitals }: TopH
           <div
             ref={panelRef}
             className={`fixed right-0 top-0 z-[70] h-full w-full max-w-md shadow-2xl flex flex-col ${
-              darkMode ? "bg-[#141824] border-l border-[#1E2130]" : "bg-white border-l border-gray-100"
+              darkMode ? "bg-[#21262D] border-l border-[#30363D]" : "bg-white border-l border-gray-100"
             }`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="viloyat-panel-title"
             tabIndex={-1}
           >
-            <div className={`flex items-center gap-2 px-5 py-4 border-b shrink-0 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+            <div className={`flex items-center gap-2 px-5 py-4 border-b shrink-0 ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
               {selectedViloyat ? (
                 <button
                   type="button"
                   onClick={() => setSelectedViloyat(null)}
                   className={`w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer shrink-0 transition-colors ${
-                    darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"
+                    darkMode ? "hover:bg-[#30363D]/50 text-gray-400" : "hover:bg-gray-100 text-gray-500"
                   }`}
                   aria-label="Viloyatlar ro'yxatiga qaytish"
                   title={t("home.topHospitals.backToRegions", { defaultValue: "Viloyatlar ro'yxatiga qaytish" })}
@@ -132,7 +134,7 @@ export default function TopHospitals({ darkMode, topHospitals, hospitals }: TopH
                 type="button"
                 onClick={closePanel}
                 className={`w-9 h-9 flex items-center justify-center rounded-lg cursor-pointer shrink-0 transition-colors ${
-                  darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"
+                  darkMode ? "hover:bg-[#30363D]/50 text-gray-400" : "hover:bg-gray-100 text-gray-500"
                 }`}
                 aria-label="Yopish"
                 title={t("common:buttons.close")}
@@ -147,7 +149,7 @@ export default function TopHospitals({ darkMode, topHospitals, hospitals }: TopH
                   {hospitalsInViloyat.map((h) => (
                     <li
                       key={h.id}
-                      className={`rounded-xl px-4 py-3 ${darkMode ? "bg-[#1A2235]" : "bg-gray-50"}`}
+                      className={`rounded-xl px-4 py-3 ${darkMode ? "border border-[#30363D] bg-[#21262D]" : "bg-gray-50"}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -183,7 +185,7 @@ export default function TopHospitals({ darkMode, topHospitals, hospitals }: TopH
                         type="button"
                         onClick={() => setSelectedViloyat(viloyat)}
                         className={`w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 text-left cursor-pointer transition-colors ${
-                          darkMode ? "bg-[#1A2235] hover:bg-[#1f2a42]" : "bg-gray-50 hover:bg-gray-100"
+                          darkMode ? "border border-[#30363D] bg-[#21262D] hover:bg-[#30363D]/50" : "bg-gray-50 hover:bg-gray-100"
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -195,7 +197,7 @@ export default function TopHospitals({ darkMode, topHospitals, hospitals }: TopH
                         <span className="flex items-center gap-1.5 shrink-0">
                           <span
                             className={`text-sm font-bold tabular-nums px-2.5 py-1 rounded-lg ${
-                              darkMode ? "bg-[#0F1117] text-emerald-400" : "bg-white text-emerald-600 shadow-sm"
+                              darkMode ? "bg-[#0D1117] text-emerald-400" : "bg-white text-emerald-600 shadow-sm"
                             }`}
                           >
                             {count}

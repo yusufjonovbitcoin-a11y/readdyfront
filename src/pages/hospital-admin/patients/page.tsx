@@ -44,7 +44,7 @@ function PatientModal({ patient, darkMode, onClose, onSave, doctors, isSubmittin
   const [errors, setErrors] = useState<Partial<Record<keyof typeof fieldId, string>>>({});
 
   const inputClass = `w-full px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${
-    darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"
+    darkMode ? "bg-[#21262D] border-[#30363D] text-white placeholder-gray-500 focus:border-teal-500" : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"
   }`;
   const labelClass = `block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-300" : "text-gray-700"}`;
 
@@ -96,7 +96,7 @@ function PatientModal({ patient, darkMode, onClose, onSave, doctors, isSubmittin
         aria-modal="true"
         aria-labelledby="ha-patient-form-title"
         tabIndex={-1}
-        className={`w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+        className={`w-full max-w-lg rounded-2xl p-6 max-h-[90vh] overflow-y-auto ${darkMode ? "bg-[#21262D]" : "bg-white"}`}
       >
         <div className="flex items-center justify-between mb-5">
           <h2 id="ha-patient-form-title" className={`text-base font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
@@ -204,7 +204,7 @@ function PatientModal({ patient, darkMode, onClose, onSave, doctors, isSubmittin
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}>{t("common:buttons.cancel")}</button>
+            <button type="button" onClick={onClose} disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#21262D] text-gray-300" : "bg-gray-100 text-gray-700"}`}>{t("common:buttons.cancel")}</button>
             <button type="submit" disabled={isSubmitting} className={`flex-1 min-h-[44px] rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${isSubmitting ? "" : "cursor-pointer"}`}>
               {isSubmitting ? t("common:buttons.saving", { defaultValue: "Saqlanmoqda..." }) : patient ? t("common:buttons.save") : t("common:buttons.add")}
             </button>
@@ -227,7 +227,7 @@ function DischargeArchiveModal({
   const { t } = useTranslation("hospital");
   const modalRef = useModalA11y({ isOpen: true, onClose });
   const rec = patient.dischargeRecord;
-  const block = `rounded-xl border p-4 ${darkMode ? "bg-[#1A2235]/60 border-[#1E2130]" : "bg-gray-50 border-gray-100"}`;
+  const block = `rounded-xl border p-4 ${darkMode ? "bg-[#21262D]/60 border-[#30363D]" : "bg-gray-50 border-gray-100"}`;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4">
@@ -237,7 +237,7 @@ function DischargeArchiveModal({
         aria-modal="true"
         aria-labelledby="ha-discharge-archive-title"
         tabIndex={-1}
-        className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 shadow-xl ${darkMode ? "bg-[#141824] border border-[#1E2130]" : "bg-white border border-gray-100"}`}
+        className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 shadow-xl ${darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"}`}
       >
         <div className="flex items-start justify-between gap-4 mb-5">
           <div>
@@ -250,7 +250,7 @@ function DischargeArchiveModal({
           <button
             type="button"
             onClick={onClose}
-            className={`w-11 h-11 flex items-center justify-center rounded-lg shrink-0 cursor-pointer ${darkMode ? "hover:bg-[#1A2235] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+            className={`w-11 h-11 flex items-center justify-center rounded-lg shrink-0 cursor-pointer ${darkMode ? "hover:bg-[#21262D] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
             aria-label={t("patients.dischargeArchive.closeAria")}
           >
             <i className="ri-close-line text-lg"></i>
@@ -283,7 +283,7 @@ function DischargeArchiveModal({
                 {rec.qa.map((row) => (
                   <div
                     key={row.id}
-                    className={`rounded-lg border p-3 ${darkMode ? "border-[#1E2130] bg-[#0F1117]/40" : "border-gray-100 bg-white"}`}
+                    className={`rounded-lg border p-3 ${darkMode ? "border-[#30363D] bg-[#0F1117]/40" : "border-gray-100 bg-white"}`}
                   >
                     <p className={`text-xs font-medium mb-1 ${darkMode ? "text-teal-400/95" : "text-teal-700"}`}>{row.question}</p>
                     <p className={`text-sm ${darkMode ? "text-gray-200" : "text-gray-800"}`}>{row.answer}</p>
@@ -425,7 +425,7 @@ export function HAPatientsPageContent() {
 
   if (doctorsState.status === "loading" || patientsState.status === "loading") {
     return (
-      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-400" : "bg-white border border-gray-100 text-gray-500"}`}>
+      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#21262D] border border-[#30363D] text-gray-400" : "bg-white border border-gray-100 text-gray-500"}`}>
         Yuklanmoqda...
       </div>
     );
@@ -433,7 +433,7 @@ export function HAPatientsPageContent() {
 
   if (doctorsState.status === "error" || patientsState.status === "error") {
     return (
-      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#141824] border border-[#1E2130] text-gray-300" : "bg-white border border-gray-100 text-gray-700"}`}>
+      <div className={`rounded-xl p-8 text-center ${darkMode ? "bg-[#21262D] border border-[#30363D] text-gray-300" : "bg-white border border-gray-100 text-gray-700"}`}>
         <p className="mb-4">{doctorsState.error ?? patientsState.error}</p>
         <button
           type="button"
@@ -450,10 +450,10 @@ export function HAPatientsPageContent() {
   }
 
   const inputClass = `px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${
-    darkMode ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"
+    darkMode ? "bg-[#21262D] border-[#30363D] text-white placeholder-gray-500 focus:border-teal-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"
   }`;
 
-  const cardClass = `rounded-xl border p-4 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`;
+  const cardClass = `rounded-xl border p-4 ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`;
 
   return (
     <>

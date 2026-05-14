@@ -1,9 +1,11 @@
 import { useTranslation } from "react-i18next";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutDarkMode } from "@/context/LayoutThemeContext";
 import { createUser, deleteUser, getUsers, updateUser } from "@/api/users";
 import { getHospitals } from "@/api/hospitals";
+import { getDoctors } from "@/api/doctor";
+import type { DoctorDto } from "@/api/types/doctor.types";
 import type { UserDto } from "@/api/types/users.types";
 import type { Hospital } from "@/types";
 import { layoutSystem } from "@/styles/layoutSystem";
@@ -26,6 +28,7 @@ export function UsersPageContent() {
   const dm = useMainLayoutDarkMode();
   const [users, setUsers] = useState<User[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [doctors, setDoctors] = useState<DoctorDto[]>([]);
   const [search, setSearch] = useState("");
   const { mode: viewMode, setMode: setViewMode } = useViewMode("admin-users", "card");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
@@ -39,12 +42,18 @@ export function UsersPageContent() {
   const { toast, showToast } = useAppToast();
   const [page, setPage] = useState(1);
   const fetchInitialData = useCallback(async () => {
-    const [usersData, hospitalsData] = await Promise.all([getUsers(), getHospitals()]);
-    return { usersData, hospitalsData };
+    const [usersData, hospitalsData, doctorsData] = await Promise.all([
+      getUsers(),
+      getHospitals(),
+      getDoctors().catch(() => [] as DoctorDto[]),
+    ]);
+    return { usersData, hospitalsData, doctorsData };
   }, []);
   const pageState = usePageState(fetchInitialData);
 
-  const PAGE_SIZE = 5;
+  const PAGE_SIZE = 8;
+
+  const doctorsById = useMemo(() => new Map(doctors.map((d) => [d.id, d])), [doctors]);
 
   const filtered = users.filter((u) => {
     const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -70,6 +79,7 @@ export function UsersPageContent() {
     if (!pageState.data) return;
     setUsers(pageState.data.usersData);
     setHospitals(pageState.data.hospitalsData);
+    setDoctors(pageState.data.doctorsData);
   }, [pageState.data]);
 
   const resetForm = useCallback(() => {
@@ -177,7 +187,7 @@ export function UsersPageContent() {
     })();
   };
 
-  const cardClass = `rounded-xl ${layoutSystem.cardPaddingCompact} border ${dm ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`;
+  const cardClass = `rounded-xl ${layoutSystem.cardPaddingCompact} border ${dm ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`;
 
   return (
     <>
@@ -271,6 +281,7 @@ export function UsersPageContent() {
           darkMode={dm}
           viewMode={viewMode}
           users={users}
+          doctorsById={doctorsById}
           filteredCount={filtered.length}
           pageRows={pageRows}
           page={page}

@@ -54,7 +54,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         tabIndex={-1}
-        className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-sm max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+        className={`w-full max-w-[calc(100vw-2rem)] sm:max-w-sm max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#21262D]" : "bg-white"}`}
       >
         <div className="w-12 h-12 flex items-center justify-center rounded-full bg-red-50 mx-auto mb-4">
           <i className="ri-delete-bin-line text-red-500 text-xl"></i>
@@ -68,7 +68,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={cancelDisabled}
-            className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${cancelDisabled ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}
+            className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${cancelDisabled ? "" : "cursor-pointer"} ${darkMode ? "bg-[#21262D] text-gray-300" : "bg-gray-100 text-gray-700"}`}
           >
             {cancelText}
           </button>

@@ -159,7 +159,7 @@ export default function PatientsTable({
                 <button
                   type="button"
                   onClick={() => onEdit(p)}
-                  className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                  className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#30363D]/50 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
                   aria-label={`Edit patient ${p.name}`}
                 >
                   <i className="ri-edit-line text-sm" aria-hidden="true"></i>
@@ -178,11 +178,11 @@ export default function PatientsTable({
         )}
       </div>
 
-      <div className={`rounded-xl border overflow-hidden ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
+      <div className={`rounded-xl border overflow-hidden ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
         <div className="hidden overflow-x-auto md:block">
           <ResponsiveTable minWidthClassName="min-w-[760px]" caption="Hospital admin patients table">
             <thead>
-              <tr className={`text-xs border-b ${darkMode ? "border-[#1E2130] text-gray-400" : "border-gray-100 text-gray-500"}`}>
+              <tr className={`text-xs border-b ${darkMode ? "border-[#30363D] text-gray-400" : "border-gray-100 text-gray-500"}`}>
                 <th scope="col" className="text-left px-5 py-3 font-medium">Bemor</th>
                 <th scope="col" className="hidden sm:table-cell text-left px-5 py-3 font-medium">Yosh / Jins</th>
                 <th scope="col" className="hidden md:table-cell text-left px-5 py-3 font-medium">Shifokor</th>
@@ -194,7 +194,7 @@ export default function PatientsTable({
             </thead>
             <tbody>
               {paginated.map((p) => (
-                <tr key={p.id} className={`border-b last:border-0 transition-colors ${darkMode ? "border-[#1E2130] hover:bg-[#1A2235]" : "border-gray-50 hover:bg-gray-50"}`}>
+                <tr key={p.id} className={`border-b last:border-0 transition-colors ${darkMode ? "border-[#30363D] hover:bg-[#21262D]" : "border-gray-50 hover:bg-gray-50"}`}>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${p.gender === "female" ? "bg-pink-100" : "bg-teal-100"}`}>
@@ -233,7 +233,7 @@ export default function PatientsTable({
                         type="button"
                         onClick={() => onEdit(p)}
                         aria-label={`Edit patient ${p.name}`}
-                        className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+                        className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md cursor-pointer transition-colors ${darkMode ? "hover:bg-[#30363D]/50 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
                       >
                         <i className="ri-edit-line text-sm" aria-hidden="true"></i>
                       </button>
@@ -261,12 +261,12 @@ export default function PatientsTable({
         </div>
 
         {totalPages > 1 && (
-          <div className={`flex items-center justify-between px-5 py-3 border-t ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+          <div className={`flex items-center justify-between px-5 py-3 border-t ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
             <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
               {(page - 1) * perPage + 1}–{Math.min(page * perPage, filteredCount)} / {filteredCount}
             </span>
             <div className="flex items-center gap-1">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-sm cursor-pointer disabled:opacity-40 ${darkMode ? "hover:bg-[#1A2235] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-sm cursor-pointer disabled:opacity-40 ${darkMode ? "hover:bg-[#21262D] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                 <i className="ri-arrow-left-s-line"></i>
               </button>
               <span className={`sm:hidden px-2 text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
@@ -280,7 +280,7 @@ export default function PatientsTable({
                       onClick={() => setPage(item)}
                       aria-label={`Go to patients page ${item}`}
                       aria-current={item === page ? "page" : undefined}
-                      className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-xs cursor-pointer ${item === page ? "bg-teal-500 text-white" : darkMode ? "text-gray-400 hover:bg-[#1A2235]" : "text-gray-500 hover:bg-gray-100"}`}
+                      className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-xs cursor-pointer ${item === page ? "bg-teal-500 text-white" : darkMode ? "text-gray-400 hover:bg-[#21262D]" : "text-gray-500 hover:bg-gray-100"}`}
                     >
                       {item}
                     </button>
@@ -291,7 +291,7 @@ export default function PatientsTable({
                   ),
                 )}
               </div>
-              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-sm cursor-pointer disabled:opacity-40 ${darkMode ? "hover:bg-[#1A2235] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md text-sm cursor-pointer disabled:opacity-40 ${darkMode ? "hover:bg-[#21262D] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}>
                 <i className="ri-arrow-right-s-line"></i>
               </button>
             </div>

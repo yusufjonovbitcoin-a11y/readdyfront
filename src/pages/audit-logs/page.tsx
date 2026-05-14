@@ -177,13 +177,13 @@ export function AuditLogsPageContent() {
     <>
     <div className="space-y-4">
         {pageState.status === "loading" ? (
-          <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+          <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
             <i className="ri-loader-4-line always-spin text-2xl text-emerald-500" />
             <p className={`mt-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Audit loglar yuklanmoqda...</p>
           </div>
         ) : null}
         {pageState.status === "error" ? (
-          <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+          <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
             <i className="ri-error-warning-line text-2xl text-red-500" />
             <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{pageState.error}</p>
             <button
@@ -196,7 +196,7 @@ export function AuditLogsPageContent() {
           </div>
         ) : null}
         {pageState.status === "success" && authoritativeLogs.length === 0 ? (
-          <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+          <div className={`rounded-xl p-14 text-center ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
             <i className={`ri-file-search-line text-3xl ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
             <p className={`mt-3 text-sm ${darkMode ? "text-gray-300" : "text-gray-600"}`}>{t("audit.empty")}</p>
             <button
@@ -240,14 +240,14 @@ export function AuditLogsPageContent() {
             </button>
           </div>
         </div>
-        <div className={`rounded-xl border px-4 py-3 text-xs ${darkMode ? "bg-[#1A2235] border-[#2A3448] text-gray-300" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
+        <div className={`rounded-xl border px-4 py-3 text-xs ${darkMode ? "bg-[#21262D] border-[#2A3448] text-gray-300" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
           Ushbu bo'lim faqat authoritative audit manbasini ko'rsatadi. Faqat serverda qayd etilgan faoliyatlar bu ro'yxatga qo'shiladi.
         </div>
 
         {/* Summary Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {summaryStats.map((stat) => (
-            <div key={stat.label} className={`rounded-xl p-4 flex items-center gap-3 ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+            <div key={stat.label} className={`rounded-xl p-4 flex items-center gap-3 ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
               <div className={`w-10 h-10 flex items-center justify-center rounded-xl flex-shrink-0 ${stat.bg}`}>
                 <i className={`${stat.icon} text-lg ${stat.color}`}></i>
               </div>
@@ -290,7 +290,7 @@ export function AuditLogsPageContent() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {paginated.length === 0 ? (
-              <div className={`col-span-3 rounded-xl p-12 text-center ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+              <div className={`col-span-3 rounded-xl p-12 text-center ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
                 <div className="w-12 h-12 flex items-center justify-center mx-auto mb-3">
                   <i className="ri-file-search-line text-3xl text-gray-400"></i>
                 </div>
@@ -311,7 +311,7 @@ export function AuditLogsPageContent() {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                darkMode ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-white text-gray-500 hover:text-gray-900"
+                darkMode ? "bg-[#21262D] text-gray-400 hover:text-white" : "bg-white text-gray-500 hover:text-gray-900"
               }`}
             >
               <i className="ri-arrow-left-s-line text-lg"></i>
@@ -336,7 +336,7 @@ export function AuditLogsPageContent() {
                     page === p
                       ? "bg-emerald-500 text-white font-semibold"
                       : darkMode
-                      ? "bg-[#1A2235] text-gray-400 hover:text-white"
+                      ? "bg-[#21262D] text-gray-400 hover:text-white"
                       : "bg-white text-gray-500 hover:text-gray-900"
                   }`}
                 >
@@ -349,7 +349,7 @@ export function AuditLogsPageContent() {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                darkMode ? "bg-[#1A2235] text-gray-400 hover:text-white" : "bg-white text-gray-500 hover:text-gray-900"
+                darkMode ? "bg-[#21262D] text-gray-400 hover:text-white" : "bg-white text-gray-500 hover:text-gray-900"
               }`}
             >
               <i className="ri-arrow-right-s-line text-lg"></i>

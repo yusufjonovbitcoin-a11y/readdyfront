@@ -34,6 +34,10 @@ export function getDoctorPatients(): Promise<DoctorPatientDto[]> {
   return doctorAdapter.getDoctorPatients();
 }
 
+export function getDoctorPatientsByDoctorId(doctorId: string): Promise<DoctorPatientDto[]> {
+  return doctorAdapter.getDoctorPatientsByDoctorId(doctorId);
+}
+
 export function getDoctorPatientById(
   responseId: string,
 ): Promise<DoctorPatientDto | null> {
@@ -58,6 +62,10 @@ export function getDoctorQuestions(): Promise<DoctorQuestionDto[]> {
 
 export function getDoctorAnalytics(): Promise<DoctorAnalyticsDto[]> {
   return doctorAdapter.getDoctorAnalytics();
+}
+
+export function getDoctorAnalyticsByDoctorId(doctorId: string): Promise<DoctorAnalyticsDto[]> {
+  return doctorAdapter.getDoctorAnalyticsByDoctorId(doctorId);
 }
 
 export function getDoctorQuestionCategories(): Promise<DoctorQuestionCategoryDto[]> {

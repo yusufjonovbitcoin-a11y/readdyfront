@@ -37,7 +37,7 @@ export default function UserFormPanel({
 
   const inputClass = `w-full px-3 py-2.5 rounded-lg text-sm outline-none ${
     darkMode
-      ? "bg-[#0F1117] border border-[#1E2A3A] text-white placeholder-gray-600 focus:border-emerald-500"
+      ? "bg-[#0F1117] border border-[#30363D] text-white placeholder-gray-600 focus:border-emerald-500"
       : "bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-emerald-500"
   }`;
   const labelClass = `block text-xs font-medium mb-1.5 ${darkMode ? "text-gray-400" : "text-gray-600"}`;
@@ -45,7 +45,7 @@ export default function UserFormPanel({
   return (
     <div
       className={`rounded-xl p-4 border ${
-        darkMode ? "bg-[#1A2235] border-emerald-500/30" : "bg-white border-emerald-200"
+        darkMode ? "bg-[#21262D] border-emerald-500/30" : "bg-white border-emerald-200"
       }`}
     >
       <h3 className={`text-sm font-semibold mb-4 ${darkMode ? "text-white" : "text-gray-900"}`}>

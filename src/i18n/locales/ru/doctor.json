@@ -9,7 +9,8 @@
     "analytics": "Аналитика",
     "notifications": "Уведомления",
     "news": "Новости",
-    "chatGroup": "Чат Группа",
+    "chatGuruhi": "Chat Guruhi",
+    "chatGuruhiSubtitle": "{{online}} онлайн · {{members}} участников",
     "settings": "Настройки",
     "doctorName": "Д-р Алишер Каримов",
     "specialty": "Кардиология",
@@ -19,6 +20,31 @@
     "completed": "Завершено",
     "expand": "Развернуть боковую панель",
     "collapse": "Свернуть боковую панель"
+  },
+  "chat": {
+    "pageTitle": "Группа специалистов",
+    "groupSubtitle": "Все коллеги по направлению общаются в одной группе",
+    "membersCount": "Всего {{count}} участников (включая вас)",
+    "membersListTitle": "Участники группы",
+    "groupFeedHint": "Одна лента для {{count}} человек",
+    "groupMessagePlaceholder": "Сообщение в группу...",
+    "onlineShort": "{{count}} онлайн",
+    "groupMetaLine": "{{count}} участников · {{description}}",
+    "toggleMembers": "Список участников",
+    "memberCountBadge": "{{count}} участников",
+    "today": "Сегодня",
+    "yearsShort": "{{years}} лет",
+    "youShort": "вы",
+    "specialtyChat": "Чат: {{specialty}}",
+    "doctorCount": "{{count}} врачей",
+    "newCount": "{{count}} новых",
+    "searchPlaceholder": "Врач или больница...",
+    "statsOnline": "Онлайн",
+    "statsBusy": "Занят",
+    "statsOffline": "Офлайн",
+    "notFound": "Участник не найден",
+    "messagePlaceholder": "Сообщение... (Enter — отправить)",
+    "back": "Назад"
   },
   "header": {
     "actions": {
@@ -131,7 +157,27 @@
     "diagnoses": "Диагнозы",
     "totalDiagnoses": "Всего диагнозов:",
     "peakHours": "Пиковые часы",
-    "peakTime": "Самое загруженное время:"
+    "peakHoursSubtitle": "Количество пациентов по каждому интервалу выбранного периода.",
+    "peakRange24h": "24H",
+    "peakRange7d": "7D",
+    "peakRange30d": "30D",
+    "peakTime": "Самое загруженное время:",
+    "peakSlotPatients": "{{count}} пациентов",
+    "flowCard": {
+      "chartAria": "График динамики потока пациентов",
+      "brandShort": "MC",
+      "calendarHint": "Даты статистики (до 31 дня)",
+      "exportCsv": "Скачать CSV",
+      "dateRangeTitle": "Диапазон дат",
+      "dateRangeFrom": "С",
+      "dateRangeTo": "По",
+      "dateRangeApply": "Применить",
+      "dateRangeClear": "Сбросить",
+      "dateRangeTooLong": "Интервал не может превышать 31 день.",
+      "dateRangeHint": "Не более 31 календарного дня — график и CSV сужаются до выбранного периода.",
+      "dateRangeFillBoth": "Выберите даты начала и окончания.",
+      "dateRangeOrderInvalid": "Дата «С» не может быть позже даты «По»."
+    }
   },
   "profile": {
     "title": "Профиль",
@@ -150,7 +196,10 @@
       "security": "Безопасность",
       "languageTheme": "Язык и тема",
       "notifications": "Уведомления"
-    }
+    },
+    "fieldFullName": "Полное имя",
+    "fieldExperience": "Стаж",
+    "dash": "—"
   },
   "dashboard": {
     "title": "Панель врача",

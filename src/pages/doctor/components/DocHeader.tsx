@@ -6,6 +6,7 @@ import { getCurrentDoctorSession } from "@/api/services/doctorSession.service";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useAuth } from "@/hooks/useAuth";
 import { getModShortcut } from "@/utils/modShortcut";
+import { AppLogoMark } from "@/components/branding/AppLogoMark";
 import {
   emitNotificationsUpdated,
   getNotifications as fetchNotifications,
@@ -77,9 +78,9 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
       { id: "history", label: t("sidebar.history"), hint: "/doctor/history", to: "/doctor/history", icon: "ri-history-line" },
       { id: "analytics", label: t("sidebar.analytics"), hint: "/doctor/analytics", to: "/doctor/analytics", icon: "ri-bar-chart-2-line" },
       { id: "questions", label: t("sidebar.questions"), hint: "/doctor/questions", to: "/doctor/questions", icon: "ri-questionnaire-line" },
+      { id: "chat", label: t("sidebar.chatGuruhi"), hint: "/doctor/chat", to: "/doctor/chat", icon: "ri-chat-3-line" },
       { id: "notifications", label: t("sidebar.notifications"), hint: "/doctor/notifications", to: "/doctor/notifications", icon: "ri-notification-3-line" },
       { id: "news", label: t("sidebar.news"), hint: "/doctor/news", to: "/doctor/news", icon: "ri-newspaper-line" },
-      { id: "chat", label: t("sidebar.chatGroup"), hint: "/doctor/chat", to: "/doctor/chat", icon: "ri-chat-3-line" },
       { id: "settings", label: t("sidebar.settings"), hint: "/doctor/settings", to: "/doctor/settings", icon: "ri-settings-3-line" },
       { id: "profile", label: t("profile.title"), hint: "/doctor/profile", to: "/doctor/profile", icon: "ri-user-line" },
     ];
@@ -202,19 +203,22 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
     <>
       <header
         className={`fixed top-0 right-0 z-20 h-16 flex min-w-0 items-center px-4 md:px-6 transition-[left] duration-300 ease-out left-0 md:left-[var(--doc-sidebar-w)] ${
-          darkMode ? "bg-[#0D1117] border-b border-[#1C2333]" : "bg-white border-b border-gray-100"
+          darkMode ? "bg-[#0D1117] border-b border-[#30363D]" : "bg-white border-b border-gray-100"
         }`}
       >
         <button
           type="button"
           onClick={onToggleMobile}
           className={`mr-2 shrink-0 md:hidden h-11 w-11 flex items-center justify-center rounded-lg transition-colors ${
-            darkMode ? "bg-[#1C2333] text-gray-300 hover:bg-[#252D3D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            darkMode ? "bg-[#21262D] text-gray-300 hover:bg-[#30363D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}
           aria-label={t("header.actions.openSidebar")}
         >
           <i className="ri-menu-line text-base" />
         </button>
+        <div className="mr-2 flex shrink-0 items-center md:hidden">
+          <AppLogoMark size={28} className="shrink-0" alt="MedCore" />
+        </div>
         <div className="min-w-0 flex flex-1 items-center gap-2 pr-2">
           <h1 className={`truncate text-lg font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{title}</h1>
         </div>
@@ -234,7 +238,7 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
             type="button"
             onClick={openSearch}
             className={`hidden h-11 shrink-0 cursor-pointer items-center gap-2 rounded-lg px-3 text-sm transition-colors lg:flex ${
-              darkMode ? "bg-[#1C2333] text-gray-400 hover:bg-[#252D3D]" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              darkMode ? "bg-[#21262D] text-gray-400 hover:bg-[#30363D]" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
             }`}
             aria-haspopup="dialog"
             aria-expanded={searchOpen}
@@ -245,7 +249,7 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
             </span>
             <span className="text-xs">{t("header.search.trigger")}</span>
             <kbd
-              className={`rounded px-1.5 py-0.5 font-sans text-[10px] leading-none ${
+              className={`inline-flex h-[25px] items-center justify-center rounded px-1.5 py-1.5 font-sans text-[14px] leading-none ${
                 darkMode ? "bg-[#0D1117] text-gray-500" : "bg-white text-gray-400"
               }`}
             >
@@ -256,7 +260,7 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
             type="button"
             onClick={openSearch}
             className={`hidden md:flex lg:hidden h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors ${
-              darkMode ? "bg-[#1C2333] text-gray-300 hover:bg-[#252D3D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              darkMode ? "bg-[#21262D] text-gray-300 hover:bg-[#30363D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
             aria-label={t("header.search.global")}
             aria-haspopup="dialog"
@@ -271,7 +275,7 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
             onClick={toggleDarkMode}
             aria-label={darkMode ? t("header.actions.switchToLight") : t("header.actions.switchToDark")}
             className={`h-11 w-11 shrink-0 flex cursor-pointer items-center justify-center rounded-lg transition-colors ${
-              darkMode ? "bg-[#1C2333] text-yellow-400 hover:bg-[#252D3D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              darkMode ? "bg-[#21262D] text-yellow-400 hover:bg-[#30363D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             <i className={`${darkMode ? "ri-sun-line" : "ri-moon-line"} text-base`} aria-hidden />
@@ -287,7 +291,7 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
               aria-controls="doctor-notification-popover"
               aria-haspopup="true"
               className={`relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${
-                darkMode ? "bg-[#1C2333] text-gray-300 hover:bg-[#252D3D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                darkMode ? "bg-[#21262D] text-gray-300 hover:bg-[#30363D]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
             >
               <i className="ri-notification-3-line text-base" aria-hidden="true"></i>
@@ -303,10 +307,10 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
                 aria-label="Bildirishnomalar"
                 tabIndex={-1}
                 className={`absolute right-0 top-12 z-50 w-80 rounded-xl border shadow-lg ${
-                  darkMode ? "bg-[#161B27] border-[#1C2333]" : "bg-white border-gray-100"
+                  darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"
                 }`}
               >
-                <div className={`flex items-center justify-between border-b px-4 py-3 ${darkMode ? "border-[#1C2333]" : "border-gray-100"}`}>
+                <div className={`flex items-center justify-between border-b px-4 py-3 ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
                   <span id="doctor-notifications-title" className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>
                     {t("header.notifications.title")}
                   </span>
@@ -329,7 +333,7 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
                         navigate(n.actionPath || "/doctor/notifications");
                       }}
                       className={`flex w-full cursor-pointer gap-3 px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 ${
-                        darkMode ? "hover:bg-[#1C2333]" : "hover:bg-gray-50"
+                        darkMode ? "hover:bg-[#21262D]" : "hover:bg-gray-50"
                       }`}
                     >
                       <div
@@ -393,10 +397,10 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
             aria-labelledby="doctor-global-search-title"
             tabIndex={-1}
             className={`relative w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl ${
-              darkMode ? "border-[#1C2333] bg-[#161B27]" : "border-gray-200 bg-white"
+              darkMode ? "border-[#30363D] bg-[#21262D]" : "border-gray-200 bg-white"
             }`}
           >
-            <div className={`flex items-center gap-2 border-b px-3 ${darkMode ? "border-[#1C2333]" : "border-gray-100"}`}>
+            <div className={`flex items-center gap-2 border-b px-3 ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
               <i className={`ri-search-line shrink-0 text-lg ${darkMode ? "text-gray-500" : "text-gray-400"}`} aria-hidden />
               <input
                 ref={searchInputRef}
@@ -415,7 +419,7 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
               <button
                 type="button"
                 onClick={closeSearch}
-                className={`shrink-0 rounded px-2 py-1 text-xs ${darkMode ? "text-gray-500 hover:bg-[#1C2333]" : "text-gray-400 hover:bg-gray-100"}`}
+                className={`shrink-0 rounded px-2 py-1 text-xs ${darkMode ? "text-gray-500 hover:bg-[#21262D]" : "text-gray-400 hover:bg-gray-100"}`}
               >
                 Esc
               </button>
@@ -442,10 +446,10 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
                       className={`flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors ${
                         i === activeIndex
                           ? darkMode
-                            ? "bg-[#1C2333]"
+                            ? "bg-[#21262D]"
                             : "bg-violet-50"
                           : darkMode
-                            ? "hover:bg-[#1C2333]/80"
+                            ? "hover:bg-[#21262D]/80"
                             : "hover:bg-gray-50"
                       }`}
                     >
@@ -468,7 +472,7 @@ export default function DocHeader({ title, onToggleMobile, notificationCount }: 
                 ))
               )}
             </ul>
-            <div className={`border-t px-4 py-2 text-xs ${darkMode ? "border-[#1C2333] text-gray-500" : "border-gray-100 text-gray-400"}`}>
+            <div className={`border-t px-4 py-2 text-xs ${darkMode ? "border-[#30363D] text-gray-500" : "border-gray-100 text-gray-400"}`}>
               <span className="hidden sm:inline">{t("header.search.help")}</span>
               <span className="sm:ml-1">
                 {modShortcut} · Esc

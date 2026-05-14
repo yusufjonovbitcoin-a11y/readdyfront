@@ -172,7 +172,7 @@ export function DocQuestionsContent() {
 
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
-  const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
+  const cardBase = darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100";
   const cardHover = darkMode ? "hover:border-emerald-500/40" : "hover:border-emerald-200";
   const borderSubtle = darkMode ? "border-[#30363D]" : "border-gray-100";
   const textBody = darkMode ? "text-gray-200" : "text-gray-800";
@@ -194,7 +194,7 @@ export function DocQuestionsContent() {
     ? "hover:bg-[#21262D] text-gray-400 hover:text-gray-200"
     : "hover:bg-gray-100 text-gray-400 hover:text-gray-700";
   const iconBtnDel = darkMode ? "hover:bg-red-950/40 text-gray-400 hover:text-red-400" : "hover:bg-red-50 text-gray-400 hover:text-red-500";
-  const modalPanel = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white";
+  const modalPanel = darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white";
   const modalTitle = darkMode ? "text-white" : "text-gray-900";
   const labelCls = darkMode ? "text-gray-300" : "text-gray-700";
   const fieldBase = darkMode

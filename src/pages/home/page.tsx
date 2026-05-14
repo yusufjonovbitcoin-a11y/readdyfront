@@ -7,7 +7,7 @@ import { homeDashboardBundleQueryOptions } from "@/lib/coreQueryCache";
 import StatCard from "./components/StatCard";
 import ActivityChart from "./components/ActivityChart";
 import TopHospitals from "./components/TopHospitals";
-import RecentActivity from "./components/RecentActivity";
+import { DashboardBookingCharts } from "./components/DashboardBookingCharts";
 
 export function DashboardContent() {
   const { t } = useTranslation("admin");
@@ -58,12 +58,12 @@ export function DashboardContent() {
   }, [dashboardState.data, t]);
 
   if (dashboardState.isLoading) {
-    return <div className={`rounded-xl p-8 text-center ${dark ? "bg-[#1A2235] text-gray-400" : "bg-white text-gray-500"}`}>Yuklanmoqda...</div>;
+    return <div className={`rounded-xl p-8 text-center ${dark ? "bg-[#21262D] text-gray-400" : "bg-white text-gray-500"}`}>Yuklanmoqda...</div>;
   }
 
   if (dashboardState.isError) {
     return (
-      <div className={`rounded-xl p-8 text-center ${dark ? "bg-[#1A2235] text-gray-300" : "bg-white text-gray-700"}`}>
+      <div className={`rounded-xl p-8 text-center ${dark ? "bg-[#21262D] text-gray-300" : "bg-white text-gray-700"}`}>
         <p className="mb-4">{dashboardState.error instanceof Error ? dashboardState.error.message : "Ma'lumotlarni yuklashda xatolik yuz berdi."}</p>
         <button
           type="button"
@@ -102,38 +102,12 @@ export function DashboardContent() {
           </div>
         </div>
 
-        {/* Bottom Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2">
-            <RecentActivity darkMode={dark} logs={dashboardState.data?.logs ?? []} />
-          </div>
-          {/* System Alerts */}
-          <div className={`rounded-xl p-5 ${dark ? "bg-[#1A2235]" : "bg-white"}`}>
-            <h3 className={`text-base font-semibold mb-4 ${dark ? "text-white" : "text-gray-900"}`}>{t("home.alerts.title")}</h3>
-            <div className="space-y-3">
-              {[
-                { text: t("home.alerts.items.inactive"), type: "error", time: t("home.alerts.times.twoDays") },
-                { text: t("home.alerts.items.shortage"), type: "warning", time: t("home.alerts.times.fiveHours") },
-                { text: t("home.alerts.items.report"), type: "success", time: t("home.alerts.times.oneHour") },
-                { text: t("home.alerts.items.newHospital"), type: "info", time: t("home.alerts.times.threeDays") },
-              ].map((alert, i) => (
-                <div key={i} className={`flex items-start gap-3 p-3 rounded-lg ${
-                  dark ? "bg-[#0F1117]" : "bg-gray-50"
-                }`}>
-                  <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                    alert.type === "error" ? "bg-red-400" :
-                    alert.type === "warning" ? "bg-yellow-400" :
-                    alert.type === "success" ? "bg-emerald-400" : "bg-blue-400"
-                  }`}></div>
-                  <div>
-                    <p className={`text-sm ${dark ? "text-gray-300" : "text-gray-700"}`}>{alert.text}</p>
-                    <p className={`text-sm mt-0.5 ${dark ? "text-gray-600" : "text-gray-400"}`}>{alert.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <DashboardBookingCharts
+          darkMode={dark}
+          dailyBookings={dashboardState.data?.dailyBookings ?? []}
+          cityStats={dashboardState.data?.cityStats ?? []}
+          weeklyBookings={dashboardState.data?.weeklyBookings ?? []}
+        />
       </div>
   );
 }

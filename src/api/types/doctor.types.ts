@@ -4,6 +4,8 @@ export interface DoctorDto {
   name: string;
   /** Bo‘lim nomi (`department.name`). */
   departmentName: string;
+  /** `Departments.id` — yangiliklar filtri uchun */
+  departmentId?: string;
   /** Kasalxona nomi (`hospital.name`). */
   hospitalName: string;
   specialty: string;
@@ -12,6 +14,8 @@ export interface DoctorDto {
   avatar: string;
   todayPatients: number;
   totalPatients: number;
+  /** So‘nggi 7 kun ichidagi kunlik o‘rtacha (backend `weeklyAvgPatients`). */
+  weeklyAvgPatients: number;
   rating: number;
   status: "active" | "inactive";
   joinDate: string;

@@ -1,353 +1,378 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { io, type Socket } from "socket.io-client";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
+import { useAuth } from "@/hooks/useAuth";
+import { getStoredAccessToken } from "@/api/client";
 import {
-  groupChatMessages,
-  currentChatDoctor,
-  getDoctorsForSpecialty,
-  statusColors,
-  statusLabels,
-  type GroupChatMessage,
-  type ChatDoctor,
-} from "@/mocks/doctorChat";
+  getDoctorDepartmentChatMembers,
+  getDoctorDepartmentChatMessages,
+  getDoctorDepartmentChatSummary,
+  postDoctorDepartmentChatMarkRead,
+  postDoctorDepartmentChatMessage,
+} from "@/api/adapters/departmentChat.http";
+import type { DepartmentChatMemberDto, DepartmentChatMessageDto } from "@/api/types/departmentChat.types";
+import {
+  departmentChatMessageToAdminMessage,
+  peerBubbleClassFromSender,
+} from "@/lib/departmentChatUi";
 
-const CURRENT_SPECIALTY = "Kardiologiya";
+type UiMsg = ReturnType<typeof departmentChatMessageToAdminMessage>;
 
-function ChatBubble({
+function resolveSocketBaseUrl(): string {
+  const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+  if (!raw) return "http://localhost:4000";
+  return raw.replace(/\/api\/?$/i, "").replace(/\/$/, "");
+}
+
+function GroupMessageBubble({
   msg,
   isMe,
   darkMode,
   showAvatar,
 }: {
-  msg: GroupChatMessage;
+  msg: UiMsg;
   isMe: boolean;
   darkMode: boolean;
   showAvatar: boolean;
 }) {
+  const avatarClass = isMe ? "bg-violet-600" : peerBubbleClassFromSender(msg.senderId);
+
   return (
     <div className={`flex gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
       {showAvatar && (
         <div
-          className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-1 ${
-            isMe
-              ? "bg-green-600"
-              : msg.senderId === "d-card-2"
-              ? "bg-emerald-600"
-              : msg.senderId === "d-card-3"
-              ? "bg-sky-600"
-              : msg.senderId === "d-card-4"
-              ? "bg-rose-600"
-              : "bg-amber-600"
-          }`}
+          className={`mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white ${avatarClass}`}
         >
           {msg.senderAvatar}
         </div>
       )}
-      {!showAvatar && <div className="w-9 flex-shrink-0" />}
-      <div className={`max-w-[70%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+      {!showAvatar && <div className="w-9 shrink-0" />}
+      <div className={`flex max-w-[70%] flex-col ${isMe ? "items-end" : "items-start"}`}>
         {showAvatar && (
-          <div className="flex items-center gap-1.5 mb-0.5 px-1">
+          <div className="mb-0.5 flex items-center gap-1.5 px-1">
             <span className={`text-[11px] font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
               {msg.senderName}
             </span>
-            <span className={`text-[10px] ${darkMode ? "text-gray-600" : "text-gray-400"}`}>
-              {msg.senderHospital}
-            </span>
+            <span className={`text-[10px] ${darkMode ? "text-gray-600" : "text-gray-400"}`}>{msg.senderHospital}</span>
           </div>
         )}
         <div
-          className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+          className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
             isMe
               ? darkMode
-                ? "bg-green-600 text-white rounded-tr-sm"
-                : "bg-green-600 text-white rounded-tr-sm shadow-sm"
+                ? "rounded-tr-sm bg-violet-600 text-white"
+                : "rounded-tr-sm bg-violet-600 text-white shadow-sm"
               : darkMode
-              ? "bg-[#1C2333] text-gray-200 rounded-tl-sm border border-[#1C2333]"
-              : "bg-white text-gray-800 rounded-tl-sm border border-gray-100 shadow-sm"
+                ? "rounded-tl-sm border border-[#1C2333] bg-[#1C2333] text-gray-200"
+                : "rounded-tl-sm border border-gray-100 bg-white text-gray-800 shadow-sm"
           }`}
         >
           {msg.content}
         </div>
-        <span className={`text-[10px] px-1 mt-0.5 ${darkMode ? "text-gray-600" : "text-gray-400"}`}>
+        <span className={`mt-0.5 px-1 text-[10px] ${darkMode ? "text-gray-600" : "text-gray-400"}`}>
           {msg.time}
-          {isMe && (
-            <i className={`ri-check-double-line ml-1 ${msg.read ? "text-emerald-400" : ""}`} />
-          )}
+          {isMe && <i className={`ri-check-double-line ml-1 ${msg.read ? "text-emerald-400" : ""}`} aria-hidden />}
         </span>
       </div>
     </div>
   );
 }
 
-export function DocChatContent() {
+export default function DoctorChatPage() {
+  const { t } = useTranslation("doctor");
   const { darkMode } = useDoctorTheme();
-  const [messages, setMessages] = useState<GroupChatMessage[]>([...groupChatMessages]);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [messageText, setMessageText] = useState("");
-  const [showMembers, setShowMembers] = useState(false);
-  const [searchMembers, setSearchMembers] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const socketRef = useRef<Socket | null>(null);
 
-  const allMembers = useMemo(() => {
-    const specialty = getDoctorsForSpecialty(CURRENT_SPECIALTY);
-    return [currentChatDoctor, ...specialty];
-  }, []);
+  const { data: summary, isLoading: summaryLoading } = useQuery({
+    queryKey: ["doctor-department-chat-summary"],
+    queryFn: getDoctorDepartmentChatSummary,
+  });
 
-  const onlineCount = allMembers.filter((d) => d.status === "online").length;
-  const unreadCount = messages.filter((m) => !m.read).length;
+  const { data: members = [] } = useQuery({
+    queryKey: ["doctor-department-chat-members", summary?.departmentId],
+    queryFn: getDoctorDepartmentChatMembers,
+    enabled: Boolean(summary?.departmentId),
+  });
 
-  const filteredMembers = useMemo(() => {
-    if (!searchMembers.trim()) return allMembers;
-    const q = searchMembers.toLowerCase();
-    return allMembers.filter(
-      (d) => d.name.toLowerCase().includes(q) || d.hospitalName.toLowerCase().includes(q),
-    );
-  }, [allMembers, searchMembers]);
+  const { data: messagesPage, isLoading: messagesLoading } = useQuery({
+    queryKey: ["doctor-department-chat-messages", summary?.departmentId],
+    queryFn: () => getDoctorDepartmentChatMessages(),
+    enabled: Boolean(summary?.departmentId),
+  });
+
+  const uiMessages = useMemo(
+    () => (messagesPage?.messages ?? []).map(departmentChatMessageToAdminMessage),
+    [messagesPage],
+  );
+
+  useEffect(() => {
+    if (!summary?.departmentId) return;
+    void postDoctorDepartmentChatMarkRead().then(() => {
+      void queryClient.invalidateQueries({ queryKey: ["doctor-department-chat-summary"] });
+    });
+  }, [summary?.departmentId, queryClient]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+  }, [uiMessages.length]);
+
+  const departmentId = summary?.departmentId;
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (!departmentId) return;
+    const token = getStoredAccessToken();
+    if (!token) return;
+    const socket: Socket = io(`${resolveSocketBaseUrl()}/department-chat`, {
+      transports: ["websocket"],
+      withCredentials: true,
+      auth: { token },
+    });
+    socketRef.current = socket;
+    const onConnect = () => {
+      socket.emit("join", { departmentId });
+    };
+    socket.on("connect", onConnect);
+    socket.on("department_chat:message", (payload: DepartmentChatMessageDto) => {
+      if (payload && payload.id) {
+        const ui = departmentChatMessageToAdminMessage(payload);
+        queryClient.setQueryData<{ messages: DepartmentChatMessageDto[]; nextCursor: string | null }>(
+          ["doctor-department-chat-messages", departmentId],
+          (old) => {
+            const list = old?.messages ?? [];
+            const nextCursor = old?.nextCursor ?? null;
+            if (list.some((m) => m.id === payload.id)) return old ?? { messages: list, nextCursor };
+            return { messages: [...list, payload], nextCursor };
+          },
+        );
+      }
+    });
+    return () => {
+      socket.removeAllListeners();
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [departmentId, queryClient]);
+
+  const sendMutation = useMutation({
+    mutationFn: (body: string) => postDoctorDepartmentChatMessage(body),
+    onSuccess: (dto) => {
+      queryClient.setQueryData<{ messages: DepartmentChatMessageDto[]; nextCursor: string | null }>(
+        ["doctor-department-chat-messages", summary?.departmentId],
+        (old) => {
+          const list = old?.messages ?? [];
+          const nextCursor = old?.nextCursor ?? null;
+          if (list.some((m) => m.id === dto.id)) return old ?? { messages: list, nextCursor };
+          return { messages: [...list, dto], nextCursor };
+        },
+      );
+      setMessageText("");
+      globalThis.setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      void queryClient.invalidateQueries({ queryKey: ["doctor-department-chat-summary"] });
+    },
+  });
+
+  const currentUserId = user?.id ?? "";
+  const isMe = (senderId: string) => senderId === currentUserId;
 
   const sendMessage = () => {
-    if (!messageText.trim()) return;
-    const newMsg: GroupChatMessage = {
-      id: `gm-${Date.now()}`,
-      senderId: currentChatDoctor.id,
-      senderName: currentChatDoctor.name,
-      senderAvatar: currentChatDoctor.avatar,
-      senderHospital: currentChatDoctor.hospitalName,
-      content: messageText.trim(),
-      time: new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
-      date: new Date().toISOString().split("T")[0],
-      read: false,
-    };
-    setMessages((prev) => [...prev, newMsg]);
-    setMessageText("");
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    const text = messageText.trim();
+    if (!text || sendMutation.isPending) return;
+    sendMutation.mutate(text);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
   };
 
-  const isMe = (senderId: string) => senderId === currentChatDoctor.id;
+  const onlineCount = summary?.onlineCount ?? 0;
+  const totalMembers = summary?.memberCount ?? members.length;
+  const groupName = summary?.departmentName ?? t("chat.pageTitle");
+  const groupDescription = summary?.description ?? "";
+
+  const headerMembers: DepartmentChatMemberDto[] = members.length > 0 ? members : [];
+
+  if (summaryLoading) {
+    return (
+      <div className="flex min-h-[420px] flex-1 items-center justify-center">
+        <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>…</p>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <div className="flex min-h-[420px] flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
+        <p className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+          Guruh chatni yuklab bo&apos;lmadi
+        </p>
+        <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-500"}`}>API / tizimga kirishni tekshiring.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-      {/* Main Chat Area */}
-      <div className={`flex-1 flex flex-col min-w-0 ${darkMode ? "bg-[#0F1117]" : "bg-white"}`}>
-        {/* Chat header */}
-        <div className={`px-5 py-3.5 border-b flex items-center gap-3 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
-          <div className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-            Ka
+    <div className="flex h-[calc(100dvh-4rem)] min-h-[420px] overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div
+          className={`flex shrink-0 items-center gap-3 border-b px-5 py-3.5 ${
+            darkMode ? "border-[#1C2333] bg-[#0D1117]" : "border-gray-100 bg-white"
+          }`}
+        >
+          <div className="relative shrink-0">
+            <div className="flex -space-x-2">
+              {headerMembers.slice(0, 3).map((m, i) => (
+                <div
+                  key={m.id}
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-xl border-2 text-xs font-bold text-white ${
+                    darkMode ? "border-[#0D1117]" : "border-white"
+                  } ${i === 0 ? "z-30 bg-violet-600" : i === 1 ? "z-20 bg-emerald-600" : "z-10 bg-sky-600"}`}
+                >
+                  {m.avatar}
+                </div>
+              ))}
+              {headerMembers.length > 3 && (
+                <div
+                  className={`z-0 flex h-10 w-10 items-center justify-center rounded-xl border-2 text-xs font-bold ${
+                    darkMode ? "border-[#0D1117] bg-[#1C2333] text-gray-400" : "border-white bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  +{headerMembers.length - 3}
+                </div>
+              )}
+              {headerMembers.length === 0 && (
+                <div
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl border-2 text-xs font-bold text-white ${
+                    darkMode ? "border-[#0D1117] bg-violet-600" : "border-white bg-violet-600"
+                  }`}
+                >
+                  {(groupName.slice(0, 2) || "DR").toUpperCase()}
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
+
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className={`text-sm font-bold truncate ${darkMode ? "text-white" : "text-gray-900"}`}>
-                {CURRENT_SPECIALTY} Guruhi
-              </h2>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-500">
-                {CURRENT_SPECIALTY}
+              <h2 className={`truncate text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{groupName}</h2>
+              <span className="shrink-0 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-500">
+                <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+                {t("chat.onlineShort", { count: onlineCount })}
               </span>
             </div>
-            <p className={`text-xs truncate ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-              {allMembers.length} a'zo · {onlineCount} onlayn
+            <p className={`truncate text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+              {t("chat.groupMetaLine", { count: totalMembers, description: groupDescription })}
             </p>
           </div>
-          <button
-            onClick={() => setShowMembers(!showMembers)}
-            className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
-              darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"
-            } ${showMembers ? (darkMode ? "bg-[#1E2A3A] text-white" : "bg-gray-100 text-gray-900") : ""}`}
-          >
-            <i className="ri-group-line text-sm" />
-          </button>
         </div>
 
-        {/* Messages */}
-        <div className={`flex-1 overflow-y-auto px-5 py-5 space-y-4 ${darkMode ? "bg-[#0F1117]" : "bg-gradient-to-b from-gray-50 to-white"}`}>
-          {/* Group welcome banner */}
-          <div className="flex flex-col items-center py-4">
-            <div className={`w-14 h-14 flex items-center justify-center rounded-2xl mb-3 ${darkMode ? "bg-[#1E2130]" : "bg-green-50"}`}>
-              <i className={`ri-chat-smile-2-line text-2xl ${darkMode ? "text-green-400" : "text-green-500"}`} />
+        <div
+          className={`min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 ${
+            darkMode ? "bg-[#0D1117]" : "bg-gradient-to-b from-gray-50 to-white"
+          }`}
+        >
+          <div
+            className={`flex flex-col items-center py-6 ${darkMode ? "border-b border-[#1C2333]" : "border-b border-gray-100"}`}
+          >
+            <div
+              className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${
+                darkMode ? "bg-[#1C2333]" : "bg-violet-50"
+              }`}
+            >
+              <i className={`ri-chat-smile-2-line text-2xl ${darkMode ? "text-violet-400" : "text-violet-500"}`} />
             </div>
-            <p className={`text-sm font-bold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>
-              {CURRENT_SPECIALTY} Guruhi
-            </p>
-            <p className={`text-xs text-center max-w-md mb-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-              Barcha shifoxonalardagi {CURRENT_SPECIALTY.toLowerCase()} mutaxassislari uchun guruh chat. Kasallik holatlari, yangi tadqiqotlar va tajriba almashish.
+            <p className={`mb-1 text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{groupName}</p>
+            <p className={`mb-3 max-w-md text-center text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+              {groupDescription}
             </p>
             <div className="flex items-center gap-2">
-              <span className={`text-xs px-2.5 py-1 rounded-full ${darkMode ? "bg-[#1E2130] text-gray-300" : "bg-gray-100 text-gray-600"}`}>
-                {allMembers.length} a'zo
+              <span
+                className={`rounded-full px-2.5 py-1 text-xs ${darkMode ? "bg-[#1C2333] text-gray-300" : "bg-gray-100 text-gray-600"}`}
+              >
+                {t("chat.memberCountBadge", { count: totalMembers })}
               </span>
-              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
-                {onlineCount} onlayn
+              <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-500">
+                {t("chat.onlineShort", { count: onlineCount })}
               </span>
             </div>
           </div>
 
-          {/* Date divider */}
-          <div className="flex items-center gap-3 my-2">
-            <div className={`flex-1 h-px ${darkMode ? "bg-[#1E2130]" : "bg-gray-200"}`} />
-            <span className={`text-[10px] px-2 py-0.5 rounded-full ${darkMode ? "bg-[#1E2130] text-gray-500" : "bg-gray-100 text-gray-400"}`}>
-              Bugun
+          <div className="my-2 flex items-center gap-3">
+            <div className={`h-px flex-1 ${darkMode ? "bg-[#1C2333]" : "bg-gray-200"}`} />
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] ${
+                darkMode ? "bg-[#1C2333] text-gray-500" : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              {t("chat.today")}
             </span>
-            <div className={`flex-1 h-px ${darkMode ? "bg-[#1E2130]" : "bg-gray-200"}`} />
+            <div className={`h-px flex-1 ${darkMode ? "bg-[#1C2333]" : "bg-gray-200"}`} />
           </div>
 
-          {/* Messages */}
-          {messages.map((msg, idx) => {
+          {messagesLoading && (
+            <p className={`text-center text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Xabarlar yuklanmoqda…</p>
+          )}
+
+          {uiMessages.map((msg, idx) => {
             const me = isMe(msg.senderId);
-            const prevMsg = messages[idx - 1];
+            const prevMsg = uiMessages[idx - 1];
             const showAvatar = !prevMsg || prevMsg.senderId !== msg.senderId;
-            return <ChatBubble key={msg.id} msg={msg} isMe={me} darkMode={darkMode} showAvatar={showAvatar} />;
+            return (
+              <GroupMessageBubble key={msg.id} msg={msg} isMe={me} darkMode={darkMode} showAvatar={showAvatar} />
+            );
           })}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
-        <div className={`px-5 py-4 border-t ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
-          <div className="flex gap-3 items-end">
-            <div className="flex-1 relative">
+        <div
+          className={`shrink-0 border-t px-5 py-4 ${darkMode ? "border-[#1C2333] bg-[#0D1117]" : "border-gray-100 bg-white"}`}
+        >
+          <div className="flex items-end gap-3">
+            <div className="relative flex-1">
               <textarea
                 ref={inputRef}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value.slice(0, 500))}
                 onKeyDown={handleKeyDown}
-                placeholder="Xabar yozing..."
+                placeholder={t("chat.groupMessagePlaceholder")}
                 rows={1}
-                className={`w-full text-sm px-4 py-3 rounded-2xl outline-none resize-none transition-colors ${
+                className={`w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none transition-colors ${
                   darkMode
-                    ? "bg-[#0F1117] border border-[#1E2130] text-white placeholder-gray-600 focus:border-green-500/50"
-                    : "bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-green-300"
+                    ? "border border-[#1C2333] bg-[#161B22] text-white placeholder:text-gray-600 focus:border-violet-500/50"
+                    : "border border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-violet-300"
                 }`}
                 style={{ minHeight: "44px", maxHeight: "120px" }}
               />
-              <p className={`absolute right-3 bottom-1 text-[10px] ${darkMode ? "text-gray-600" : "text-gray-300"}`}>
+              <p className={`absolute bottom-1 right-3 text-[10px] ${darkMode ? "text-gray-600" : "text-gray-300"}`}>
                 {messageText.length}/500
               </p>
             </div>
             <button
+              type="button"
               onClick={sendMessage}
-              disabled={!messageText.trim()}
-              className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all cursor-pointer flex-shrink-0 ${
-                messageText.trim()
-                  ? "bg-green-600 hover:bg-green-700 text-white shadow-sm"
+              disabled={!messageText.trim() || sendMutation.isPending}
+              className={`flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl transition-all ${
+                messageText.trim() && !sendMutation.isPending
+                  ? "bg-violet-600 text-white shadow-sm hover:bg-violet-700"
                   : darkMode
-                  ? "bg-[#1E2130] text-gray-600"
-                  : "bg-gray-100 text-gray-300"
+                    ? "bg-[#1C2333] text-gray-600"
+                    : "bg-gray-100 text-gray-300"
               }`}
             >
-              <i className="ri-send-plane-fill text-base" />
+              <i className="ri-send-plane-fill text-base" aria-hidden />
             </button>
           </div>
         </div>
       </div>
-
-      {/* Members panel (togglable) */}
-      {showMembers && (
-        <div className={`w-72 flex-shrink-0 border-l flex flex-col ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
-          <div className={`px-4 py-3.5 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
-            <h3 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Guruh a'zolari</h3>
-            <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-              {allMembers.length} ta shifokor
-            </p>
-          </div>
-
-          {/* Search members */}
-          <div className={`px-4 py-3 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
-            <div className="relative">
-              <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
-                <i className={`ri-search-line text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`} />
-              </div>
-              <input
-                type="text"
-                value={searchMembers}
-                onChange={(e) => setSearchMembers(e.target.value)}
-                placeholder="Qidirish..."
-                className={`w-full pl-7 pr-3 py-2 rounded-lg text-xs outline-none transition-colors ${
-                  darkMode
-                    ? "bg-[#0F1117] border border-[#1E2130] text-white placeholder-gray-600 focus:border-green-500/50"
-                    : "bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-green-300"
-                }`}
-              />
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className={`grid grid-cols-3 gap-0 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
-            {[
-              { label: "Onlayn", value: allMembers.filter((d) => d.status === "online").length, color: "text-emerald-500" },
-              { label: "Band", value: allMembers.filter((d) => d.status === "busy").length, color: "text-amber-500" },
-              { label: "Offlayn", value: allMembers.filter((d) => d.status === "offline").length, color: "text-gray-400" },
-            ].map((s) => (
-              <div key={s.label} className={`py-2 text-center ${darkMode ? "border-r border-[#1E2130]" : "border-r border-gray-100"} last:border-r-0`}>
-                <p className={`text-base font-bold ${s.color}`}>{s.value}</p>
-                <p className={`text-[9px] ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{s.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Members list */}
-          <div className="flex-1 overflow-y-auto py-2">
-            {filteredMembers.map((member) => {
-              const isSelf = member.id === currentChatDoctor.id;
-              return (
-                <div
-                  key={member.id}
-                  className={`flex items-center gap-3 px-4 py-2.5 ${darkMode ? "hover:bg-[#1E2A3A]" : "hover:bg-gray-50"}`}
-                >
-                  <div className="relative flex-shrink-0">
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold ${
-                        member.status === "online" ? "bg-emerald-600" : member.status === "busy" ? "bg-amber-600" : "bg-gray-500"
-                      }`}
-                    >
-                      {member.avatar}
-                    </div>
-                    <span
-                      className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 ${
-                        darkMode ? "border-[#141824]" : "border-white"
-                      } ${statusColors[member.status]}`}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium truncate ${darkMode ? "text-gray-200" : "text-gray-900"}`}>
-                      {member.name}
-                      {isSelf && <span className={`ml-1 text-[10px] ${darkMode ? "text-gray-500" : "text-gray-400"}`}>(siz)</span>}
-                    </p>
-                    <p className={`text-xs truncate ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
-                      {member.hospitalName}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                      member.status === "online"
-                        ? "bg-emerald-500/10 text-emerald-500"
-                        : member.status === "busy"
-                        ? "bg-amber-500/10 text-amber-500"
-                        : "bg-gray-500/10 text-gray-400"
-                    }`}
-                  >
-                    {statusLabels[member.status]}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
-}
-
-export default function DocChatPage() {
-  return <DocChatContent />;
 }

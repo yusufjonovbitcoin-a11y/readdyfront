@@ -29,7 +29,7 @@ export default function PatientCard({ patient, darkMode = false, onStatusChange 
   return (
     <div
       className={`rounded-xl border p-4 cursor-pointer transition-all hover:shadow-md ${
-        darkMode ? "bg-[#161B27] border-[#1C2333] hover:border-emerald-800" : "bg-white border-gray-100 hover:border-emerald-200"
+        darkMode ? "bg-[#21262D] border-[#30363D] hover:border-emerald-800" : "bg-white border-gray-100 hover:border-emerald-200"
       } ${patient.riskLevel === 'critical' ? (darkMode ? 'border-red-900/50' : 'border-red-200') : ''}`}
       onClick={() => navigate(`/doctor/patients/${patient.id}`)}
     >
@@ -72,12 +72,12 @@ export default function PatientCard({ patient, darkMode = false, onStatusChange 
           <p className={`text-xs font-medium mb-1 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Simptomlar:</p>
           <div className="flex flex-wrap gap-1">
             {patient.symptoms.slice(0, 2).map((s, i) => (
-              <span key={i} className={`text-xs px-2 py-0.5 rounded-md ${darkMode ? "bg-[#1C2333] text-gray-300" : "bg-gray-100 text-gray-600"}`}>
+              <span key={i} className={`text-xs px-2 py-0.5 rounded-md ${darkMode ? "bg-[#21262D] text-gray-300" : "bg-gray-100 text-gray-600"}`}>
                 {s}
               </span>
             ))}
             {patient.symptoms.length > 2 && (
-              <span className={`text-xs px-2 py-0.5 rounded-md ${darkMode ? "bg-[#1C2333] text-gray-400" : "bg-gray-100 text-gray-500"}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-md ${darkMode ? "bg-[#21262D] text-gray-400" : "bg-gray-100 text-gray-500"}`}>
                 +{patient.symptoms.length - 2}
               </span>
             )}
@@ -86,7 +86,7 @@ export default function PatientCard({ patient, darkMode = false, onStatusChange 
       )}
 
       {/* Footer */}
-      <div className={`flex items-center justify-between pt-3 border-t ${darkMode ? "border-[#1C2333]" : "border-gray-100"}`}>
+      <div className={`flex items-center justify-between pt-3 border-t ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 flex items-center justify-center">
             <i className={`ri-time-line text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}></i>

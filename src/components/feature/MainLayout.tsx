@@ -18,7 +18,8 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [darkMode, toggleDarkMode, setDarkMode] = usePersistedSuperAdminTheme();
   const { drawerRef, captureTrigger } = useMobileDrawerA11y(mobileSidebarOpen, () => setMobileSidebarOpen(false));
-  const isFullBleedRoute = pathname.includes("notifications") || pathname.startsWith("/admin-chat");
+  const isAdminChatRoute = pathname.startsWith("/admin-chat");
+  const isFullBleedRoute = pathname.includes("notifications") || isAdminChatRoute;
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-[#0F1117]" : "bg-[#F5F6FA]"}`}>
@@ -59,7 +60,17 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
             collapsed ? "md:ml-16" : "md:ml-64"
           }`}
         >
-          <div className={isFullBleedRoute ? "" : layoutSystem.pagePadding}>{children}</div>
+          <div
+            className={
+              isAdminChatRoute
+                ? "flex h-[calc(100vh-4rem)] min-h-0 w-full flex-col overflow-hidden"
+                : isFullBleedRoute
+                  ? ""
+                  : layoutSystem.pagePadding
+            }
+          >
+            {children}
+          </div>
         </main>
       </LayoutThemeProvider>
     </div>

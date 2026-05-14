@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
+import { useDocumentThemeSync } from "@/hooks/useDocumentThemeSync";
 
 const HospitalAdminThemeContext = createContext<boolean | null>(null);
 
@@ -9,6 +10,7 @@ export function HospitalAdminThemeProvider({
   darkMode: boolean;
   children: ReactNode;
 }) {
+  useDocumentThemeSync(darkMode);
   return (
     <HospitalAdminThemeContext.Provider value={darkMode}>{children}</HospitalAdminThemeContext.Provider>
   );

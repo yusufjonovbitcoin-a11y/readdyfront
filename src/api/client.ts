@@ -32,6 +32,8 @@ const RETRY_BASE_DELAY_MS = 350;
 const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
 /** Dev: Vite proxy returns 502 if Nest is not listening on the proxy target — try API origin directly. */
 const PROXY_FALLBACK_STATUS_CODES = new Set([404, 502, 503, 504]);
+/** Session probes: skip direct :4000 retry — same failure, duplicate console noise when Nest is down. */
+const PROXY_FALLBACK_EXCLUDED_PATHS = new Set(["/api/auth/me", "/api/auth/refresh"]);
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
 const AUTH_ENDPOINTS = new Set(["/api/auth/login", "/api/auth/refresh", "/api/auth/logout"]);
 let authRecoverySuppressed = false;
@@ -155,14 +157,7 @@ export async function trySilentSessionRefresh(): Promise<boolean> {
       headers: { "Content-Type": "application/json" },
     });
 
-  let response = await runFetch(buildUrl("/api/auth/refresh"));
-  if (
-    !response.ok &&
-    PROXY_FALLBACK_STATUS_CODES.has(response.status) &&
-    !configuredApiBaseUrl
-  ) {
-    response = await runFetch(buildUrlWithBase("/api/auth/refresh", API_FALLBACK_BASE_URL));
-  }
+  const response = await runFetch(buildUrl("/api/auth/refresh"));
 
   if (!response.ok) return false;
 
@@ -230,7 +225,8 @@ export async function apiRequest<TResponse>(
           !response.ok &&
           PROXY_FALLBACK_STATUS_CODES.has(response.status) &&
           !configuredApiBaseUrl &&
-          path.startsWith("/api")
+          path.startsWith("/api") &&
+          !PROXY_FALLBACK_EXCLUDED_PATHS.has(path)
         ) {
           response = await fetch(buildUrlWithBase(path, API_FALLBACK_BASE_URL), {
             ...fetchOptions,
@@ -350,4 +346,47 @@ export async function apiRequest<TResponse>(
   }
 
   return requestInternal(true);
+}
+
+/**
+ * `multipart/form-data` (masalan, rasm yuklash). `Content-Type` qo‘lda qo‘yilmaydi.
+ */
+export async function apiPostFormData<TResponse>(path: string, formData: FormData): Promise<TResponse> {
+  const token = getStoredAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const runFetch = (url: string) => {
+    const controller = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    return fetch(url, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+      headers,
+      signal: controller.signal,
+    }).finally(() => globalThis.clearTimeout(timeoutId));
+  };
+
+  let response = await runFetch(buildUrl(path));
+  if (
+    !response.ok &&
+    PROXY_FALLBACK_STATUS_CODES.has(response.status) &&
+    !configuredApiBaseUrl &&
+    path.startsWith("/api")
+  ) {
+    response = await runFetch(buildUrlWithBase(path, API_FALLBACK_BASE_URL));
+  }
+
+  const responseData = await parseResponse(response);
+  if (!response.ok) {
+    const message = resolveErrorMessage(responseData, response.statusText || "Request failed");
+    if (response.status === 401) {
+      clearStoredAccessToken();
+      notifySessionFailure();
+      throw new AuthError();
+    }
+    throw normalizeError(response.status, message, responseData);
+  }
+  return responseData as TResponse;
 }

@@ -55,11 +55,23 @@ export default function HALayout({ children, title }: HALayoutProps) {
         <main
           id="main-content"
           tabIndex={-1}
-          className={`transition-[margin-left] duration-300 ease-out pt-16 min-h-screen ${
+          className={`transition-[margin-left] duration-300 ease-out pt-16 ${
             collapsed ? "md:ml-16" : "md:ml-64"
-          } ${isFullBleedRoute ? "h-screen overflow-hidden" : ""}`}
+          } ${
+            isFullBleedRoute
+              ? "flex h-screen min-h-0 flex-col overflow-hidden"
+              : "min-h-screen"
+          }`}
         >
-          <div className={isFullBleedRoute ? "" : layoutSystem.pagePadding}>{children}</div>
+          <div
+            className={
+              isFullBleedRoute
+                ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+                : layoutSystem.pagePadding
+            }
+          >
+            {children}
+          </div>
         </main>
       </div>
     </HospitalAdminThemeProvider>

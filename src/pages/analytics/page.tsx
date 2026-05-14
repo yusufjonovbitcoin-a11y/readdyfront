@@ -1,9 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import MainLayout from "@/components/feature/MainLayout";
 import { useMainLayoutDarkMode } from "@/context/LayoutThemeContext";
 import { getAnalyticsDashboard } from "@/api/analytics";
 import type { AnalyticsDashboardDto } from "@/api/types/analytics.types";
+import { PatientFlowRechartsCard } from "@/components/charts/PatientFlowRechartsCard";
 
 type Period = "daily" | "weekly" | "monthly";
 
@@ -13,39 +14,18 @@ const EMPTY_ANALYTICS: AnalyticsDashboardDto = {
   monthly: [],
   doctorPerformance: [],
   topHospitals: [],
+  dailyBookings: [],
+  weeklyBookings: [],
+  cityStats: [],
 };
-
-function nearestIndex(vx: number, pts: { x: number }[]) {
-  let best = 0;
-  let bestDist = Infinity;
-  pts.forEach((p, i) => {
-    const d = Math.abs(p.x - vx);
-    if (d < bestDist) {
-      bestDist = d;
-      best = i;
-    }
-  });
-  return best;
-}
-
-function vxFromPointer(e: React.MouseEvent<SVGSVGElement> | React.PointerEvent<SVGSVGElement>) {
-  const svg = e.currentTarget;
-  const rect = svg.getBoundingClientRect();
-  const xPx = e.clientX - rect.left;
-  const ratio = rect.width > 0 ? xPx / rect.width : 0;
-  return ratio * 100;
-}
 
 export function AnalyticsPageContent() {
   const { t } = useTranslation("admin");
   const dm = useMainLayoutDarkMode();
-  const gradId = useId().replace(/:/g, "");
   const hospitalFilterHelpId = useId().replace(/:/g, "") + "-hospital-filter-help";
   const [period, setPeriod] = useState<Period>("daily");
   const [hospitalFilter, setHospitalFilter] = useState("all");
   const isHospitalFilterReady = true;
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
-  const scrubbingRef = useRef(false);
   const [analytics, setAnalytics] = useState<AnalyticsDashboardDto>(EMPTY_ANALYTICS);
 
   useEffect(() => {
@@ -67,27 +47,7 @@ export function AnalyticsPageContent() {
 
   const dataMap = { daily: analytics.daily, weekly: analytics.weekly, monthly: analytics.monthly };
   const data = dataMap[period];
-  const maxVal = Math.max(...data.map((d) => d.patients), 1);
-  const chartW = 100;
-  const chartH = 180;
-  const xDenom = Math.max(1, data.length - 1);
-
-  const pts = data.map((d, i) => {
-    const x = (i / xDenom) * chartW;
-    const y = chartH - (d.patients / maxVal) * chartH;
-    return { x, y, ...d };
-  });
-  const polyline = pts.map((p) => `${p.x},${p.y}`).join(" ");
-  const area = `0,${chartH} ${polyline} ${chartW},${chartH}`;
-
-  const applyPointerX = (e: React.MouseEvent<SVGSVGElement> | React.PointerEvent<SVGSVGElement>) => {
-    const vx = vxFromPointer(e);
-    setHoverIndex(nearestIndex(vx, pts));
-  };
-
-  const tooltipRow = hoverIndex !== null ? data[hoverIndex] : null;
-  const tooltipPt = hoverIndex !== null ? pts[hoverIndex] : null;
-  const crossStroke = dm ? "rgba(148, 163, 184, 0.55)" : "rgba(100, 116, 139, 0.55)";
+  const maxVal = Math.max(1, ...data.map((d) => d.patients));
 
   const totalPatients = data.reduce((s, d) => s + d.patients, 0);
   const totalAppointments = data.reduce((s, d) => s + d.appointments, 0);
@@ -112,23 +72,6 @@ export function AnalyticsPageContent() {
     <div className="space-y-5">
         {/* Filters */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <div className={`flex items-center gap-1 p-1 rounded-lg ${dm ? "bg-[#1A2235]" : "bg-white border border-gray-200"}`}>
-            {(["daily", "weekly", "monthly"] as Period[]).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => {
-                  setPeriod(p);
-                  setHoverIndex(null);
-                  scrubbingRef.current = false;
-                }}
-                className={`px-4 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-none whitespace-nowrap ${period === p ? "bg-emerald-500 text-white" : dm ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-gray-900"}`}
-              >
-                {p === "daily" ? t("admin:analytics.period.daily") : p === "weekly" ? t("admin:analytics.period.weekly") : t("admin:analytics.period.monthly")}
-              </button>
-            ))}
-          </div>
-
           <select
             value={hospitalFilter}
             onChange={(e) => {
@@ -137,7 +80,7 @@ export function AnalyticsPageContent() {
             }}
             disabled={!isHospitalFilterReady}
             aria-describedby={!isHospitalFilterReady ? hospitalFilterHelpId : undefined}
-            className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dm ? "bg-[#1A2235] text-white border border-[#1E2A3A]" : "bg-white text-gray-900 border border-gray-200"}`}
+            className={`px-3 py-2 rounded-lg text-sm outline-none cursor-pointer ${dm ? "bg-[#21262D] text-white border border-[#30363D]" : "bg-white text-gray-900 border border-gray-200"}`}
           >
             <option value="all">{t("admin:analytics.allHospitals")}</option>
             {analytics.topHospitals.map((h, i) => (
@@ -162,168 +105,55 @@ export function AnalyticsPageContent() {
             { label: t("admin:analytics.summary.completed"), value: totalCompleted.toLocaleString(), icon: "ri-checkbox-circle-line", color: "text-violet-400", bg: "bg-violet-500/20" },
             { label: t("admin:analytics.summary.completionRate"), value: `${completionRate}%`, icon: "ri-percent-line", color: "text-orange-400", bg: "bg-orange-500/20" },
           ].map((s, i) => (
-            <div key={i} className={`rounded-xl p-4 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
-              <div className={`w-9 h-9 flex items-center justify-center rounded-lg ${s.bg} mb-3`}>
-                <i className={`${s.icon} ${s.color} text-base`}></i>
+            <div key={i} className={`rounded-xl border p-4 ${dm ? "border-[#30363D] bg-[#21262D]" : "border-gray-100 bg-white"}`}>
+              <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg ${s.bg}`}>
+                <i className={`${s.icon} ${s.color} text-sm`}></i>
               </div>
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-              <p className={`text-xs mt-1 ${dm ? "text-gray-400" : "text-gray-500"}`}>{s.label}</p>
+              <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
+              <p className={`mt-1 text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>{s.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Main Chart */}
-        <div className={`rounded-xl p-5 border ${dm ? "bg-[#1A2235] border-[#263245]" : "bg-white border-gray-100"}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className={`text-sm font-semibold ${dm ? "text-white" : "text-gray-900"}`}>{t("admin:analytics.flowDynamics")}</h3>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400"></div>
-                <span className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("admin:analytics.patients")}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-400"></div>
-                <span className={`text-xs ${dm ? "text-gray-400" : "text-gray-500"}`}>{t("admin:analytics.appointments")}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className={`relative select-none rounded-xl p-3 ${dm ? "bg-[#141a26]" : "bg-gray-50/70"}`}>
-            {tooltipRow && tooltipPt && (
-              <div
-                className="absolute z-20 pointer-events-none px-2 max-w-[calc(100%-8px)] transition-opacity duration-150"
-                style={{
-                  left: `${(tooltipPt.x / chartW) * 100}%`,
-                  top: `${(tooltipPt.y / chartH) * 100}%`,
-                  transform: "translate(-50%, calc(-100% - 8px))",
-                }}
-                role="tooltip"
-              >
-                <div
-                  className={`rounded-lg px-3 py-2 shadow-xl border text-center min-w-[150px] ${
-                    dm ? "bg-[#0F1117] border-[#2A3448] text-white" : "bg-white border-gray-200 text-gray-900 shadow-md"
-                  }`}
-                >
-                  <p className={`text-sm font-semibold mb-1.5 ${dm ? "text-emerald-400" : "text-emerald-600"}`}>{tooltipRow.date}</p>
-                  <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-sm leading-tight">
-                    <span className={dm ? "text-gray-500" : "text-gray-500"}>{t("admin:analytics.patients")}</span>
-                    <span className={dm ? "text-gray-500" : "text-gray-500"}>{t("admin:analytics.appointmentShort")}</span>
-                    <span className={dm ? "text-gray-500" : "text-gray-500"}>{t("admin:analytics.completeShort")}</span>
-                    <span className="font-bold tabular-nums text-emerald-400">{tooltipRow.patients}</span>
-                    <span className="font-bold tabular-nums text-blue-400">{tooltipRow.appointments}</span>
-                    <span className="font-bold tabular-nums text-violet-400">{tooltipRow.completed}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            <svg
-              viewBox={`0 0 ${chartW} ${chartH}`}
-              className="w-full touch-none cursor-crosshair rounded-lg"
-              style={{ height: 220 }}
-              preserveAspectRatio="none"
-              onMouseMove={applyPointerX}
-              onMouseLeave={() => {
-                if (!scrubbingRef.current) setHoverIndex(null);
-              }}
-              onPointerDown={(e) => {
-                if (e.button !== 0) return;
-                e.currentTarget.setPointerCapture(e.pointerId);
-                scrubbingRef.current = true;
-                applyPointerX(e);
-              }}
-              onPointerMove={applyPointerX}
-              onPointerUp={(e) => {
-                scrubbingRef.current = false;
-                try {
-                  e.currentTarget.releasePointerCapture(e.pointerId);
-                } catch {
-                  /* ignore */
-                }
-              }}
-              onPointerCancel={() => {
-                scrubbingRef.current = false;
-              }}
-              role="img"
-              aria-label={t("admin:analytics.flowChartAria")}
-            >
-              <defs>
-                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.38" />
-                  <stop offset="45%" stopColor="#22d3ee" stopOpacity="0.18" />
-                  <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.02" />
-                </linearGradient>
-              </defs>
-              {[0.25, 0.5, 0.75].map((f) => (
-                <line
-                  key={f}
-                  x1="0"
-                  y1={chartH * f}
-                  x2={chartW}
-                  y2={chartH * f}
-                  stroke={dm ? "#1E2A3A" : "#f0f0f0"}
-                  strokeWidth="0.5"
-                />
-              ))}
-              <polygon points={area} fill={`url(#${gradId})`} />
-              <polyline
-                points={polyline}
-                fill="none"
-                stroke="#2dd4bf"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              {tooltipPt && (
-                <g pointerEvents="none" aria-hidden="true">
-                  <line
-                    x1={tooltipPt.x}
-                    y1={0}
-                    x2={tooltipPt.x}
-                    y2={chartH}
-                    stroke={crossStroke}
-                    strokeWidth={0.45}
-                    strokeDasharray="1.8 1.8"
-                    vectorEffect="nonScalingStroke"
-                  />
-                </g>
-              )}
-              {pts.map((p, i) => (
-                <circle
-                  key={i}
-                  cx={p.x}
-                  cy={p.y}
-                  r={hoverIndex === i ? "3.2" : "1.9"}
-                  fill="#2dd4bf"
-                  className="pointer-events-none"
-                />
-              ))}
-              {tooltipPt && (
-                <circle
-                  cx={tooltipPt.x}
-                  cy={tooltipPt.y}
-                  r={4}
-                  fill="none"
-                  stroke="#5eead4"
-                  strokeWidth={0.8}
-                  opacity={0.95}
-                  className="pointer-events-none"
-                  vectorEffect="nonScalingStroke"
-                />
-              )}
-            </svg>
-          </div>
-
-          <div className="flex justify-between mt-2">
-            {data.map((d, i) => (
-              <span key={i} className={`text-xs ${dm ? "text-gray-500" : "text-gray-400"}`}>{d.date}</span>
-            ))}
-          </div>
-        </div>
+        <PatientFlowRechartsCard
+          darkMode={dm}
+          mainLayoutDarkSurfaces
+          period={period}
+          onPeriodChange={setPeriod}
+          dailyData={analytics.daily}
+          weeklyData={analytics.weekly}
+          monthlyData={analytics.monthly}
+          title={t("admin:analytics.flowDynamics")}
+          subtitle={t("admin:analytics.flowDynamicsSubtitle")}
+          badge={t("admin:analytics.liveBadge")}
+          csvFilenamePrefix="super-admin-tahlil"
+          labels={{
+            periodDaily: t("admin:analytics.period.daily"),
+            periodWeekly: t("admin:analytics.period.weekly"),
+            periodMonthly: t("admin:analytics.period.monthly"),
+            patients: t("admin:analytics.patients"),
+            appointments: t("admin:analytics.appointments"),
+            completed: t("admin:analytics.summary.completed"),
+            chartAria: t("admin:analytics.flowChartAria"),
+            calendarHint: t("home.activityChart.calendarHint"),
+            dateRangeTitle: t("home.activityChart.dateRangeTitle"),
+            dateRangeFrom: t("home.activityChart.dateRangeFrom"),
+            dateRangeTo: t("home.activityChart.dateRangeTo"),
+            dateRangeApply: t("home.activityChart.dateRangeApply"),
+            dateRangeClear: t("home.activityChart.dateRangeClear"),
+            dateRangeTooLong: t("home.activityChart.dateRangeTooLong"),
+            dateRangeHint: t("home.activityChart.dateRangeHint"),
+            dateRangeFillBoth: t("home.activityChart.dateRangeFillBoth"),
+            dateRangeOrderInvalid: t("home.activityChart.dateRangeOrderInvalid"),
+            exportCsv: t("home.activityChart.exportCsv"),
+            brandShort: t("home.activityChart.brandShort"),
+          }}
+        />
 
         {/* Bottom Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Doctor Performance */}
-          <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+          <div className={`rounded-xl p-5 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
             <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>{t("admin:analytics.doctorPerformance")}</h3>
             <div className="space-y-3">
               {analytics.doctorPerformance.map((d, i) => (
@@ -338,12 +168,6 @@ export function AnalyticsPageContent() {
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className={`text-xs ${dm ? "text-gray-500" : "text-gray-400"}`}>{d.specialty}</span>
-                      <div className="flex items-center gap-0.5">
-                        <div className="w-3 h-3 flex items-center justify-center">
-                          <i className="ri-star-fill text-yellow-400 text-xs"></i>
-                        </div>
-                        <span className="text-xs text-yellow-400">{d.rating}</span>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -352,7 +176,7 @@ export function AnalyticsPageContent() {
           </div>
 
           {/* Bar Chart - Hospitals */}
-          <div className={`rounded-xl p-5 ${dm ? "bg-[#1A2235]" : "bg-white"}`}>
+          <div className={`rounded-xl p-5 ${dm ? "bg-[#21262D]" : "bg-white"}`}>
             <h3 className={`text-sm font-semibold mb-4 ${dm ? "text-white" : "text-gray-900"}`}>{t("admin:analytics.hospitalComparison")}</h3>
             <div className="space-y-4">
               {filteredHospitals.map((h, i) => (
@@ -375,7 +199,7 @@ export function AnalyticsPageContent() {
             </div>
 
             {/* Peak Hours */}
-            <div className={`mt-5 pt-4 border-t ${dm ? "border-[#1E2130]" : "border-gray-100"}`}>
+            <div className={`mt-5 pt-4 border-t ${dm ? "border-[#30363D]" : "border-gray-100"}`}>
               <div className="flex items-center justify-between mb-3">
                 <p className={`text-xs font-semibold ${dm ? "text-gray-300" : "text-gray-600"}`}>{t("admin:analytics.peakHours")}</p>
                 <span className={`text-[11px] px-2 py-0.5 rounded-full ${dm ? "bg-teal-900/40 text-teal-300" : "bg-teal-100 text-teal-700"}`}>

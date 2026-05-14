@@ -26,6 +26,9 @@ const AnalyticsPageContent = lazy(() =>
 const UsersPageContent = lazy(() =>
   import("../pages/users/page").then((m) => ({ default: m.UsersPageContent })),
 );
+const UsersUserDetailContent = lazy(() =>
+  import("../pages/users/detail/page").then((m) => ({ default: m.UsersUserDetailContent })),
+);
 const SuperAdminNotificationsPageContent = lazy(() =>
   import("../pages/notifications/page").then((m) => ({ default: m.SuperAdminNotificationsPageContent })),
 );
@@ -35,6 +38,7 @@ const SuperAdminQuestionsPageContent = lazy(() =>
 const AdminNewsPageContent = lazy(() =>
   import("../pages/news/page").then((m) => ({ default: m.AdminNewsPageContent })),
 );
+const AdminChatPageContent = lazy(() => import("../pages/admin-chat/page"));
 const SettingsPageContent = lazy(() =>
   import("../pages/settings/page").then((m) => ({ default: m.SettingsPageContent })),
 );
@@ -63,6 +67,7 @@ const HAAnalyticsPageContent = lazy(() =>
 const HASettingsPageContent = lazy(() =>
   import("../pages/hospital-admin/settings/page").then((m) => ({ default: m.HASettingsPageContent })),
 );
+const HAChatPageContent = lazy(() => import("../pages/hospital-admin/chat/page"));
 
 const DocPatientsContent = lazy(() =>
   import("../pages/doctor/patients/page").then((m) => ({ default: m.DocPatientsContent })),
@@ -82,20 +87,12 @@ const DocSettingsContent = lazy(() =>
 const DocQuestionsContent = lazy(() =>
   import("../pages/doctor/questions/page").then((m) => ({ default: m.DocQuestionsContent })),
 );
+const DocChatContent = lazy(() => import("../pages/doctor/chat/page"));
 const DocProfileContent = lazy(() =>
   import("../pages/doctor/profile/page").then((m) => ({ default: m.DocProfileContent })),
 );
 const DocNewsContent = lazy(() =>
   import("../pages/doctor/news/page").then((m) => ({ default: m.DocNewsContent })),
-);
-const DocChatContent = lazy(() =>
-  import("../pages/doctor/chat/page").then((m) => ({ default: m.DocChatContent })),
-);
-const AdminChatPageContent = lazy(() =>
-  import("../pages/admin-chat/page").then((m) => ({ default: m.AdminChatPageContent })),
-);
-const HAChatContent = lazy(() =>
-  import("../pages/hospital-admin/chat/page").then((m) => ({ default: m.HAChatContent })),
 );
 const NotificationsPageContent = lazy(() =>
   import("../pages/notifications/page").then((m) => ({ default: m.SuperAdminNotificationsPageContent })),
@@ -183,6 +180,22 @@ const routes: RouteObject[] = [
         element: (
           <WithSuspense>
             <AnalyticsPageContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "/users/doctor/:id",
+        element: (
+          <WithSuspense>
+            <HADoctorDetailContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "/users/detail/:id",
+        element: (
+          <WithSuspense>
+            <UsersUserDetailContent />
           </WithSuspense>
         ),
       },
@@ -311,7 +324,7 @@ const routes: RouteObject[] = [
         path: "/hospital-admin/chat",
         element: (
           <WithSuspense>
-            <HAChatContent />
+            <HAChatPageContent />
           </WithSuspense>
         ),
       },
@@ -398,18 +411,18 @@ const routes: RouteObject[] = [
         ),
       },
       {
-        path: "chat",
-        element: (
-          <WithSuspense>
-            <DocChatContent />
-          </WithSuspense>
-        ),
-      },
-      {
         path: "questions",
         element: (
           <WithSuspense>
             <DocQuestionsContent />
+          </WithSuspense>
+        ),
+      },
+      {
+        path: "chat",
+        element: (
+          <WithSuspense>
+            <DocChatContent />
           </WithSuspense>
         ),
       },

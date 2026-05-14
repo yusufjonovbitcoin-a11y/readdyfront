@@ -296,7 +296,7 @@ export function SuperAdminNotificationsPageContent() {
         className={`relative group flex gap-4 p-5 rounded-2xl border transition-all duration-200 cursor-pointer ${
           n.read
             ? dm
-              ? "bg-[#121826] border-[#273041] hover:border-[#334155]"
+              ? "bg-[#21262D] border-[#30363D] hover:border-[#334155]"
               : "bg-white border-gray-100 hover:border-gray-200"
             : `${dm ? "bg-red-500/10 border-red-500/40 hover:border-red-500/60" : "bg-red-50 border-red-200 hover:border-red-300"}`
         }`}
@@ -355,12 +355,13 @@ export function SuperAdminNotificationsPageContent() {
   };
 
   return (
-    <div
-      className={`h-[calc(100vh-4rem)] w-full overflow-y-auto ${dm ? "bg-[#0F1117]" : ""}`}
-      style={dm ? undefined : { background: "linear-gradient(135deg, #f0fdf4 0%, #f9fafb 50%, #f0f9ff 100%)" }}
-    >
-      <div className="w-full py-8 px-6">
-        <div className={`sticky top-0 z-20 pb-4 ${dm ? "bg-[#0F1117]" : "bg-white/90 backdrop-blur"}`}>
+    <div className={`h-[calc(100vh-4rem)] w-full overflow-y-auto ${dm ? "bg-[#0F1117]" : "bg-[#F5F6FA]"}`}>
+      <div className="w-full py-8 px-4 md:px-6">
+        <div
+          className={`sticky top-0 z-20 -mx-4 px-4 md:-mx-6 md:px-6 pb-4 ${
+            dm ? "bg-[#0F1117] border-b border-[#30363D]" : "bg-[#F5F6FA] border-b border-gray-200/70"
+          }`}
+        >
           <div className="mb-8 flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center bg-emerald-500 rounded-2xl">
@@ -386,8 +387,8 @@ export function SuperAdminNotificationsPageContent() {
             ) : null}
           </div>
 
-          <div className={`flex flex-wrap gap-2 mb-2 p-3 rounded-2xl border ${dm ? "bg-[#121826] border-[#273041]" : "bg-white border-gray-100"}`}>
-            <div className={`${dm ? "bg-[#1A2235]" : "bg-gray-100"} flex rounded-xl p-1`}>
+          <div className={`flex flex-wrap items-center gap-2 mb-2 p-3 rounded-2xl border ${dm ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
+            <div className={`${dm ? "bg-[#21262D]" : "bg-gray-100"} flex rounded-xl p-1`}>
               {(["all", "unread", "read"] as const).map((f) => (
                 <button
                   key={f}
@@ -404,9 +405,9 @@ export function SuperAdminNotificationsPageContent() {
               <button
                 type="button"
                 onClick={() => setComposerOpen((v) => !v)}
-                className={`inline-flex items-center gap-1 justify-center h-9 px-3 rounded-xl border transition-colors cursor-pointer text-sm font-medium ${
+                className={`inline-flex items-center gap-1 justify-center h-[52px] px-3 rounded-xl border transition-colors cursor-pointer text-sm font-medium ${
                   dm
-                    ? "border-[#273041] bg-[#0F1117] text-emerald-400 hover:bg-[#1A2235]"
+                    ? "border-[#30363D] bg-[#0F1117] text-emerald-400 hover:bg-[#21262D]"
                     : "border-gray-200 bg-white text-emerald-600 hover:bg-emerald-50"
                 }`}
                 title={user?.role === "SUPER_ADMIN" ? "Barcha admin va shifokorlarga xabar yuborish" : "Faqat shu shifoxonadagi shifokorlarga xabar yuborish"}
@@ -430,14 +431,14 @@ export function SuperAdminNotificationsPageContent() {
           </div>
         </div>
         {composerOpen && (user?.role === "SUPER_ADMIN" || user?.role === "HOSPITAL_ADMIN") ? (
-          <div className={`mb-6 rounded-2xl border p-4 ${dm ? "bg-[#121826] border-[#273041]" : "bg-white border-gray-100"}`}>
+          <div className={`mb-6 rounded-2xl border p-4 ${dm ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
             <div className="grid grid-cols-1 gap-3">
               <input
                 value={composeTitle}
                 onChange={(e) => setComposeTitle(e.target.value)}
                 placeholder="Xabar sarlavhasi"
                 className={`w-full px-3 py-2 rounded-xl border text-sm outline-none ${
-                  dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"
+                  dm ? "bg-[#0F1117] border-[#30363D] text-gray-200" : "bg-white border-gray-200 text-gray-800"
                 }`}
               />
               <textarea
@@ -446,14 +447,14 @@ export function SuperAdminNotificationsPageContent() {
                 placeholder="Xabar matni"
                 rows={3}
                 className={`w-full px-3 py-2 rounded-xl border text-sm outline-none resize-none ${
-                  dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"
+                  dm ? "bg-[#0F1117] border-[#30363D] text-gray-200" : "bg-white border-gray-200 text-gray-800"
                 }`}
               />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <select
                   value={composeRecipientType}
                   onChange={(e) => setComposeRecipientType(e.target.value as "doctor" | "admin")}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#30363D] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
                 >
                   {user?.role === "SUPER_ADMIN" ? (
                     <>
@@ -472,7 +473,7 @@ export function SuperAdminNotificationsPageContent() {
                     const match = categoryOptions.find((item) => item.id === nextId);
                     if (match) setComposeCategory(normalizeCategory(match.name));
                   }}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#30363D] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
                 >
                   {categoryOptions.length === 0 ? (
                     <option value="">Kategoriyalar yuklanmoqda...</option>
@@ -492,7 +493,7 @@ export function SuperAdminNotificationsPageContent() {
                     const match = priorityOptions.find((item) => item.id === nextId);
                     if (match) setComposePriority(normalizePriority(match.name));
                   }}
-                  className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#273041] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
+                  className={`w-full px-3 py-2 rounded-xl border text-sm cursor-pointer ${dm ? "bg-[#0F1117] border-[#30363D] text-gray-200" : "bg-white border-gray-200 text-gray-800"}`}
                 >
                   {priorityOptions.length === 0 ? (
                     <option value="">Prioritetlar yuklanmoqda...</option>
@@ -524,7 +525,7 @@ export function SuperAdminNotificationsPageContent() {
                     setComposePriority("high");
                     setComposeCategory("system");
                   }}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium cursor-pointer ${dm ? "bg-[#1A2235] text-gray-300" : "bg-gray-100 text-gray-700"}`}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium cursor-pointer ${dm ? "bg-[#21262D] text-gray-300" : "bg-gray-100 text-gray-700"}`}
                 >
                   Bekor qilish
                 </button>
@@ -534,8 +535,8 @@ export function SuperAdminNotificationsPageContent() {
         ) : null}
 
         {filtered.length === 0 ? (
-          <div className={`text-center py-20 rounded-2xl border ${dm ? "bg-[#121826] border-[#273041]" : "bg-white border-gray-100"}`}>
-            <div className={`w-20 h-20 flex items-center justify-center rounded-3xl mx-auto mb-4 ${dm ? "bg-[#1A2235]" : "bg-gray-50"}`}>
+          <div className={`text-center py-20 rounded-2xl border ${dm ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
+            <div className={`w-20 h-20 flex items-center justify-center rounded-3xl mx-auto mb-4 ${dm ? "bg-[#21262D]" : "bg-gray-50"}`}>
               <i className={`ri-notification-off-line text-3xl ${dm ? "text-gray-600" : "text-gray-200"}`} />
             </div>
             <p className={dm ? "text-gray-300 font-medium" : "text-gray-500 font-medium"}>Bildirishnomalar topilmadi</p>
@@ -544,10 +545,10 @@ export function SuperAdminNotificationsPageContent() {
         ) : viewMode === "card" ? (
           <div className="space-y-3">{filtered.map(renderCard)}</div>
         ) : (
-          <div className={`rounded-2xl border overflow-hidden ${dm ? "bg-[#121826] border-[#273041]" : "bg-white border-gray-100"}`}>
+          <div className={`rounded-2xl border overflow-hidden ${dm ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
             <ResponsiveTable minWidthClassName="min-w-[900px]" caption="Notifications table">
               <thead>
-                <tr className={`text-xs border-b ${dm ? "border-[#273041] text-gray-400" : "border-gray-100 text-gray-500"}`}>
+                <tr className={`text-xs border-b ${dm ? "border-[#30363D] text-gray-400" : "border-gray-100 text-gray-500"}`}>
                   <th scope="col" className="text-left px-4 py-3 font-medium">Sarlavha</th>
                   <th scope="col" className="text-left px-4 py-3 font-medium">Xabar</th>
                   <th scope="col" className="text-left px-4 py-3 font-medium">Yuborgan</th>
@@ -558,7 +559,7 @@ export function SuperAdminNotificationsPageContent() {
               </thead>
               <tbody>
                 {filtered.map((n) => (
-                  <tr key={n.id} className={`border-b last:border-0 ${dm ? "border-[#273041] hover:bg-[#1A2235]" : "border-gray-50 hover:bg-gray-50"}`}>
+                  <tr key={n.id} className={`border-b last:border-0 ${dm ? "border-[#30363D] hover:bg-[#21262D]" : "border-gray-50 hover:bg-gray-50"}`}>
                     <td className={`px-4 py-3 text-sm font-medium ${dm ? "text-gray-200" : "text-gray-800"}`}>{n.title}</td>
                     <td className={`px-4 py-3 text-sm ${dm ? "text-gray-400" : "text-gray-600"}`}>{n.message}</td>
                     <td className={`px-4 py-3 text-sm ${dm ? "text-gray-400" : "text-gray-600"}`}>{n.senderName}</td>

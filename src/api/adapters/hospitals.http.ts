@@ -7,21 +7,40 @@ type BackendHospitalDto = {
   address: string;
   phone: string;
   created_at?: string;
+  createdAt?: string;
+  is_active?: boolean;
+  isActive?: boolean;
+  adminName?: string;
+  adminPhone?: string;
+  viloyat?: string;
+  doctorsCount?: number;
+  dailyPatients?: number;
 };
 
+function pickCreatedAt(dto: BackendHospitalDto): string {
+  return dto.createdAt ?? dto.created_at ?? new Date().toISOString();
+}
+
+function pickActive(dto: BackendHospitalDto): boolean {
+  if (typeof dto.isActive === "boolean") return dto.isActive;
+  if (typeof dto.is_active === "boolean") return dto.is_active;
+  return true;
+}
+
 function normalizeHospital(dto: BackendHospitalDto): Hospital {
+  const active = pickActive(dto);
   return {
     id: dto.id,
     name: dto.name,
-    viloyat: "",
+    viloyat: typeof dto.viloyat === "string" ? dto.viloyat : "",
     address: dto.address,
     phone: dto.phone,
-    doctorsCount: 0,
-    dailyPatients: 0,
-    status: "active",
-    adminName: "",
-    adminPhone: "",
-    createdAt: dto.created_at ?? new Date().toISOString(),
+    doctorsCount: typeof dto.doctorsCount === "number" && !Number.isNaN(dto.doctorsCount) ? dto.doctorsCount : 0,
+    dailyPatients: typeof dto.dailyPatients === "number" && !Number.isNaN(dto.dailyPatients) ? dto.dailyPatients : 0,
+    status: active ? "active" : "inactive",
+    adminName: typeof dto.adminName === "string" ? dto.adminName : "",
+    adminPhone: typeof dto.adminPhone === "string" ? dto.adminPhone : "",
+    createdAt: pickCreatedAt(dto),
   };
 }
 

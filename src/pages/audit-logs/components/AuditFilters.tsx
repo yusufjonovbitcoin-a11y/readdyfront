@@ -35,18 +35,18 @@ export default function AuditFilters({
 }: AuditFiltersProps) {
   const inputCls = `w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
     darkMode
-      ? "bg-[#1A2235] border-[#2A3448] text-white placeholder-gray-500"
+      ? "bg-[#21262D] border-[#2A3448] text-white placeholder-gray-500"
       : "bg-white border-gray-200 text-gray-900 placeholder-gray-400"
   }`;
 
   const selectCls = `w-full px-3 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer ${
     darkMode
-      ? "bg-[#1A2235] border-[#2A3448] text-white"
+      ? "bg-[#21262D] border-[#2A3448] text-white"
       : "bg-white border-gray-200 text-gray-900"
   }`;
 
   return (
-    <div className={`rounded-xl p-4 mb-4 ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+    <div className={`rounded-xl p-4 mb-4 ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
         {/* Search */}
         <div className="relative lg:col-span-2">

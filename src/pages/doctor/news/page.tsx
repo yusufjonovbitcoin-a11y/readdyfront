@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useDoctorTheme } from "@/context/DoctorThemeContext";
 import { useAuth } from "@/hooks/useAuth";
-import { specialtyNews, type NewsItem } from "@/mocks/news";
-
-const currentDoctorSpecialty = "Kardiologiya";
+import type { NewsItem } from "@/api/types/news.types";
+import { getMyDoctorProfile } from "@/api/doctor";
+import { fetchNewsArticles, mapApiNewsToNewsItem } from "@/api/adapters/news.http";
 
 function NewsCard({
   news,
@@ -19,7 +19,7 @@ function NewsCard({
       onClick={onClick}
       className={`group cursor-pointer rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 ${
         darkMode
-          ? "bg-[#161B22] border border-[#1C2333] hover:border-green-500/40 hover:shadow-lg hover:shadow-green-900/10"
+          ? "bg-[#21262D] border border-[#30363D] hover:border-green-500/40 hover:shadow-lg hover:shadow-green-900/10"
           : "bg-white border border-gray-100 hover:border-green-200 hover:shadow-lg hover:shadow-green-100/50"
       }`}
     >
@@ -48,6 +48,23 @@ function NewsCard({
       )}
 
       <div className="p-4">
+        {!news.imageUrl && (
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            {news.isNew && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-600 text-white">
+                <span className="w-1 h-1 rounded-full bg-white mr-1 animate-pulse" />
+                Yangi
+              </span>
+            )}
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${
+                darkMode ? "bg-[#21262D] text-gray-300" : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {news.category}
+            </span>
+          </div>
+        )}
         <h3
           className={`text-sm font-bold leading-snug mb-2 line-clamp-2 group-hover:text-green-500 transition-colors ${
             darkMode ? "text-gray-100" : "text-gray-900"
@@ -69,7 +86,7 @@ function NewsCard({
               key={tag}
               className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
                 darkMode
-                  ? "bg-[#1C2333] text-green-400"
+                  ? "bg-[#21262D] text-green-400"
                   : "bg-green-50 text-green-600"
               }`}
             >
@@ -112,7 +129,7 @@ function NewsDetailModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div
         className={`relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl ${
-          darkMode ? "bg-[#161B22] border border-[#1C2333]" : "bg-white border border-gray-100"
+          darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"
         }`}
       >
         {news.imageUrl && (
@@ -152,7 +169,7 @@ function NewsDetailModal({
                 )}
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
-                    darkMode ? "bg-[#1C2333] text-gray-300" : "bg-gray-100 text-gray-600"
+                    darkMode ? "bg-[#21262D] text-gray-300" : "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {news.category}
@@ -161,7 +178,7 @@ function NewsDetailModal({
               <button
                 onClick={onClose}
                 className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors cursor-pointer ${
-                  darkMode ? "hover:bg-[#1C2333] text-gray-400" : "hover:bg-gray-100 text-gray-500"
+                  darkMode ? "hover:bg-[#21262D] text-gray-400" : "hover:bg-gray-100 text-gray-500"
                 }`}
               >
                 <i className="ri-close-line" />
@@ -190,7 +207,7 @@ function NewsDetailModal({
               <span
                 key={tag}
                 className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${
-                  darkMode ? "bg-[#1C2333] text-green-400" : "bg-green-50 text-green-600"
+                  darkMode ? "bg-[#21262D] text-green-400" : "bg-green-50 text-green-600"
                 }`}
               >
                 {tag}
@@ -202,8 +219,15 @@ function NewsDetailModal({
             {news.content}
           </div>
 
-          <div className={`mt-6 pt-4 border-t border-dashed ${darkMode ? "border-[#1C2333]" : "border-gray-200"}`}>
+          <div className={`mt-6 pt-4 border-t border-dashed ${darkMode ? "border-[#30363D]" : "border-gray-200"}`}>
             <div className="flex items-center gap-2">
+              <i className="ri-hospital-line text-green-500 text-sm" />
+              <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                Bo‘lim:{" "}
+                <span className="font-medium">{news.departmentName?.trim() || "Umumiy (barcha bo‘limlar)"}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
               <i className="ri-stethoscope-line text-green-500 text-sm" />
               <span className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
                 Mutaxassislik: <span className="font-medium">{news.specialty}</span>
@@ -223,9 +247,36 @@ export function DocNewsContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Barchasi");
   const [timeFilter, setTimeFilter] = useState("Barchasi");
+  const [doctorDepartmentName, setDoctorDepartmentName] = useState("");
+  const [apiNews, setApiNews] = useState<NewsItem[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [newsError, setNewsError] = useState<string | null>(null);
 
-  const doctorName = user?.name?.trim() || "Dr. Alisher Karimov";
-  const doctorNews = specialtyNews[currentDoctorSpecialty] || [];
+  const doctorName = user?.name?.trim() || "Shifokor";
+
+  const loadNews = useCallback(async () => {
+    setNewsLoading(true);
+    setNewsError(null);
+    try {
+      const [profile, rows] = await Promise.all([
+        getMyDoctorProfile(),
+        fetchNewsArticles(),
+      ]);
+      setDoctorDepartmentName(profile?.departmentName?.trim() ?? "");
+      setApiNews(rows.map(mapApiNewsToNewsItem));
+    } catch {
+      setNewsError("Yangiliklarni yuklab bo‘lmadi. Internet yoki serverni tekshiring.");
+      setApiNews([]);
+    } finally {
+      setNewsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadNews();
+  }, [loadNews]);
+
+  const doctorNews = apiNews;
 
   const filteredNews = useMemo(() => {
     let filtered = [...doctorNews];
@@ -280,10 +331,12 @@ export function DocNewsContent() {
             </div>
             <div>
               <h2 className={`text-lg font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
-                {currentDoctorSpecialty} Yangiliklari
+                {doctorDepartmentName ? `${doctorDepartmentName} yangiliklari` : "Yangiliklar"}
               </h2>
               <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                {doctorName} uchun maxsus tanlangan
+                {doctorDepartmentName
+                  ? `${doctorName} — o‘z bo‘limingiz va umumiy yangiliklar`
+                  : `${doctorName} — umumiy yangiliklar`}
               </p>
             </div>
             {newCount > 0 && (
@@ -295,7 +348,7 @@ export function DocNewsContent() {
           <div className="flex flex-wrap gap-3">
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
-                darkMode ? "bg-[#161B22] text-gray-300" : "bg-white text-gray-700 shadow-sm"
+                darkMode ? "bg-[#21262D] text-gray-300" : "bg-white text-gray-700 shadow-sm"
               }`}
             >
               <i className="ri-file-list-3-line text-violet-500" />
@@ -303,7 +356,7 @@ export function DocNewsContent() {
             </div>
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
-                darkMode ? "bg-[#161B22] text-gray-300" : "bg-white text-gray-700 shadow-sm"
+                darkMode ? "bg-[#21262D] text-gray-300" : "bg-white text-gray-700 shadow-sm"
               }`}
             >
               <i className="ri-flashlight-line text-amber-500" />
@@ -311,7 +364,7 @@ export function DocNewsContent() {
             </div>
             <div
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
-                darkMode ? "bg-[#161B22] text-gray-300" : "bg-white text-gray-700 shadow-sm"
+                darkMode ? "bg-[#21262D] text-gray-300" : "bg-white text-gray-700 shadow-sm"
               }`}
             >
               <i className="ri-bookmark-3-line text-emerald-500" />
@@ -334,7 +387,7 @@ export function DocNewsContent() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className={`w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-colors ${
               darkMode
-                ? "bg-[#161B22] border border-[#1C2333] text-white placeholder-gray-600 focus:border-green-500/50"
+                ? "bg-[#21262D] border border-[#30363D] text-white placeholder-gray-600 focus:border-green-500/50"
                 : "bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-green-300"
             }`}
           />
@@ -353,7 +406,7 @@ export function DocNewsContent() {
           onChange={(e) => setSelectedCategory(e.target.value)}
           className={`px-4 py-2.5 rounded-xl text-sm outline-none transition-colors cursor-pointer appearance-none ${
             darkMode
-              ? "bg-[#161B22] border border-[#1C2333] text-white focus:border-green-500/50"
+              ? "bg-[#21262D] border border-[#30363D] text-white focus:border-green-500/50"
               : "bg-white border border-gray-200 text-gray-700 focus:border-green-300"
           }`}
           style={{ backgroundImage: "none" }}
@@ -363,7 +416,7 @@ export function DocNewsContent() {
           ))}
         </select>
 
-        <div className={`flex rounded-xl overflow-hidden border ${darkMode ? "border-[#1C2333]" : "border-gray-200"}`}>
+        <div className={`flex rounded-xl overflow-hidden border ${darkMode ? "border-[#30363D]" : "border-gray-200"}`}>
           {["Barchasi", "Hafta", "Oy"].map((t) => (
             <button
               key={t}
@@ -372,7 +425,7 @@ export function DocNewsContent() {
                 timeFilter === t
                   ? "bg-green-600 text-white"
                   : darkMode
-                  ? "bg-[#161B22] text-gray-400 hover:text-white"
+                  ? "bg-[#21262D] text-gray-400 hover:text-white"
                   : "bg-white text-gray-500 hover:text-gray-900"
               }`}
             >
@@ -385,12 +438,40 @@ export function DocNewsContent() {
       {/* Results count */}
       <div className="flex items-center justify-between">
         <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-          {filteredNews.length} ta natija topildi
+          {newsLoading ? "Yuklanmoqda…" : `${filteredNews.length} ta natija topildi`}
         </p>
+        {newsError && (
+          <button
+            type="button"
+            onClick={() => void loadNews()}
+            className="text-xs font-medium text-green-600 hover:text-green-500 cursor-pointer"
+          >
+            Qayta urinish
+          </button>
+        )}
       </div>
 
+      {newsError && (
+        <div
+          className={`rounded-xl px-4 py-3 text-sm ${
+            darkMode ? "bg-red-950/40 text-red-200 border border-red-900/50" : "bg-red-50 text-red-800 border border-red-100"
+          }`}
+        >
+          {newsError}
+        </div>
+      )}
+
       {/* News grid */}
-      {filteredNews.length > 0 ? (
+      {newsLoading ? (
+        <div
+          className={`flex flex-col items-center justify-center py-16 rounded-2xl ${
+            darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"
+          }`}
+        >
+          <i className={`ri-loader-4-line text-3xl animate-spin mb-3 ${darkMode ? "text-green-400" : "text-green-600"}`} />
+          <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>Yangiliklar yuklanmoqda…</p>
+        </div>
+      ) : filteredNews.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredNews.map((news) => (
             <NewsCard
@@ -404,10 +485,10 @@ export function DocNewsContent() {
       ) : (
         <div
           className={`flex flex-col items-center justify-center py-16 rounded-2xl ${
-            darkMode ? "bg-[#161B22] border border-[#1C2333]" : "bg-white border border-gray-100"
+            darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100"
           }`}
         >
-          <div className={`w-16 h-16 flex items-center justify-center rounded-full mb-4 ${darkMode ? "bg-[#1C2333]" : "bg-gray-100"}`}>
+          <div className={`w-16 h-16 flex items-center justify-center rounded-full mb-4 ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
             <i className={`ri-article-line text-2xl ${darkMode ? "text-gray-600" : "text-gray-400"}`} />
           </div>
           <p className={`text-sm font-medium mb-1 ${darkMode ? "text-gray-300" : "text-gray-700"}`}>

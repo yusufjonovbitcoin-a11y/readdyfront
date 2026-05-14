@@ -9,6 +9,8 @@ export interface AuthUserDto {
   role: ApiUserRole;
   hospitalId?: string;
   hospitalName?: string;
+  departmentId?: string;
+  departmentName?: string;
   phone?: string;
   avatar: string;
   checkinUrl?: string;

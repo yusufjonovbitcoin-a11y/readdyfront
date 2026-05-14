@@ -99,7 +99,7 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
   const inputClass = (field: string) =>
     `w-full px-3 py-2.5 rounded-lg text-sm outline-none transition-colors ${
       darkMode
-        ? `bg-[#0F1117] border ${errors[field] ? "border-red-500" : "border-[#1E2A3A]"} text-white placeholder-gray-600 focus:border-emerald-500`
+        ? `bg-[#0F1117] border ${errors[field] ? "border-red-500" : "border-[#30363D]"} text-white placeholder-gray-600 focus:border-emerald-500`
         : `bg-gray-50 border ${errors[field] ? "border-red-400" : "border-gray-200"} text-gray-900 placeholder-gray-400 focus:border-emerald-500`
     }`;
 
@@ -118,17 +118,17 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
         aria-modal="true"
         aria-labelledby="add-hospital-panel-title"
         tabIndex={-1}
-        className={`fixed right-0 top-0 h-full w-full max-w-md z-50 flex flex-col shadow-2xl transition-transform duration-300 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+        className={`fixed right-0 top-0 h-full w-full max-w-md z-50 flex flex-col shadow-2xl transition-transform duration-300 ${darkMode ? "bg-[#21262D]" : "bg-white"}`}
       >
         {/* Header */}
-        <div className={`flex items-center justify-between px-6 py-4 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+        <div className={`flex items-center justify-between px-6 py-4 border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
           <div>
             <h2 id="add-hospital-panel-title" className={`text-base font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>Kasalxona Qo'shish</h2>
             <p className={`text-xs mt-0.5 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Yangi kasalxona va admin yaratish</p>
           </div>
           <button
             onClick={onClose}
-            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#1E2A3A] text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg cursor-pointer transition-colors ${darkMode ? "hover:bg-[#30363D]/50 text-gray-400" : "hover:bg-gray-100 text-gray-500"}`}
             aria-label="Kasalxona qo'shish panelini yopish"
           >
             <i className="ri-close-line text-lg" aria-hidden="true"></i>
@@ -139,7 +139,7 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           {/* Hospital Info */}
           <div>
-            <div className={`flex items-center gap-2 mb-4 pb-2 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+            <div className={`flex items-center gap-2 mb-4 pb-2 border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
               <div className="w-6 h-6 flex items-center justify-center rounded-md bg-emerald-500/20">
                 <i className="ri-hospital-line text-emerald-400 text-sm"></i>
               </div>
@@ -173,7 +173,7 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
 
           {/* Admin Info */}
           <div>
-            <div className={`flex items-center gap-2 mb-4 pb-2 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+            <div className={`flex items-center gap-2 mb-4 pb-2 border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
               <div className="w-6 h-6 flex items-center justify-center rounded-md bg-blue-500/20">
                 <i className="ri-user-settings-line text-blue-400 text-sm"></i>
               </div>
@@ -200,7 +200,7 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
         </div>
 
         {/* Footer */}
-        <div className={`px-6 py-4 border-t space-y-2 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+        <div className={`px-6 py-4 border-t space-y-2 ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
           {submitError && (
             <p className="text-xs text-red-500" role="alert">
               {submitError}
@@ -210,7 +210,7 @@ export default function AddHospitalPanel({ open, onClose, onAdd, darkMode, trigg
           <button
             onClick={onClose}
             disabled={loading || submitting}
-            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${loading || submitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#1E2A3A] text-gray-300 hover:bg-[#243040]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-60 disabled:cursor-not-allowed ${loading || submitting ? "" : "cursor-pointer"} ${darkMode ? "bg-[#30363D] text-gray-300 hover:bg-[#30363D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
           >
             Bekor qilish
           </button>

@@ -251,20 +251,20 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
     };
   }, [patient.id]);
 
-  const cardBase = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white border border-gray-100";
+  const cardBase = darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white border border-gray-100";
   const pageTitle = darkMode ? "text-white" : "text-gray-900";
   const pageMuted = darkMode ? "text-gray-400" : "text-gray-500";
   const textBody = darkMode ? "text-gray-300" : "text-gray-700";
   const sectionTitle = darkMode ? "text-gray-200" : "text-gray-900";
   const labelSm = darkMode ? "text-gray-500" : "text-gray-600";
   const backBtn = darkMode
-    ? "bg-[#161B22] border border-[#30363D] text-gray-300 hover:bg-[#21262D]"
+    ? "bg-[#21262D] border border-[#30363D] text-gray-300 hover:bg-[#21262D]"
     : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700";
   const iconBox = darkMode ? "bg-[#21262D]" : "bg-gray-100";
   const textareaCls = darkMode
     ? "w-full text-sm border border-[#30363D] rounded-lg px-3 py-2.5 bg-[#0D1117] text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 resize-none"
     : "w-full text-sm border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-400 resize-none text-gray-700 placeholder-gray-400";
-  const modalPanel = darkMode ? "bg-[#161B22] border border-[#30363D]" : "bg-white";
+  const modalPanel = darkMode ? "bg-[#21262D] border border-[#30363D]" : "bg-white";
   const modalTitle = darkMode ? "text-white" : "text-gray-900";
   const btnSecondary = darkMode
     ? "border border-[#30363D] text-gray-200 hover:bg-[#21262D]"

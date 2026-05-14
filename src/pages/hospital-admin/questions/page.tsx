@@ -59,9 +59,9 @@ export function HAQuestionsPageContent() {
   const [promptDepartment, setPromptDepartment] = useState<DepartmentDto | null>(null);
   const [promptText, setPromptText] = useState("");
 
-  const panel = `rounded-xl border ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`;
-  const cardBase = `rounded-xl border p-5 ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`;
-  const input = `w-full rounded-lg border px-3 py-2 text-sm outline-none ${darkMode ? "bg-[#1A2235] border-[#263245] text-white placeholder-gray-500 focus:border-teal-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"}`;
+  const panel = `rounded-xl border ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`;
+  const cardBase = `rounded-xl border p-5 ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`;
+  const input = `w-full rounded-lg border px-3 py-2 text-sm outline-none ${darkMode ? "bg-[#0F1117] border-[#30363D] text-white placeholder-gray-500 focus:border-teal-500" : "bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"}`;
   const title = darkMode ? "text-white" : "text-gray-900";
   const muted = darkMode ? "text-gray-400" : "text-gray-500";
   const btn = "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-lg px-3 text-sm font-medium transition-colors disabled:opacity-60";
@@ -189,7 +189,7 @@ export function HAQuestionsPageContent() {
         </div>
 
         {filteredDepartments.length === 0 ? (
-          <div className={`rounded-lg border border-dashed px-4 py-10 text-center text-sm ${darkMode ? "border-[#263245] text-gray-500" : "border-gray-200 text-gray-500"}`}>
+          <div className={`rounded-lg border border-dashed px-4 py-10 text-center text-sm ${darkMode ? "border-[#30363D] text-gray-500" : "border-gray-200 text-gray-500"}`}>
             Bo'lim topilmadi.
           </div>
         ) : viewMode === "card" ? (
@@ -262,7 +262,7 @@ export function HAQuestionsPageContent() {
                         setEditingDepartment(department);
                         setEditingName(department.name);
                       }}
-                      className={`${btn} ${darkMode ? "bg-[#1A2235] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                      className={`${btn} ${darkMode ? "bg-[#21262D] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                     >
                       <i className="ri-edit-line" /> Update
                     </button>
@@ -279,10 +279,10 @@ export function HAQuestionsPageContent() {
             ))}
           </div>
         ) : (
-          <div className={`rounded-xl border overflow-hidden ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}>
+          <div className={`rounded-xl border overflow-hidden ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}>
             <ResponsiveTable minWidthClassName="min-w-[760px]" caption="Departments table">
               <thead>
-                <tr className={`text-xs border-b ${darkMode ? "border-[#1E2130] text-gray-400" : "border-gray-100 text-gray-500"}`}>
+                <tr className={`text-xs border-b ${darkMode ? "border-[#30363D] text-gray-400" : "border-gray-100 text-gray-500"}`}>
                   <th scope="col" className="text-left px-4 py-3 font-medium">Bo'lim</th>
                   <th scope="col" className="text-left px-4 py-3 font-medium">ID</th>
                   <th scope="col" className="text-left px-4 py-3 font-medium">AI prompt</th>
@@ -291,7 +291,7 @@ export function HAQuestionsPageContent() {
               </thead>
               <tbody>
                 {filteredDepartments.map((department) => (
-                  <tr key={department.id} className={`border-b last:border-0 ${darkMode ? "border-[#1E2130] hover:bg-[#1A2235]" : "border-gray-50 hover:bg-gray-50"}`}>
+                  <tr key={department.id} className={`border-b last:border-0 ${darkMode ? "border-[#30363D] hover:bg-[#21262D]" : "border-gray-50 hover:bg-gray-50"}`}>
                     <td className={`px-4 py-3 text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{department.name}</td>
                     <td className={`px-4 py-3 text-sm ${darkMode ? "text-gray-400" : "text-gray-600"}`}>{department.id.slice(0, 8)}...</td>
                     <td className="px-4 py-3">
@@ -344,7 +344,7 @@ export function HAQuestionsPageContent() {
 
       {editingDepartment ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className={`w-full max-w-md rounded-xl p-5 ${darkMode ? "bg-[#141824]" : "bg-white"}`}>
+          <div className={`w-full max-w-md rounded-xl p-5 ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
             <h3 className={`text-base font-semibold ${title}`}>Bo'lim nomini yangilash</h3>
             <input
               className={`${input} mt-4`}
@@ -353,7 +353,7 @@ export function HAQuestionsPageContent() {
               placeholder="Bo'lim nomi"
             />
             <div className="mt-4 flex gap-2 justify-end">
-              <button type="button" onClick={() => setEditingDepartment(null)} className={`${btn} ${darkMode ? "bg-[#1A2235] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+              <button type="button" onClick={() => setEditingDepartment(null)} className={`${btn} ${darkMode ? "bg-[#21262D] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
                 Bekor
               </button>
               <button type="button" disabled={saving} onClick={() => void saveDepartmentName()} className={`${btn} bg-teal-500 text-white hover:bg-teal-600`}>
@@ -366,7 +366,7 @@ export function HAQuestionsPageContent() {
 
       {promptDepartment ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className={`w-full max-w-2xl rounded-xl p-5 ${darkMode ? "bg-[#141824]" : "bg-white"}`}>
+          <div className={`w-full max-w-2xl rounded-xl p-5 ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
             <h3 className={`text-base font-semibold ${title}`}>AI Prompt — {promptDepartment.name}</h3>
             <textarea
               className={`${input} mt-4 min-h-[180px]`}
@@ -379,11 +379,11 @@ export function HAQuestionsPageContent() {
                 type="button"
                 disabled={saving}
                 onClick={() => setPromptText("")}
-                className={`${btn} ${darkMode ? "bg-[#1A2235] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                className={`${btn} ${darkMode ? "bg-[#21262D] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
               >
                 Tozalash
               </button>
-              <button type="button" onClick={() => setPromptDepartment(null)} className={`${btn} ${darkMode ? "bg-[#1A2235] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
+              <button type="button" onClick={() => setPromptDepartment(null)} className={`${btn} ${darkMode ? "bg-[#21262D] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}>
                 Bekor
               </button>
               <button type="button" disabled={saving} onClick={() => void saveDepartmentPrompt()} className={`${btn} bg-teal-500 text-white hover:bg-teal-600`}>
@@ -396,7 +396,7 @@ export function HAQuestionsPageContent() {
 
       {showCreateModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-[2px] p-4">
-          <div className={`relative w-full max-w-md rounded-2xl border p-5 overflow-hidden ${darkMode ? "bg-[#141824] border-[#252B3B]" : "bg-white border-gray-200"}`}>
+          <div className={`relative w-full max-w-md rounded-2xl border p-5 overflow-hidden ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-200"}`}>
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 right-0 w-2/3 bg-gradient-to-l from-teal-500/15 via-violet-500/10 to-transparent"
@@ -425,7 +425,7 @@ export function HAQuestionsPageContent() {
                   setShowCreateModal(false);
                   setNewDepartment("");
                 }}
-                className={`${btn} ${darkMode ? "bg-[#1A2235] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                className={`${btn} ${darkMode ? "bg-[#21262D] text-gray-200 hover:bg-[#202B3D]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
               >
                 Bekor
               </button>

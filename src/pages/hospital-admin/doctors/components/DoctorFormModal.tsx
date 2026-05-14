@@ -128,7 +128,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
 
   const inputClass = `w-full px-3 py-2 rounded-lg text-sm border outline-none transition-colors ${
     darkMode
-      ? "bg-[#1A2235] border-[#1E2130] text-white placeholder-gray-500 focus:border-teal-500"
+      ? "bg-[#21262D] border-[#30363D] text-white placeholder-gray-500 focus:border-teal-500"
       : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-teal-500"
   }`;
 
@@ -142,7 +142,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
         aria-modal="true"
         aria-labelledby="ha-doctor-form-title"
         tabIndex={-1}
-        className={`w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#141824]" : "bg-white"}`}
+        className={`w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-6 ${darkMode ? "bg-[#21262D]" : "bg-white"}`}
       >
         <div className="flex items-center justify-between mb-5">
           <h2 id="ha-doctor-form-title" className={`text-base font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>
@@ -242,7 +242,7 @@ export default function DoctorFormModal({ doctor, darkMode, onClose, onSave, isS
                 onClose();
               }}
               disabled={isSaving}
-              className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60 ${darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+              className={`flex-1 min-h-[44px] rounded-lg text-sm font-medium transition-colors cursor-pointer whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-60 ${darkMode ? "bg-[#21262D] text-gray-300 hover:bg-[#30363D]/50" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
             >
               Bekor qilish
             </button>

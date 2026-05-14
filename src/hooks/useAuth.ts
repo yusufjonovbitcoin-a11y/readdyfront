@@ -16,6 +16,8 @@ export interface AuthUser {
   role: UserRole;
   hospitalId?: string;
   hospitalName?: string;
+  departmentId?: string;
+  departmentName?: string;
   phone?: string;
   avatar: string;
   checkinUrl?: string;
@@ -83,6 +85,8 @@ function normalizeAuthCandidate(value: unknown): AuthUser | null {
     avatar: raw.avatar.trim(),
     hospitalId: typeof raw.hospitalId === "string" ? raw.hospitalId.trim() : undefined,
     hospitalName: typeof raw.hospitalName === "string" ? raw.hospitalName.trim() : undefined,
+    departmentId: typeof raw.departmentId === "string" && raw.departmentId.trim() ? raw.departmentId.trim() : undefined,
+    departmentName: typeof raw.departmentName === "string" ? raw.departmentName.trim() : undefined,
     phone: typeof raw.phone === "string" ? raw.phone.trim() : undefined,
     checkinUrl: typeof raw.checkinUrl === "string" ? raw.checkinUrl.trim() : undefined,
   };

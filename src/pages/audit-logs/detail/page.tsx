@@ -155,7 +155,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
   if (!log) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <div className={`w-16 h-16 flex items-center justify-center rounded-2xl ${darkMode ? "bg-[#1A2235]" : "bg-gray-100"}`}>
+        <div className={`w-16 h-16 flex items-center justify-center rounded-2xl ${darkMode ? "bg-[#21262D]" : "bg-gray-100"}`}>
           <i className="ri-file-search-line text-3xl text-gray-400"></i>
         </div>
         <p className={`text-lg font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{t("auditDetail.notFoundTitle")}</p>
@@ -200,7 +200,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
           <button
             onClick={() => navigate("/audit-logs")}
             className={`w-11 h-11 flex items-center justify-center rounded-xl transition-colors cursor-pointer ${
-              darkMode ? "bg-[#1A2235] hover:bg-[#2A3448] text-gray-400 hover:text-white" : "bg-white hover:bg-gray-100 text-gray-500"
+              darkMode ? "bg-[#21262D] hover:bg-[#2A3448] text-gray-400 hover:text-white" : "bg-white hover:bg-gray-100 text-gray-500"
             }`}
           >
             <i className="ri-arrow-left-line text-lg"></i>
@@ -218,7 +218,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
         </div>
 
         {/* Hero card */}
-        <div className={`rounded-2xl overflow-hidden ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+        <div className={`rounded-2xl overflow-hidden ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
           {/* Status banner */}
           <div className={`px-6 py-3 flex items-center justify-between border-b ${statusCfg.bg} ${statusCfg.border} border`}>
             <div className="flex items-center gap-2">
@@ -289,7 +289,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
         </div>
 
         {/* Full details table */}
-        <div className={`rounded-2xl overflow-hidden ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+        <div className={`rounded-2xl overflow-hidden ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
           <div className={`px-6 py-4 border-b flex items-center gap-3 ${darkMode ? "border-[#2A3448]" : "border-gray-100"}`}>
             <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-emerald-500/15">
               <i className="ri-file-list-3-line text-emerald-400 text-sm"></i>
@@ -322,7 +322,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
         </div>
 
         {/* Timeline / Related section */}
-        <div className={`rounded-2xl overflow-hidden ${darkMode ? "bg-[#1A2235]" : "bg-white"}`}>
+        <div className={`rounded-2xl overflow-hidden ${darkMode ? "bg-[#21262D]" : "bg-white"}`}>
           <div className={`px-6 py-4 border-b flex items-center gap-3 ${darkMode ? "border-[#2A3448]" : "border-gray-100"}`}>
             <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-teal-500/15">
               <i className="ri-time-line text-teal-400 text-sm"></i>
@@ -371,7 +371,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
             onClick={() => navigate("/audit-logs")}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl border transition-colors cursor-pointer whitespace-nowrap ${
               darkMode
-                ? "border-[#2A3448] text-gray-400 hover:text-white hover:bg-[#1A2235]"
+                ? "border-[#2A3448] text-gray-400 hover:text-white hover:bg-[#21262D]"
                 : "border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50"
             }`}
           >

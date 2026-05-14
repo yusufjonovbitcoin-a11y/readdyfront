@@ -123,6 +123,7 @@ function normalizeDoctor(dto: BackendDoctorDto): DoctorDto {
     avatar: dto.avatar ?? dto.avatar_url ?? dto.refresh_token ?? "",
     todayPatients: 0,
     totalPatients: 0,
+    weeklyAvgPatients: 0,
     rating: 0,
     status: "active",
     joinDate: dto.created_at ?? new Date().toISOString(),

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import { useNavigate } from "react-router-dom";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { getModShortcut } from "@/utils/modShortcut";
+import { AppLogoMark } from "@/components/branding/AppLogoMark";
 import {
   emitNotificationsUpdated,
   getNotifications as fetchNotifications,
@@ -64,9 +65,9 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
       { id: "doctors", label: t("sidebar.doctors"), hint: "/hospital-admin/doctors", to: "/hospital-admin/doctors", icon: "ri-stethoscope-line" },
       { id: "patients", label: t("sidebar.patients"), hint: "/hospital-admin/patients", to: "/hospital-admin/patients", icon: "ri-user-heart-line" },
       { id: "analytics", label: t("sidebar.analytics"), hint: "/hospital-admin/analytics", to: "/hospital-admin/analytics", icon: "ri-bar-chart-2-line" },
+      { id: "chat", label: t("sidebar.chatGuruhi"), hint: "/hospital-admin/chat", to: "/hospital-admin/chat", icon: "ri-chat-3-line" },
       { id: "notifications", label: t("sidebar.notifications"), hint: "/hospital-admin/notifications", to: "/hospital-admin/notifications", icon: "ri-notification-3-line" },
       { id: "settings", label: t("sidebar.settings"), hint: "/hospital-admin/settings", to: "/hospital-admin/settings", icon: "ri-settings-3-line" },
-      { id: "chat", label: "Chat Guruhi", hint: "/hospital-admin/chat", to: "/hospital-admin/chat", icon: "ri-chat-3-line" },
     ];
   }, [t]);
 
@@ -188,18 +189,21 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
       <header
         className={`fixed top-0 right-0 h-16 z-20 flex items-center px-4 md:px-6 transition-[left] duration-300 ease-out ${
           sidebarCollapsed ? "left-0 md:left-16" : "left-0 md:left-64"
-        } ${darkMode ? "bg-[#0F1117] border-b border-[#1E2130]" : "bg-white border-b border-gray-100"}`}
+        } ${darkMode ? "bg-[#0F1117] border-b border-[#30363D]" : "bg-white border-b border-gray-100"}`}
       >
         <button
           type="button"
           onClick={onToggleMobile}
           className={`mr-2 shrink-0 md:hidden h-11 w-11 flex items-center justify-center rounded-lg transition-colors ${
-            darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            darkMode ? "bg-[#21262D] text-gray-300 hover:bg-[#30363D]/50" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
           }`}
           aria-label={t("header.actions.openSidebar")}
         >
           <i className="ri-menu-line text-base" />
         </button>
+        <div className="mr-2 flex shrink-0 items-center md:hidden">
+          <AppLogoMark size={28} className="shrink-0" alt="MedCore" />
+        </div>
         <div className="min-w-0 flex-1">
           <h1 className={`truncate text-lg font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{title}</h1>
           <p className={`truncate text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
@@ -218,7 +222,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
             type="button"
             onClick={openSearch}
             className={`hidden shrink-0 lg:flex h-11 cursor-pointer items-center gap-2 rounded-lg px-3 text-sm transition-colors ${
-              darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-400 hover:bg-gray-100"
+              darkMode ? "bg-[#21262D] text-gray-400 hover:bg-[#30363D]/50" : "bg-gray-50 text-gray-400 hover:bg-gray-100"
             }`}
             aria-haspopup="dialog"
             aria-expanded={searchOpen}
@@ -229,7 +233,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
             </span>
             <span className="text-xs">{t("header.search.trigger")}</span>
             <kbd
-              className={`rounded px-1.5 py-0.5 font-sans text-xs ${darkMode ? "bg-[#0F1117] text-gray-500" : "bg-white text-gray-400"}`}
+              className={`inline-flex h-[28px] items-center justify-center rounded px-1.5 py-1.5 font-sans text-[11px] leading-none ${darkMode ? "bg-[#0F1117] text-gray-500" : "bg-white text-gray-400"}`}
             >
               {modShortcut}
             </kbd>
@@ -238,7 +242,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
             type="button"
             onClick={openSearch}
             className={`hidden h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors md:flex lg:hidden ${
-              darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+              darkMode ? "bg-[#21262D] text-gray-400 hover:bg-[#30363D]/50" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
             }`}
             aria-label={t("header.search.global")}
             aria-haspopup="dialog"
@@ -253,7 +257,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
             onClick={onToggleDark}
             aria-label={darkMode ? t("header.actions.switchToLight") : t("header.actions.switchToDark")}
             className={`h-11 w-11 shrink-0 flex cursor-pointer items-center justify-center rounded-lg transition-colors ${
-              darkMode ? "bg-[#1A2235] text-yellow-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+              darkMode ? "bg-[#21262D] text-yellow-400 hover:bg-[#30363D]/50" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
             }`}
           >
             <i className={`${darkMode ? "ri-sun-line" : "ri-moon-line"} text-base`} aria-hidden />
@@ -269,7 +273,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
               aria-controls="ha-notification-popover"
               aria-haspopup="true"
               className={`relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-colors ${
-                darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                darkMode ? "bg-[#21262D] text-gray-400 hover:bg-[#30363D]/50" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
               }`}
             >
               <div className="flex h-5 w-5 items-center justify-center">
@@ -286,10 +290,10 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
                 role="region"
                 aria-label="Bildirishnomalar"
                 tabIndex={-1}
-                className={`absolute right-0 top-11 z-50 w-80 rounded-xl border ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}
+                className={`absolute right-0 top-11 z-50 w-80 rounded-xl border ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}
                 style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.18)" }}
               >
-                <div className={`flex items-center justify-between border-b px-4 py-3 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+                <div className={`flex items-center justify-between border-b px-4 py-3 ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
                   <p id="ha-notifications-title" className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>
                     {t("header.notifications.title")}
                   </p>
@@ -319,7 +323,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
                         navigate(n.actionPath || "/hospital-admin/notifications");
                       }}
                       className={`w-full cursor-pointer px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50 ${
-                        darkMode ? "hover:bg-[#1A2235]" : "hover:bg-gray-50"
+                        darkMode ? "hover:bg-[#21262D]" : "hover:bg-gray-50"
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -358,10 +362,10 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
             aria-labelledby="ha-global-search-title"
             tabIndex={-1}
             className={`relative w-full max-w-lg overflow-hidden rounded-xl border shadow-2xl ${
-              darkMode ? "border-[#1E2130] bg-[#141824]" : "border-gray-200 bg-white"
+              darkMode ? "border-[#30363D] bg-[#21262D]" : "border-gray-200 bg-white"
             }`}
           >
-            <div className={`flex items-center gap-2 border-b px-3 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+            <div className={`flex items-center gap-2 border-b px-3 ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
               <i className={`ri-search-line shrink-0 text-lg ${darkMode ? "text-gray-500" : "text-gray-400"}`} aria-hidden />
               <input
                 ref={searchInputRef}
@@ -380,7 +384,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
               <button
                 type="button"
                 onClick={closeSearch}
-                className={`shrink-0 rounded px-2 py-1 text-xs ${darkMode ? "text-gray-500 hover:bg-[#1A2235]" : "text-gray-400 hover:bg-gray-100"}`}
+                className={`shrink-0 rounded px-2 py-1 text-xs ${darkMode ? "text-gray-500 hover:bg-[#21262D]" : "text-gray-400 hover:bg-gray-100"}`}
               >
                 Esc
               </button>
@@ -407,10 +411,10 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
                       className={`flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors ${
                         i === activeIndex
                           ? darkMode
-                            ? "bg-[#1A2235]"
+                            ? "bg-[#21262D]"
                             : "bg-teal-50"
                           : darkMode
-                            ? "hover:bg-[#1A2235]/80"
+                            ? "hover:bg-[#21262D]/80"
                             : "hover:bg-gray-50"
                       }`}
                     >
@@ -433,7 +437,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
                 ))
               )}
             </ul>
-            <div className={`border-t px-4 py-2 text-xs ${darkMode ? "border-[#1E2130] text-gray-500" : "border-gray-100 text-gray-400"}`}>
+            <div className={`border-t px-4 py-2 text-xs ${darkMode ? "border-[#30363D] text-gray-500" : "border-gray-100 text-gray-400"}`}>
               <span className="hidden sm:inline">{t("header.search.help")}</span>
               <span className="sm:ml-1">
                 {modShortcut} · Esc

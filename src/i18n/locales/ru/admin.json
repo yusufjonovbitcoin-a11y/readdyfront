@@ -4,6 +4,8 @@
     "hospitals": "Клиники",
     "analytics": "Аналитика",
     "users": "Пользователи",
+    "usersDoctorDetail": "Врач",
+    "usersMemberDetail": "Пользователь",
     "questions": "Вопросы",
     "auditLogs": "Аудит-логи",
     "settings": "Настройки"
@@ -17,7 +19,8 @@
     "auditLogs": "Аудит-логи",
     "notifications": "Notifications",
     "news": "Новости",
-    "chatGroup": "Чат Группа",
+    "chatGuruhi": "Chat Guruhi",
+    "chatGuruhiSubtitle": "{{online}} онлайн · {{members}} участников",
     "settings": "Настройки",
     "logout": "Выйти",
     "superAdmin": "Супер админ",
@@ -80,6 +83,20 @@
       "patients": "+8.3% к вчерашнему дню",
       "visits": "-2.1% к прошлому месяцу"
     },
+    "activityChart": {
+      "brandShort": "MC",
+      "calendarHint": "Даты статистики (до 31 дня)",
+      "exportCsv": "Скачать CSV",
+      "dateRangeTitle": "Диапазон дат",
+      "dateRangeFrom": "С",
+      "dateRangeTo": "По",
+      "dateRangeApply": "Применить",
+      "dateRangeClear": "Сбросить",
+      "dateRangeTooLong": "Интервал не может превышать 31 день.",
+      "dateRangeHint": "Не более 31 календарного дня — график и CSV сужаются до выбранного периода.",
+      "dateRangeFillBoth": "Выберите даты начала и окончания.",
+      "dateRangeOrderInvalid": "Дата «С» не может быть позже даты «По»."
+    },
     "alerts": {
       "title": "Системные уведомления",
       "items": {
@@ -94,6 +111,15 @@
         "oneHour": "1 час назад",
         "threeDays": "3 дня назад"
       }
+    },
+    "charts": {
+      "bookingsByDay": "Записи по дням (завершено / в процессе)",
+      "distributionByRegion": "Распределение по регионам",
+      "weeklyTrend": "Динамика по неделям",
+      "successful": "Завершено",
+      "failed": "В процессе",
+      "bookings": "Записи",
+      "noData": "Недостаточно данных для графика"
     }
   },
   "hospitals": {
@@ -108,7 +134,8 @@
       "dailyPatients": "Пациенты в день",
       "status": "Статус",
       "actions": "Действия",
-      "adminPrefix": "Админ:"
+      "adminPrefix": "Админ:",
+      "viloyat": "Вилоят"
     },
     "deleteConfirm": {
       "title": "Подтвердите удаление",
@@ -137,6 +164,8 @@
       "completionRate": "Процент завершения"
     },
     "flowDynamics": "Динамика потока пациентов",
+    "flowDynamicsSubtitle": "Мониторинг аналитики пациентов в реальном времени",
+    "liveBadge": "LIVE",
     "patients": "Пациенты",
     "appointments": "Приемы",
     "appointmentShort": "Прием",
@@ -155,9 +184,18 @@
     "toast": {
       "added": "Пользователь успешно добавлен!"
     },
+    "stats": {
+      "totalUsers": "Всего пользователей"
+    },
     "roles": {
       "admins": "Админы",
-      "doctors": "Врачи"
+      "doctors": "Врачи",
+      "display": {
+        "superAdmin": "Супер админ",
+        "hospitalAdmin": "Админ клиники",
+        "doctor": "Врач",
+        "reception": "Регистратура"
+      }
     },
     "form": {
       "fullNameLabel": "Полное имя *",
@@ -180,6 +218,50 @@
       "toggleStatusTitle": "Изменить статус",
       "editTitle": "Редактировать",
       "deleteTitle": "Удалить"
+    },
+    "detail": {
+      "sectionPersonal": "Личные данные",
+      "back": "К списку пользователей",
+      "loading": "Загрузка…",
+      "notFound": "Пользователь не найден.",
+      "loadError": "Не удалось загрузить данные.",
+      "idMissing": "Не указан ID.",
+      "fields": {
+        "phone": "Телефон",
+        "email": "Email",
+        "role": "Роль",
+        "lastLogin": "Последний вход",
+        "createdAt": "Дата регистрации",
+        "status": "Статус"
+      },
+      "tabs": {
+        "overview": "Обзор",
+        "analytics": "Аналитика"
+      },
+      "stats": {
+        "lastAccess": "Последний вход",
+        "memberSince": "В системе с"
+      },
+      "statTiles": {
+        "hospital": "Клиника",
+        "role": "Роль",
+        "contact": "Контакт",
+        "accountStatus": "Статус аккаунта"
+      },
+      "personal": {
+        "fullName": "Полное имя"
+      },
+      "statisticsTitle": "Статистика",
+      "analytics": {
+        "activityTitle": "Активность",
+        "chartHint": "Недельная динамика — скоро полные данные",
+        "metricsTitle": "Показатели",
+        "metricActivity": "Активность",
+        "metricProfile": "Заполненность профиля",
+        "systemTitle": "Система",
+        "systemSuper": "Глобальное управление по всем клиникам и администраторам.",
+        "systemHospital": "Подробная аналитика по клинике — в разделе Аналитика."
+      }
     }
   },
   "audit": {

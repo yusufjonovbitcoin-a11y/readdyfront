@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { useHospitals } from "@/hooks/useHospitals";
 import { getModShortcut } from "@/utils/modShortcut";
+import { AppLogoMark } from "@/components/branding/AppLogoMark";
 import {
   emitNotificationsUpdated,
   getNotifications as fetchNotifications,
@@ -90,7 +91,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
       { id: "page-users", kind: "page" as const, label: t("admin:header.pages.users"), to: "/users" },
       { id: "page-audit-logs", kind: "page" as const, label: t("admin:header.pages.auditLogs"), to: "/audit-logs" },
       { id: "page-news", kind: "page" as const, label: t("admin:sidebar.news"), to: "/news" },
-      { id: "page-admin-chat", kind: "page" as const, label: "Chat Guruhi", to: "/admin-chat" },
+      { id: "page-admin-chat", kind: "page" as const, label: t("admin:sidebar.chatGuruhi"), to: "/admin-chat" },
       { id: "page-settings", kind: "page" as const, label: t("admin:header.pages.settings"), to: "/settings" },
     ];
     return [...pages, ...hospitalHits];
@@ -243,18 +244,21 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
     <header
       className={`fixed top-0 right-0 h-16 z-[70] flex items-center px-4 md:px-6 transition-[left] duration-300 ease-out ${
         sidebarCollapsed ? "left-0 md:left-16" : "left-0 md:left-64"
-      } ${darkMode ? "bg-[#0F1117] border-b border-[#1E2130]" : "bg-white border-b border-gray-100"}`}
+      } ${darkMode ? "bg-[#0F1117] border-b border-[#30363D]" : "bg-white border-b border-gray-100"}`}
     >
       <button
         type="button"
         onClick={onToggleMobile}
         className={`mr-2 shrink-0 md:hidden h-11 w-11 flex items-center justify-center rounded-lg transition-colors ${
-          darkMode ? "bg-[#1A2235] text-gray-300 hover:bg-[#1E2A3A]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          darkMode ? "bg-[#21262D] text-gray-300 hover:bg-[#30363D]/50" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
         }`}
         aria-label={t("admin:header.actions.openSidebar")}
       >
         <i className="ri-menu-line text-base" />
       </button>
+      <div className="mr-2 flex shrink-0 items-center md:hidden">
+        <AppLogoMark size={28} className="shrink-0" alt="MedCore" />
+      </div>
       <div className="min-w-0 flex-1">
         <h1 className={`truncate text-lg font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{title}</h1>
         <p className={`truncate text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
@@ -272,7 +276,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
             setSearchOpen(true);
           }}
           className={`hidden shrink-0 lg:flex h-11 items-center gap-2 px-3 rounded-lg text-sm cursor-pointer transition-colors ${
-            darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-400 hover:bg-gray-100"
+            darkMode ? "bg-[#21262D] text-gray-400 hover:bg-[#30363D]/50" : "bg-gray-50 text-gray-400 hover:bg-gray-100"
           }`}
           aria-haspopup="dialog"
           aria-expanded={searchOpen}
@@ -283,7 +287,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
           </span>
           <span className="text-xs">{t("admin:header.search.trigger")}</span>
           <kbd
-            className={`text-xs px-1.5 py-0.5 rounded font-sans ${darkMode ? "bg-[#0F1117] text-gray-500" : "bg-white text-gray-400"}`}
+            className={`inline-flex h-[27px] items-center justify-center px-1.5 py-1.5 text-[14px] leading-none rounded font-sans ${darkMode ? "bg-[#0F1117] text-gray-500" : "bg-white text-gray-400"}`}
           >
             {modShortcut}
           </kbd>
@@ -295,7 +299,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
             setSearchOpen(true);
           }}
           className={`hidden h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors md:flex lg:hidden ${
-            darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+            darkMode ? "bg-[#21262D] text-gray-400 hover:bg-[#30363D]/50" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
           }`}
           aria-label={t("admin:header.search.global")}
           aria-haspopup="dialog"
@@ -311,7 +315,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
           onClick={onToggleDark}
           aria-label={darkMode ? t("admin:header.actions.switchToLight") : t("admin:header.actions.switchToDark")}
           className={`h-11 w-11 shrink-0 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
-            darkMode ? "bg-[#1A2235] text-yellow-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+            darkMode ? "bg-[#21262D] text-yellow-400 hover:bg-[#30363D]/50" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
           }`}
         >
           <i className={`${darkMode ? "ri-sun-line" : "ri-moon-line"} text-base`} aria-hidden />
@@ -328,7 +332,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
             aria-controls="admin-notification-popover"
             aria-haspopup="true"
             className={`relative h-11 w-11 shrink-0 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
-              darkMode ? "bg-[#1A2235] text-gray-400 hover:bg-[#1E2A3A]" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+              darkMode ? "bg-[#21262D] text-gray-400 hover:bg-[#30363D]/50" : "bg-gray-50 text-gray-500 hover:bg-gray-100"
             }`}
           >
             <div className="flex h-5 w-5 items-center justify-center">
@@ -344,9 +348,9 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
               role="region"
               aria-label="Bildirishnomalar"
               tabIndex={-1}
-              className={`absolute right-0 top-11 w-80 rounded-xl shadow-lg border z-[80] ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`}
+              className={`absolute right-0 top-11 w-80 rounded-xl shadow-lg border z-[80] ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`}
             >
-              <div className={`px-[25px] py-3 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+              <div className={`px-[25px] py-3 border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
                 <p id="header-notifications-title" className={`text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{t("admin:header.notifications.title")}</p>
               </div>
               <div className="py-2">
@@ -367,7 +371,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
                       }
                       navigate(getNotificationRoute(n));
                     }}
-                    className={`w-full px-4 py-3 text-left cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 ${darkMode ? "hover:bg-[#1A2235]" : "hover:bg-gray-50"}`}
+                    className={`w-full px-4 py-3 text-left cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50 ${darkMode ? "hover:bg-[#21262D]" : "hover:bg-gray-50"}`}
                   >
                     <div className="flex items-start gap-3">
                       <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${n.priority === "critical" ? "bg-red-400" : n.priority === "high" ? "bg-orange-400" : n.priority === "medium" ? "bg-yellow-400" : "bg-blue-400"}`}></div>
@@ -401,10 +405,10 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
           aria-labelledby="global-search-title"
           tabIndex={-1}
           className={`relative w-full max-w-lg rounded-xl shadow-2xl border overflow-hidden ${
-            darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-200"
+            darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-200"
           }`}
         >
-          <div className={`flex items-center gap-2 px-3 border-b ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+          <div className={`flex items-center gap-2 px-3 border-b ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
             <i className={`ri-search-line text-lg shrink-0 ${darkMode ? "text-gray-500" : "text-gray-400"}`} aria-hidden />
             <input
               ref={searchInputRef}
@@ -423,7 +427,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
             <button
               type="button"
               onClick={closeSearch}
-              className={`shrink-0 px-2 py-1 rounded text-xs ${darkMode ? "text-gray-500 hover:bg-[#1A2235]" : "text-gray-400 hover:bg-gray-100"}`}
+              className={`shrink-0 px-2 py-1 rounded text-xs ${darkMode ? "text-gray-500 hover:bg-[#21262D]" : "text-gray-400 hover:bg-gray-100"}`}
             >
               Esc
             </button>
@@ -452,10 +456,10 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
                     className={`w-full text-left px-4 py-2.5 flex items-start gap-3 transition-colors ${
                       i === activeIndex
                         ? darkMode
-                          ? "bg-[#1A2235]"
+                          ? "bg-[#21262D]"
                           : "bg-emerald-50"
                         : darkMode
-                          ? "hover:bg-[#1A2235]/80"
+                          ? "hover:bg-[#21262D]/80"
                           : "hover:bg-gray-50"
                     }`}
                   >
@@ -486,7 +490,7 @@ export default function Header({ title, darkMode, onToggleDark, sidebarCollapsed
               ))
             )}
           </ul>
-          <div className={`px-4 py-2 text-xs border-t ${darkMode ? "border-[#1E2130] text-gray-500" : "border-gray-100 text-gray-400"}`}>
+          <div className={`px-4 py-2 text-xs border-t ${darkMode ? "border-[#30363D] text-gray-500" : "border-gray-100 text-gray-400"}`}>
             <span className="hidden sm:inline">{t("admin:header.search.help")}</span>
             {modShortcut} yoki Esc
           </div>

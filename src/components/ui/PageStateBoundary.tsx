@@ -59,7 +59,7 @@ export default function PageStateBoundary<T>({
   const darkMode = useAnyDarkMode();
   const resolvedClassName =
     className === defaultCardClassName
-      ? `${defaultCardClassName} ${darkMode ? "bg-[#141824] border-[#1E2130]" : "bg-white border-gray-100"}`
+      ? `${defaultCardClassName} ${darkMode ? "bg-[#21262D] border-[#30363D]" : "bg-white border-gray-100"}`
       : className;
 
   if (state.status === "loading") {
