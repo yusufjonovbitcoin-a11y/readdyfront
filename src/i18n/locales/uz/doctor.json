@@ -143,6 +143,16 @@
       "delete": "Savolni o'chirish: {{text}}",
       "closeQuestionModal": "Savol oynasini yopish",
       "closeTemplateModal": "Template oynasini yopish"
+    },
+    "aiPrompt": {
+      "title": "AI assistent ko'rsatmalari",
+      "subtitle": "Faqat sizning bemorlaringiz check-in suhbatiga qo'shimcha ta'sir qiladi.",
+      "departmentNote": "Bo'lim prompti super admin tomonidan belgilanadi.",
+      "placeholder": "Masalan: og'riq balini 1–10 so'rang, qisqa javoblar so'rang...",
+      "save": "Promptni saqlash",
+      "saved": "AI prompt saqlandi.",
+      "saveError": "AI promptni saqlashda xatolik.",
+      "loadError": "AI promptni yuklashda xatolik."
     }
   },
   "analytics": {

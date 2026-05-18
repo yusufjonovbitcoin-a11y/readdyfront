@@ -6,10 +6,12 @@ import { useModalA11y } from "@/hooks/useModalA11y";
 import {
   createDoctorQuestionWithTemplate,
   deleteDoctorQuestion,
-  getDoctorById,
+  getMyDoctorProfile,
   getDoctorQuestionCategories,
   getDoctorQuestions,
+  getMyAiIntakePrompt,
   updateDoctorQuestion,
+  updateMyAiIntakePrompt,
 } from "@/api/doctor";
 import type {
   DoctorQuestionCategoryDto,
@@ -102,6 +104,9 @@ export function DocQuestionsContent() {
   const [questionAnswerModes, setQuestionAnswerModes] = useState<Record<string, "boolean" | "text">>({});
   const [draggingQuestionId, setDraggingQuestionId] = useState<string | null>(null);
   const [dragOverQuestionId, setDragOverQuestionId] = useState<string | null>(null);
+  const [aiIntakePrompt, setAiIntakePrompt] = useState("");
+  const [aiPromptLoading, setAiPromptLoading] = useState(true);
+  const [aiPromptSaving, setAiPromptSaving] = useState(false);
   const { toast, showToast } = useAppToast();
   const fetchPageData = useCallback(async (): Promise<DoctorQuestionsPageData> => {
     const [questionsData, categoriesData] = await Promise.all([
@@ -145,15 +150,38 @@ export function DocQuestionsContent() {
   }, [categories]);
 
   useEffect(() => {
+    if (user?.role !== "DOCTOR") return;
+    let cancelled = false;
+    void (async () => {
+      setAiPromptLoading(true);
+      try {
+        const res = await getMyAiIntakePrompt();
+        if (!cancelled) setAiIntakePrompt(res.ai_intake_prompt ?? "");
+      } catch {
+        if (!cancelled) showToast(t("questions.aiPrompt.loadError"), "error");
+      } finally {
+        if (!cancelled) setAiPromptLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.role, showToast, t]);
+
+  useEffect(() => {
     if (user?.role !== "DOCTOR" || !user.id || categories.length === 0) return;
     let cancelled = false;
     void (async () => {
       try {
-        const doctor = await getDoctorById(user.id);
-        if (cancelled || !doctor?.specialty) return;
-        const matched = categories.find(
-          (category) => category.name.trim().toLowerCase() === doctor.specialty.trim().toLowerCase(),
-        );
+        const doctor = await getMyDoctorProfile();
+        if (cancelled || !doctor) return;
+        const matched =
+          categories.find((category) => category.id === doctor.departmentId) ??
+          categories.find(
+            (category) =>
+              doctor.departmentName &&
+              category.name.trim().toLowerCase() === doctor.departmentName.trim().toLowerCase(),
+          );
         if (matched) {
           setDoctorDepartmentId(matched.id);
         }
@@ -375,10 +403,65 @@ export function DocQuestionsContent() {
     inertSelectors: MODAL_INERT_SELECTORS,
   });
 
+  const saveAiIntakePrompt = async () => {
+    setAiPromptSaving(true);
+    try {
+      const res = await updateMyAiIntakePrompt(aiIntakePrompt.trim() || null);
+      setAiIntakePrompt(res.ai_intake_prompt ?? "");
+      showToast(t("questions.aiPrompt.saved"));
+    } catch {
+      showToast(t("questions.aiPrompt.saveError"), "error");
+    } finally {
+      setAiPromptSaving(false);
+    }
+  };
+
   return (
     <>
       <AppToast toast={toast} />
       <div className="space-y-5">
+      <section
+        className={`rounded-xl p-4 md:p-5 ${cardBase} border-emerald-500/20`}
+        aria-labelledby="doctor-ai-intake-prompt-title"
+      >
+        <div className="flex items-start gap-3 mb-3">
+          <div
+            className={`w-10 h-10 shrink-0 flex items-center justify-center rounded-xl ${
+              darkMode ? "bg-violet-900/40" : "bg-violet-50"
+            }`}
+          >
+            <i className={`ri-sparkling-2-line text-lg ${darkMode ? "text-violet-300" : "text-violet-600"}`} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 id="doctor-ai-intake-prompt-title" className={`text-base font-semibold ${pageTitle}`}>
+              {t("questions.aiPrompt.title")}
+            </h3>
+            <p className={`text-sm mt-0.5 ${pageMuted}`}>{t("questions.aiPrompt.subtitle")}</p>
+            <p className={`text-xs mt-1 ${textMuted}`}>{t("questions.aiPrompt.departmentNote")}</p>
+          </div>
+        </div>
+        <textarea
+          value={aiIntakePrompt}
+          onChange={(e) => setAiIntakePrompt(e.target.value)}
+          disabled={aiPromptLoading || aiPromptSaving}
+          rows={4}
+          maxLength={8000}
+          placeholder={t("questions.aiPrompt.placeholder")}
+          className={`${fieldBase} resize-y min-h-[96px]`}
+        />
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => void saveAiIntakePrompt()}
+            disabled={aiPromptLoading || aiPromptSaving}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <i className="ri-save-line" />
+            {aiPromptSaving ? "..." : t("questions.aiPrompt.save")}
+          </button>
+        </div>
+      </section>
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>

@@ -74,6 +74,22 @@ html.dark *::-webkit-scrollbar-thumb {
   border-color: #0f1117;
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 html.dark *::-webkit-scrollbar-thumb:hover {
   background: #4d566b;
+}
+
+/* Recharts: SVG tabindex=0 — bosilganda brauzer qora fokus ramkasi */
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: none;
 }

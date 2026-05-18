@@ -11,6 +11,7 @@ import {
 } from "@/api/adapters/departmentChat.http";
 import { AdminChatShell } from "@/components/admin-chat/AdminChatShell";
 import type { AdminGroupMember, AdminGroupMessage } from "@/mocks/adminChatGroups";
+import { chatSenderUserId } from "@/lib/chatSpecialtyUi";
 import {
   departmentChatMessageToAdminMessage,
   departmentMembersToAdminMembers,
@@ -67,7 +68,7 @@ export default function AdminChatPage() {
     const avatar =
       raw && !raw.startsWith("http") && raw.length <= 4 ? raw.toUpperCase() : initialsFromName(user.name);
     return {
-      id: user.id,
+      id: chatSenderUserId(user),
       name: user.name,
       specialty: "Administrator",
       hospitalId: user.hospitalId ?? "0",

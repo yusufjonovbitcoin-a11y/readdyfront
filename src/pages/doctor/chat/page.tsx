@@ -13,10 +13,10 @@ import {
   postDoctorDepartmentChatMessage,
 } from "@/api/adapters/departmentChat.http";
 import type { DepartmentChatMemberDto, DepartmentChatMessageDto } from "@/api/types/departmentChat.types";
-import {
-  departmentChatMessageToAdminMessage,
-  peerBubbleClassFromSender,
-} from "@/lib/departmentChatUi";
+import { departmentChatMessageToAdminMessage, peerBubbleClassFromSender } from "@/lib/departmentChatUi";
+import { chatSenderUserId } from "@/lib/chatSpecialtyUi";
+import { statusColors, statusLabels } from "@/mocks/doctorGroupChat";
+import { doctorChatDark as dc } from "@/styles/doctorChatTheme";
 
 type UiMsg = ReturnType<typeof departmentChatMessageToAdminMessage>;
 
@@ -24,6 +24,13 @@ function resolveSocketBaseUrl(): string {
   const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
   if (!raw) return "http://localhost:4000";
   return raw.replace(/\/api\/?$/i, "").replace(/\/$/, "");
+}
+
+function memberAvatarClass(member: DepartmentChatMemberDto, currentUserId: string): string {
+  if (member.userId === currentUserId) return "bg-violet-600";
+  if (member.status === "online") return "bg-emerald-600";
+  if (member.status === "busy") return "bg-amber-600";
+  return "bg-gray-500";
 }
 
 function GroupMessageBubble({
@@ -43,35 +50,33 @@ function GroupMessageBubble({
     <div className={`flex gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
       {showAvatar && (
         <div
-          className={`mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white ${avatarClass}`}
+          className={`mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white ${avatarClass}`}
         >
           {msg.senderAvatar}
         </div>
       )}
-      {!showAvatar && <div className="w-9 shrink-0" />}
+      {!showAvatar && <div className="w-9 flex-shrink-0" />}
       <div className={`flex max-w-[70%] flex-col ${isMe ? "items-end" : "items-start"}`}>
         {showAvatar && (
           <div className="mb-0.5 flex items-center gap-1.5 px-1">
             <span className={`text-[11px] font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
               {msg.senderName}
             </span>
-            <span className={`text-[10px] ${darkMode ? "text-gray-600" : "text-gray-400"}`}>{msg.senderHospital}</span>
+            <span className={`text-[10px] ${darkMode ? dc.textDim : "text-gray-400"}`}>{msg.senderHospital}</span>
           </div>
         )}
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
             isMe
-              ? darkMode
-                ? "rounded-tr-sm bg-violet-600 text-white"
-                : "rounded-tr-sm bg-violet-600 text-white shadow-sm"
+              ? "rounded-tr-sm bg-violet-600 text-white shadow-sm"
               : darkMode
-                ? "rounded-tl-sm border border-[#1C2333] bg-[#1C2333] text-gray-200"
+                ? dc.messagePeer
                 : "rounded-tl-sm border border-gray-100 bg-white text-gray-800 shadow-sm"
           }`}
         >
           {msg.content}
         </div>
-        <span className={`mt-0.5 px-1 text-[10px] ${darkMode ? "text-gray-600" : "text-gray-400"}`}>
+        <span className={`mt-0.5 px-1 text-[10px] ${darkMode ? dc.textDim : "text-gray-400"}`}>
           {msg.time}
           {isMe && <i className={`ri-check-double-line ml-1 ${msg.read ? "text-emerald-400" : ""}`} aria-hidden />}
         </span>
@@ -86,9 +91,15 @@ export default function DoctorChatPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [messageText, setMessageText] = useState("");
+  const [showMembers, setShowMembers] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const socketRef = useRef<Socket | null>(null);
+
+  const currentUserId = useMemo(
+    () => (user ? chatSenderUserId(user) : ""),
+    [user],
+  );
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ["doctor-department-chat-summary"],
@@ -141,7 +152,6 @@ export default function DoctorChatPage() {
     socket.on("connect", onConnect);
     socket.on("department_chat:message", (payload: DepartmentChatMessageDto) => {
       if (payload && payload.id) {
-        const ui = departmentChatMessageToAdminMessage(payload);
         queryClient.setQueryData<{ messages: DepartmentChatMessageDto[]; nextCursor: string | null }>(
           ["doctor-department-chat-messages", departmentId],
           (old) => {
@@ -178,7 +188,6 @@ export default function DoctorChatPage() {
     },
   });
 
-  const currentUserId = user?.id ?? "";
   const isMe = (senderId: string) => senderId === currentUserId;
 
   const sendMessage = () => {
@@ -204,7 +213,7 @@ export default function DoctorChatPage() {
   if (summaryLoading) {
     return (
       <div className="flex min-h-[420px] flex-1 items-center justify-center">
-        <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>…</p>
+        <p className={`text-sm ${darkMode ? dc.textSecondary : "text-gray-500"}`}>…</p>
       </div>
     );
   }
@@ -215,27 +224,29 @@ export default function DoctorChatPage() {
         <p className={`text-sm font-medium ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
           Guruh chatni yuklab bo&apos;lmadi
         </p>
-        <p className={`text-xs ${darkMode ? "text-gray-500" : "text-gray-500"}`}>API / tizimga kirishni tekshiring.</p>
+        <p className={`text-xs ${darkMode ? dc.textMuted : "text-gray-500"}`}>API / tizimga kirishni tekshiring.</p>
       </div>
     );
   }
 
   return (
     <div className="flex h-[calc(100dvh-4rem)] min-h-[420px] overflow-hidden">
+      {/* Main chat */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div
           className={`flex shrink-0 items-center gap-3 border-b px-5 py-3.5 ${
-            darkMode ? "border-[#1C2333] bg-[#0D1117]" : "border-gray-100 bg-white"
+            darkMode ? `${dc.borderB} ${dc.surface}` : "border-gray-100 bg-white"
           }`}
         >
-          <div className="relative shrink-0">
+          <div className="relative flex-shrink-0">
             <div className="flex -space-x-2">
               {headerMembers.slice(0, 3).map((m, i) => (
                 <div
                   key={m.id}
                   className={`relative flex h-10 w-10 items-center justify-center rounded-xl border-2 text-xs font-bold text-white ${
                     darkMode ? "border-[#0D1117]" : "border-white"
-                  } ${i === 0 ? "z-30 bg-violet-600" : i === 1 ? "z-20 bg-emerald-600" : "z-10 bg-sky-600"}`}
+                  } ${i === 0 ? "bg-violet-600" : i === 1 ? "bg-emerald-600" : "bg-sky-600"}`}
+                  style={{ zIndex: 30 - i * 10 }}
                 >
                   {m.avatar}
                 </div>
@@ -243,7 +254,7 @@ export default function DoctorChatPage() {
               {headerMembers.length > 3 && (
                 <div
                   className={`z-0 flex h-10 w-10 items-center justify-center rounded-xl border-2 text-xs font-bold ${
-                    darkMode ? "border-[#0D1117] bg-[#1C2333] text-gray-400" : "border-white bg-gray-100 text-gray-500"
+                    darkMode ? `border-[#0D1117] ${dc.iconWell} text-gray-400` : "border-white bg-gray-100 text-gray-500"
                   }`}
                 >
                   +{headerMembers.length - 3}
@@ -263,40 +274,48 @@ export default function DoctorChatPage() {
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className={`truncate text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{groupName}</h2>
-              <span className="shrink-0 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-500">
+              <h2 className={`truncate text-sm font-bold ${darkMode ? dc.textPrimary : "text-gray-900"}`}>{groupName}</h2>
+              <span className="flex-shrink-0 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-500">
                 <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
                 {t("chat.onlineShort", { count: onlineCount })}
               </span>
             </div>
-            <p className={`truncate text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+            <p className={`truncate text-xs ${darkMode ? dc.textSecondary : "text-gray-500"}`}>
               {t("chat.groupMetaLine", { count: totalMembers, description: groupDescription })}
             </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowMembers(!showMembers)}
+            className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg transition-colors ${
+              darkMode ? `${dc.hover} text-gray-400` : "text-gray-500 hover:bg-gray-100"
+            } ${showMembers ? (darkMode ? `${dc.hoverActive} text-white` : "bg-gray-100 text-gray-900") : ""}`}
+            aria-expanded={showMembers}
+            aria-label="Guruh a'zolari"
+          >
+            <i className="ri-group-line text-sm" aria-hidden />
+          </button>
         </div>
 
         <div
           className={`min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 ${
-            darkMode ? "bg-[#0D1117]" : "bg-gradient-to-b from-gray-50 to-white"
+            darkMode ? dc.page : "bg-gradient-to-b from-gray-50 to-white"
           }`}
         >
           <div
-            className={`flex flex-col items-center py-6 ${darkMode ? "border-b border-[#1C2333]" : "border-b border-gray-100"}`}
+            className={`flex flex-col items-center py-6 ${darkMode ? `border-b ${dc.border}` : "border-b border-gray-100"}`}
           >
-            <div
-              className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${
-                darkMode ? "bg-[#1C2333]" : "bg-violet-50"
-              }`}
-            >
-              <i className={`ri-chat-smile-2-line text-2xl ${darkMode ? "text-violet-400" : "text-violet-500"}`} />
+            <div className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${darkMode ? dc.iconWell : "bg-violet-50"}`}>
+              <i className={`ri-chat-smile-2-line text-2xl ${darkMode ? "text-violet-400" : "text-violet-500"}`} aria-hidden />
             </div>
-            <p className={`mb-1 text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{groupName}</p>
-            <p className={`mb-3 max-w-md text-center text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+            <p className={`mb-1 text-sm font-bold ${darkMode ? dc.textPrimary : "text-gray-900"}`}>{groupName}</p>
+            <p className={`mb-3 max-w-md text-center text-xs ${darkMode ? dc.textSecondary : "text-gray-500"}`}>
               {groupDescription}
             </p>
             <div className="flex items-center gap-2">
               <span
-                className={`rounded-full px-2.5 py-1 text-xs ${darkMode ? "bg-[#1C2333] text-gray-300" : "bg-gray-100 text-gray-600"}`}
+                className={`rounded-full px-2.5 py-1 text-xs ${darkMode ? `${dc.iconWell} text-gray-300` : "bg-gray-100 text-gray-600"}`}
               >
                 {t("chat.memberCountBadge", { count: totalMembers })}
               </span>
@@ -307,19 +326,17 @@ export default function DoctorChatPage() {
           </div>
 
           <div className="my-2 flex items-center gap-3">
-            <div className={`h-px flex-1 ${darkMode ? "bg-[#1C2333]" : "bg-gray-200"}`} />
+            <div className={`h-px flex-1 ${darkMode ? dc.divider : "bg-gray-200"}`} />
             <span
-              className={`rounded-full px-2 py-0.5 text-[10px] ${
-                darkMode ? "bg-[#1C2333] text-gray-500" : "bg-gray-100 text-gray-400"
-              }`}
+              className={`rounded-full px-2 py-0.5 text-[10px] ${darkMode ? `${dc.iconWell} text-gray-500` : "bg-gray-100 text-gray-400"}`}
             >
               {t("chat.today")}
             </span>
-            <div className={`h-px flex-1 ${darkMode ? "bg-[#1C2333]" : "bg-gray-200"}`} />
+            <div className={`h-px flex-1 ${darkMode ? dc.divider : "bg-gray-200"}`} />
           </div>
 
           {messagesLoading && (
-            <p className={`text-center text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>Xabarlar yuklanmoqda…</p>
+            <p className={`text-center text-xs ${darkMode ? dc.textMuted : "text-gray-400"}`}>Xabarlar yuklanmoqda…</p>
           )}
 
           {uiMessages.map((msg, idx) => {
@@ -333,9 +350,7 @@ export default function DoctorChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div
-          className={`shrink-0 border-t px-5 py-4 ${darkMode ? "border-[#1C2333] bg-[#0D1117]" : "border-gray-100 bg-white"}`}
-        >
+        <div className={`shrink-0 border-t px-5 py-4 ${darkMode ? `${dc.borderT} ${dc.surface}` : "border-gray-100 bg-white"}`}>
           <div className="flex items-end gap-3">
             <div className="relative flex-1">
               <textarea
@@ -346,13 +361,11 @@ export default function DoctorChatPage() {
                 placeholder={t("chat.groupMessagePlaceholder")}
                 rows={1}
                 className={`w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none transition-colors ${
-                  darkMode
-                    ? "border border-[#1C2333] bg-[#161B22] text-white placeholder:text-gray-600 focus:border-violet-500/50"
-                    : "border border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-violet-300"
+                  darkMode ? dc.input : "border border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-violet-300"
                 }`}
                 style={{ minHeight: "44px", maxHeight: "120px" }}
               />
-              <p className={`absolute bottom-1 right-3 text-[10px] ${darkMode ? "text-gray-600" : "text-gray-300"}`}>
+              <p className={`absolute bottom-1 right-3 text-[10px] ${darkMode ? dc.textDim : "text-gray-300"}`}>
                 {messageText.length}/500
               </p>
             </div>
@@ -360,11 +373,11 @@ export default function DoctorChatPage() {
               type="button"
               onClick={sendMessage}
               disabled={!messageText.trim() || sendMutation.isPending}
-              className={`flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl transition-all ${
+              className={`flex h-11 w-11 flex-shrink-0 cursor-pointer items-center justify-center rounded-xl transition-all ${
                 messageText.trim() && !sendMutation.isPending
                   ? "bg-violet-600 text-white shadow-sm hover:bg-violet-700"
                   : darkMode
-                    ? "bg-[#1C2333] text-gray-600"
+                    ? dc.sendDisabled
                     : "bg-gray-100 text-gray-300"
               }`}
             >
@@ -373,6 +386,82 @@ export default function DoctorChatPage() {
           </div>
         </div>
       </div>
+
+      {/* Members panel */}
+      {showMembers && (
+        <div
+          className={`flex h-full w-72 flex-shrink-0 flex-col border-l ${
+            darkMode ? `${dc.borderL} ${dc.surface}` : "border-gray-100 bg-white"
+          }`}
+        >
+          <div className={`border-b px-4 py-3.5 ${darkMode ? dc.borderB : "border-gray-100"}`}>
+            <h3 className={`text-sm font-bold ${darkMode ? dc.textPrimary : "text-gray-900"}`}>Guruh a&apos;zolari</h3>
+            <p className={`mt-0.5 text-xs ${darkMode ? dc.textMuted : "text-gray-400"}`}>
+              {totalMembers} ta shifokor
+            </p>
+          </div>
+          <div className="flex-1 overflow-y-auto py-2">
+            {members.length > 0 ? (
+              members.map((member) => {
+                const isCurrent = member.userId === currentUserId;
+                return (
+                  <div
+                    key={member.id}
+                    className={`flex items-center gap-3 px-4 py-2.5 ${darkMode ? dc.hover : "hover:bg-gray-50"}`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <div
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold text-white ${memberAvatarClass(member, currentUserId)}`}
+                      >
+                        {member.avatar}
+                      </div>
+                      <span
+                        className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 ${
+                          darkMode ? "border-[#0D1117]" : "border-white"
+                        } ${statusColors[member.status] ?? "bg-gray-400"}`}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`truncate text-sm font-medium ${
+                          isCurrent
+                            ? darkMode
+                              ? "text-violet-300"
+                              : "text-violet-700"
+                            : darkMode
+                              ? "text-gray-200"
+                              : "text-gray-900"
+                        }`}
+                      >
+                        {member.name}
+                        {isCurrent && (
+                          <span className="ml-1.5 rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[10px] text-violet-500">
+                            Siz
+                          </span>
+                        )}
+                      </p>
+                      <p className={`truncate text-xs ${darkMode ? dc.textMuted : "text-gray-400"}`}>{member.hospitalName}</p>
+                    </div>
+                    <span
+                      className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-[10px] ${
+                        member.status === "online"
+                          ? "bg-emerald-500/10 text-emerald-500"
+                          : member.status === "busy"
+                            ? "bg-amber-500/10 text-amber-500"
+                            : "bg-gray-500/10 text-gray-400"
+                      }`}
+                    >
+                      {statusLabels[member.status] ?? member.status}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <p className={`px-4 py-3 text-xs ${darkMode ? dc.textMuted : "text-gray-400"}`}>Yuklanmoqda…</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

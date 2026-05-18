@@ -100,3 +100,13 @@ export function deleteDoctorQuestion(id: string): Promise<void> {
 export function updateDoctorAvatar(avatarUrl: string): Promise<string> {
   return doctorAdapter.updateDoctorAvatar(avatarUrl);
 }
+
+export function getMyAiIntakePrompt(): Promise<{ ai_intake_prompt: string | null }> {
+  return doctorAdapter.getMyAiIntakePrompt();
+}
+
+export function updateMyAiIntakePrompt(
+  ai_intake_prompt: string | null,
+): Promise<{ ai_intake_prompt: string | null }> {
+  return doctorAdapter.updateMyAiIntakePrompt(ai_intake_prompt);
+}

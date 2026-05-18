@@ -58,6 +58,8 @@ export function roomSummaryToAdminChatGroup(
     createdAt: room.lastMessageAt ?? new Date().toISOString(),
     rosterCount: room.memberCount,
     onlineCountOverride: 0,
+    lastMessagePreview: room.lastMessagePreview,
+    lastMessageAt: room.lastMessageAt,
   };
 }
 

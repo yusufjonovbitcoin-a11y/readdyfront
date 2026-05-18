@@ -6,9 +6,8 @@ import { useDocPatients } from "@/context/DocPatientsContext";
 import { getDoctorPatientById } from "@/api/doctor";
 import { getAiIntakeDashboard, type DoctorDashboardJson } from "@/api/services/medicalIntake.service";
 import type { DoctorPatientDto as DocPatient } from "@/api/types/doctor.types";
+import { ClinicalIntakePatientCard } from "./ClinicalIntakePatientCard";
 import {
-  AiXulosaCard,
-  BemorVaAmallarGrid,
   JavoblarTahliliCard,
   ShifokorIzohlariCard,
   SuhbatTarixiCard,
@@ -334,59 +333,40 @@ export function PatientDetailContent({ patient }: { patient: DocPatient }) {
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => navigate(`/doctor/patients?tab=${canonicalListTab}`)}
-          aria-label="Bemorlar ro'yxatiga qaytish"
-          className={`w-11 h-11 flex items-center justify-center rounded-lg cursor-pointer transition-colors ${backBtn}`}
-        >
-          <i className="ri-arrow-left-line text-base" aria-hidden="true"></i>
-        </button>
-        <div>
-          <h2 className={`text-xl font-bold ${pageTitle}`}>{patient.name}</h2>
-          <p className={`text-sm ${pageMuted}`}>
-            {patient.age} yosh • {patient.gender === "male" ? "Erkak" : "Ayol"} • {patient.phone}
-          </p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <span className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full font-semibold border ${risk.bg} ${risk.color} ${risk.border}`}>
-            <i className={`${risk.icon} text-sm`}></i>
-            {risk.label}
-          </span>
-        </div>
-      </div>
-
       {actionDone && (
-        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-3">
-          <div className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100">
-            <i className="ri-checkbox-circle-line text-green-600"></i>
+        <div className={`rounded-2xl border px-4 py-3 flex items-center gap-3 ${
+            darkMode ? "border-emerald-500/30 bg-emerald-500/10" : "border-emerald-200 bg-emerald-50"
+          }`}>
+          <div
+            className={`w-8 h-8 flex items-center justify-center rounded-full ${
+              darkMode ? "bg-emerald-500/20" : "bg-emerald-100"
+            }`}
+          >
+            <i className={`ri-checkbox-circle-line ${darkMode ? "text-emerald-400" : "text-emerald-600"}`}></i>
           </div>
           <div>
-            <p className="text-sm font-semibold text-green-800">
+            <p className={`text-sm font-semibold ${darkMode ? "text-emerald-200" : "text-emerald-800"}`}>
               {actionDone === "diagnosed" && "Ko'rikni tugatish deb belgilandi"}
               {actionDone === "test" && "Bemor tahlilga yuborildi"}
             </p>
-            <p className="text-xs text-green-600">Holat muvaffaqiyatli yangilandi</p>
+            <p className={`text-xs ${darkMode ? "text-emerald-400/80" : "text-emerald-600"}`}>
+              Holat muvaffaqiyatli yangilandi
+            </p>
           </div>
         </div>
       )}
 
-      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-3">
-        <div className="min-w-0 lg:col-span-3">
-          <AiXulosaCard {...blockProps} />
-        </div>
-
-        <div className="min-w-0 lg:col-span-3">
-          <JavoblarTahliliCard {...blockProps} />
-        </div>
-
-        <div className="min-w-0 space-y-5 lg:col-span-3">
-          <SuhbatTarixiCard {...blockProps} />
-          <ShifokorIzohlariCard {...blockProps} />
-          <BemorVaAmallarGrid {...blockProps} />
-        </div>
-      </div>
+      <ClinicalIntakePatientCard
+        blockProps={blockProps}
+        onBack={() => navigate(`/doctor/patients?tab=${canonicalListTab}`)}
+      >
+        {(tab) => {
+          if (tab === "responses") return <JavoblarTahliliCard {...blockProps} />;
+          if (tab === "transcript") return <SuhbatTarixiCard {...blockProps} />;
+          if (tab === "notes") return <ShifokorIzohlariCard {...blockProps} />;
+          return null;
+        }}
+      </ClinicalIntakePatientCard>
 
       {showConfirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">

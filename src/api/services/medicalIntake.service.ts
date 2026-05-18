@@ -138,6 +138,20 @@ export async function updateDepartment(id: string, input: Partial<DepartmentDto>
   });
 }
 
+/** Super admin: bo‘lim AI system prompti (faqat SUPER_ADMIN). */
+export async function updateDepartmentAiSystemPrompt(
+  id: string,
+  ai_system_prompt: string | null,
+): Promise<DepartmentDto> {
+  return apiRequest<DepartmentDto>(
+    `/api/departments/${encodeURIComponent(id)}/ai-system-prompt`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ ai_system_prompt }),
+    },
+  );
+}
+
 export async function deleteDepartment(id: string): Promise<void> {
   await apiRequest<null>(`/api/departments/${encodeURIComponent(id)}`, { method: "DELETE" });
 }

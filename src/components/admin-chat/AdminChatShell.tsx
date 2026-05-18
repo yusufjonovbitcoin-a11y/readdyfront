@@ -1,27 +1,35 @@
 import { useState, useRef, useEffect, useMemo, type KeyboardEvent } from "react";
 import {
-  specialtyColors,
-  specialtyBadgeColors,
   statusColors,
   statusLabels,
   type AdminChatGroup,
   type AdminGroupMember,
   type AdminGroupMessage,
 } from "@/mocks/adminChatGroups";
-import { peerBubbleClassFromSender } from "@/lib/departmentChatUi";
+import { formatChatTime } from "@/lib/departmentChatUi";
+import {
+  getPeerMessageAvatarClass,
+  getSpecialtyBadgeClass,
+  getSpecialtyColorClass,
+  getSpecialtyIcon,
+  normalizeSpecialtyKey,
+} from "@/lib/chatSpecialtyUi";
+import { superAdminDark as sa } from "@/styles/superAdminTheme";
 
 function ChatBubble({
   msg,
   isMe,
   darkMode,
   showAvatar,
+  roomSpecialty,
 }: {
   msg: AdminGroupMessage;
   isMe: boolean;
   darkMode: boolean;
   showAvatar: boolean;
+  roomSpecialty: string;
 }) {
-  const peerAvatar = isMe ? "bg-emerald-600" : peerBubbleClassFromSender(msg.senderId);
+  const peerAvatar = getPeerMessageAvatarClass(msg.senderId, isMe, roomSpecialty);
   return (
     <div className={`flex gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
       {showAvatar && (
@@ -35,8 +43,8 @@ function ChatBubble({
       <div className={`flex max-w-[70%] flex-col ${isMe ? "items-end" : "items-start"}`}>
         {showAvatar && (
           <div className="mb-0.5 flex items-center gap-1.5 px-1">
-            <span className={`text-[11px] font-semibold ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{msg.senderName}</span>
-            <span className={`text-[10px] ${darkMode ? "text-gray-600" : "text-gray-400"}`}>{msg.senderHospital}</span>
+            <span className={`text-[11px] font-semibold ${darkMode ? sa.textSecondary : "text-gray-700"}`}>{msg.senderName}</span>
+            <span className={`text-[10px] ${darkMode ? sa.textMuted : "text-gray-400"}`}>{msg.senderHospital}</span>
           </div>
         )}
         <div
@@ -46,7 +54,7 @@ function ChatBubble({
                 ? "rounded-tr-sm bg-emerald-600 text-white"
                 : "rounded-tr-sm bg-emerald-600 text-white shadow-sm"
               : darkMode
-                ? "rounded-tl-sm border border-[#1C2333] bg-[#1C2333] text-gray-200"
+                ? sa.messagePeer
                 : "rounded-tl-sm border border-gray-100 bg-white text-gray-800 shadow-sm"
           }`}
         >
@@ -174,6 +182,18 @@ export function AdminChatShell({
   }, [selectedGroupId, fetchMessagesForGroup, groupsSyncKey, onRoomOpened]);
 
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+
+  const uniqueDepartmentOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const dept of departmentFilterOptions) {
+      const key = dept.trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      result.push(key);
+    }
+    return result.sort((a, b) => normalizeSpecialtyKey(a).localeCompare(normalizeSpecialtyKey(b), "uz"));
+  }, [departmentFilterOptions]);
 
   const hospitalsData = useMemo<HospitalData[]>(() => {
     const map = new Map<string, HospitalData>();
@@ -332,13 +352,17 @@ export function AdminChatShell({
   }
 
   return (
-    <div className="flex h-full min-h-0 w-full max-w-full flex-1 overflow-hidden rounded-xl border border-gray-100 dark:border-[#1E2130]">
+    <div
+      className={`flex h-full min-h-0 w-full max-w-full flex-1 overflow-hidden rounded-xl border ${
+        darkMode ? `${sa.border} ${sa.surface}` : "border-gray-100 bg-white"
+      }`}
+    >
       <div
         className={`flex w-[360px] flex-shrink-0 flex-col border-r ${
-          darkMode ? "border-[#1E2130] bg-[#141824]" : "border-gray-100 bg-white"
+          darkMode ? "border-[#30363D] bg-[#21262D]" : "border-gray-100 bg-white"
         }`}
       >
-        <div className={`border-b p-4 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+        <div className={`border-b p-4 ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-600">
@@ -361,9 +385,7 @@ export function AdminChatShell({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full rounded-lg py-2 pl-9 pr-8 text-sm outline-none transition-colors ${
-                darkMode
-                  ? "border border-[#1E2130] bg-[#0F1117] text-white placeholder:text-gray-600 focus:border-emerald-500/50"
-                  : "border border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-emerald-300"
+                darkMode ? sa.input : "border border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-emerald-300"
               }`}
             />
             {searchQuery && (
@@ -377,45 +399,37 @@ export function AdminChatShell({
             )}
           </div>
 
-          <div
-            id={deptFilterInputId}
-            className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            role="group"
-            aria-label="Bo'lim filtri"
-          >
-            <button
-              type="button"
-              onClick={() => setFilterDept("Barchasi")}
-              className={`cursor-pointer whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                filterDept === "Barchasi"
-                  ? "bg-emerald-600 text-white"
-                  : darkMode
-                    ? "bg-[#1E2130] text-gray-400 hover:text-white"
-                    : "bg-gray-100 text-gray-500 hover:text-gray-700"
+          <div className="relative">
+            <label htmlFor={deptFilterInputId} className="sr-only">
+              Bo&apos;lim filtri
+            </label>
+            <div className="pointer-events-none absolute left-3 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center">
+              <i className={`ri-filter-3-line text-sm ${darkMode ? "text-gray-500" : "text-gray-400"}`} aria-hidden />
+            </div>
+            <select
+              id={deptFilterInputId}
+              value={filterDept}
+              onChange={(e) => setFilterDept(e.target.value)}
+              className={`w-full cursor-pointer appearance-none rounded-lg py-2 pl-9 pr-9 text-sm outline-none transition-colors ${
+                darkMode
+                  ? `${sa.input} [&>option]:bg-[#21262D] [&>option]:text-white`
+                  : "border border-gray-200 bg-gray-50 text-gray-900 focus:border-emerald-300"
               }`}
             >
-              Barchasi
-            </button>
-            {departmentFilterOptions.map((dept) => (
-              <button
-                type="button"
-                key={dept}
-                onClick={() => setFilterDept(dept)}
-                className={`cursor-pointer whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                  filterDept === dept
-                    ? "bg-emerald-600 text-white"
-                    : darkMode
-                      ? "bg-[#1E2130] text-gray-400 hover:text-white"
-                      : "bg-gray-100 text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {dept}
-              </button>
-            ))}
+              <option value="Barchasi">Barchasi bo&apos;limlar</option>
+              {uniqueDepartmentOptions.map((dept) => (
+                <option key={dept} value={dept}>
+                  {normalizeSpecialtyKey(dept)}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 flex h-4 w-4 -translate-y-1/2 items-center justify-center">
+              <i className={`ri-arrow-down-s-line text-base ${darkMode ? "text-gray-500" : "text-gray-400"}`} aria-hidden />
+            </div>
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {filteredHospitals.length > 0 ? (
             <div className="space-y-1 p-2">
               {filteredHospitals.map((hospital) => {
@@ -425,7 +439,7 @@ export function AdminChatShell({
                   <div
                     key={hospital.hospitalId}
                     className={`overflow-hidden rounded-xl transition-all ${
-                      isExpanded ? (darkMode ? "bg-[#1A2235]/50" : "bg-gray-50/80") : ""
+                      isExpanded ? (darkMode ? "bg-[#30363D]/25" : "bg-gray-50/80") : ""
                     }`}
                   >
                     <button
@@ -434,10 +448,10 @@ export function AdminChatShell({
                       className={`flex w-full cursor-pointer items-center gap-3 rounded-xl p-3 text-left transition-all ${
                         isExpanded
                           ? darkMode
-                            ? "bg-[#1E2A3A]/60"
+                            ? "bg-[#30363D]/40"
                             : "bg-emerald-50/60"
                           : darkMode
-                            ? "hover:bg-[#1E2A3A]/30"
+                            ? "hover:bg-[#30363D]/30"
                             : "hover:bg-gray-50"
                       }`}
                     >
@@ -485,6 +499,9 @@ export function AdminChatShell({
                         {hospital.groups.map((group) => {
                           const isActive = group.id === selectedGroupId;
                           const lastMsg = group.messages[group.messages.length - 1];
+                          const previewContent = lastMsg?.content ?? group.lastMessagePreview ?? null;
+                          const previewTime =
+                            lastMsg?.time ?? (group.lastMessageAt ? formatChatTime(group.lastMessageAt) : undefined);
                           const onlineCount = onlineSize(group);
                           return (
                             <button
@@ -501,16 +518,14 @@ export function AdminChatShell({
                                     ? "border border-emerald-500/30 bg-emerald-900/20"
                                     : "border border-emerald-200 bg-emerald-50"
                                   : darkMode
-                                    ? "hover:bg-[#1E2A3A]/40"
+                                    ? "hover:bg-[#30363D]/40"
                                     : "hover:bg-gray-100"
                               }`}
                             >
                               <div className="flex items-start gap-2.5">
                                 <div className="relative flex-shrink-0">
                                   <div
-                                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-[10px] font-bold text-white ${
-                                      specialtyColors[group.specialty] || "bg-gray-600"
-                                    }`}
+                                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-[10px] font-bold text-white ${getSpecialtyColorClass(group.specialty)}`}
                                   >
                                     <i className={`ri-${getSpecialtyIcon(group.specialty)}-line`} />
                                   </div>
@@ -522,21 +537,22 @@ export function AdminChatShell({
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5">
-                                    <p className={`truncate text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{group.specialty}</p>
-                                    <span
-                                      className={`rounded-full px-1 py-0.5 text-[9px] ${
-                                        specialtyBadgeColors[group.specialty] || "bg-gray-500/10 text-gray-500"
-                                      }`}
-                                    >
+                                    <p className={`truncate text-sm font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>
+                                      {normalizeSpecialtyKey(group.specialty)}
+                                    </p>
+                                    <span className={`rounded-full px-1 py-0.5 text-[9px] ${getSpecialtyBadgeClass(group.specialty)}`}>
                                       {rosterSize(group)} a&apos;zo
                                     </span>
                                   </div>
-                                  {lastMsg && (
+                                  {previewContent && (
                                     <p className={`mt-0.5 truncate text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                                      <span className="font-medium">
-                                        {lastMsg.senderName.split(" ").slice(1).join(" ") || lastMsg.senderName}:
-                                      </span>{" "}
-                                      {lastMsg.content}
+                                      {lastMsg ? (
+                                        <>
+                                          <span className="font-medium">{lastMsg.senderName.split(" ")[1]}:</span> {previewContent}
+                                        </>
+                                      ) : (
+                                        previewContent
+                                      )}
                                     </p>
                                   )}
                                   <div className="mt-1 flex items-center gap-2">
@@ -544,7 +560,9 @@ export function AdminChatShell({
                                       <span className="h-1 w-1 rounded-full bg-emerald-500" />
                                       {onlineCount} onlayn
                                     </span>
-                                    <span className={`text-[10px] ${darkMode ? "text-gray-600" : "text-gray-300"}`}>{lastMsg?.time}</span>
+                                    {previewTime && (
+                                      <span className={`text-[10px] ${darkMode ? "text-gray-600" : "text-gray-300"}`}>{previewTime}</span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -559,7 +577,7 @@ export function AdminChatShell({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center px-4 py-12">
-              <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full ${darkMode ? "bg-[#1E2130]" : "bg-gray-100"}`}>
+              <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-full ${darkMode ? sa.inset : "bg-gray-100"}`}>
                 <i className={`ri-chat-off-line text-xl ${darkMode ? "text-gray-600" : "text-gray-400"}`} />
               </div>
               <p className={`text-sm ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Guruhlar topilmadi</p>
@@ -568,16 +586,14 @@ export function AdminChatShell({
         </div>
       </div>
 
-      <div className={`flex min-w-0 flex-1 flex-col ${darkMode ? "bg-[#0F1117]" : "bg-white"}`}>
+      <div className={`flex min-w-0 flex-1 flex-col ${darkMode ? sa.page : "bg-white"}`}>
         <div
           className={`flex items-center gap-3 border-b px-5 py-3.5 ${
-            darkMode ? "border-[#1E2130] bg-[#141824]" : "border-gray-100 bg-white"
+            darkMode ? "border-[#30363D] bg-[#21262D]" : "border-gray-100 bg-white"
           }`}
         >
           <div
-            className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white ${
-              specialtyColors[selectedGroup.specialty] || "bg-gray-600"
-            }`}
+            className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xs font-bold text-white ${getSpecialtyColorClass(selectedGroup.specialty)}`}
           >
             <i className={`ri-${getSpecialtyIcon(selectedGroup.specialty)}-line`} />
           </div>
@@ -585,9 +601,9 @@ export function AdminChatShell({
             <div className="flex items-center gap-2">
               <h2 className={`truncate text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>{selectedGroup.name}</h2>
               <span
-                className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-[10px] ${specialtyBadgeColors[selectedGroup.specialty] || ""}`}
+                className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-[10px] ${getSpecialtyBadgeClass(selectedGroup.specialty)}`}
               >
-                {selectedGroup.specialty}
+                {normalizeSpecialtyKey(selectedGroup.specialty)}
               </span>
             </div>
             <p className={`truncate text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
@@ -598,14 +614,8 @@ export function AdminChatShell({
             type="button"
             onClick={() => setShowMembers(!showMembers)}
             className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg transition-colors ${
-              darkMode
-                ? showMembers
-                  ? "bg-[#1E2A3A] text-white"
-                  : "text-gray-400 hover:bg-[#1E2A3A]"
-                : showMembers
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-500 hover:bg-gray-100"
-            }`}
+              darkMode ? `text-gray-400 ${sa.hover}` : "text-gray-500 hover:bg-gray-100"
+            } ${showMembers ? (darkMode ? `${sa.hoverActive} text-white` : "bg-gray-100 text-gray-900") : ""}`}
             aria-expanded={showMembers}
             aria-label="Guruh a'zolari"
           >
@@ -615,11 +625,11 @@ export function AdminChatShell({
 
         <div
           className={`min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-5 ${
-            darkMode ? "bg-[#0F1117]" : "bg-gradient-to-b from-gray-50 to-white"
+            darkMode ? sa.page : "bg-gradient-to-b from-gray-50 to-white"
           }`}
         >
           <div className="flex flex-col items-center py-4">
-            <div className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${darkMode ? "bg-[#1E2130]" : "bg-emerald-50"}`}>
+            <div className={`mb-3 flex h-14 w-14 items-center justify-center rounded-2xl ${darkMode ? sa.inset : "bg-emerald-50"}`}>
               <i
                 className={`ri-${getSpecialtyIcon(selectedGroup.specialty)}-line text-2xl ${
                   darkMode ? "text-emerald-400" : "text-emerald-500"
@@ -630,7 +640,7 @@ export function AdminChatShell({
             <p className={`mb-2 max-w-md text-center text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{selectedGroup.description}</p>
             <div className="flex items-center gap-2">
               <span
-                className={`rounded-full px-2.5 py-1 text-xs ${darkMode ? "bg-[#1E2130] text-gray-300" : "bg-gray-100 text-gray-600"}`}
+                className={`rounded-full px-2.5 py-1 text-xs ${darkMode ? `${sa.inset} text-gray-300` : "bg-gray-100 text-gray-600"}`}
               >
                 {rosterSize(selectedGroup)} a&apos;zo
               </span>
@@ -641,25 +651,34 @@ export function AdminChatShell({
           </div>
 
           <div className="my-2 flex items-center gap-3">
-            <div className={`h-px flex-1 ${darkMode ? "bg-[#1E2130]" : "bg-gray-200"}`} />
+            <div className={`h-px flex-1 ${darkMode ? sa.divider : "bg-gray-200"}`} />
             <span
-              className={`rounded-full px-2 py-0.5 text-[10px] ${darkMode ? "bg-[#1E2130] text-gray-500" : "bg-gray-100 text-gray-400"}`}
+              className={`rounded-full px-2 py-0.5 text-[10px] ${darkMode ? `${sa.inset} text-gray-500` : "bg-gray-100 text-gray-400"}`}
             >
               Bugun
             </span>
-            <div className={`h-px flex-1 ${darkMode ? "bg-[#1E2130]" : "bg-gray-200"}`} />
+            <div className={`h-px flex-1 ${darkMode ? sa.divider : "bg-gray-200"}`} />
           </div>
 
           {selectedGroup.messages.map((msg, idx) => {
             const me = isMe(msg.senderId);
             const prevMsg = selectedGroup.messages[idx - 1];
             const showAvatar = !prevMsg || prevMsg.senderId !== msg.senderId;
-            return <ChatBubble key={msg.id} msg={msg} isMe={me} darkMode={darkMode} showAvatar={showAvatar} />;
+            return (
+              <ChatBubble
+                key={msg.id}
+                msg={msg}
+                isMe={me}
+                darkMode={darkMode}
+                showAvatar={showAvatar}
+                roomSpecialty={selectedGroup.specialty}
+              />
+            );
           })}
           <div ref={messagesEndRef} />
         </div>
 
-        <div className={`border-t px-5 py-4 ${darkMode ? "border-[#1E2130] bg-[#141824]" : "border-gray-100 bg-white"}`}>
+        <div className={`border-t px-5 py-4 ${darkMode ? "border-[#30363D] bg-[#21262D]" : "border-gray-100 bg-white"}`}>
           <div className="flex items-end gap-3">
             <div className="relative flex-1">
               <textarea
@@ -669,9 +688,7 @@ export function AdminChatShell({
                 placeholder="Xabar yozing..."
                 rows={1}
                 className={`w-full resize-none rounded-2xl px-4 py-3 text-sm outline-none transition-colors ${
-                  darkMode
-                    ? "border border-[#1E2130] bg-[#0F1117] text-white placeholder:text-gray-600 focus:border-emerald-500/50"
-                    : "border border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-emerald-300"
+                  darkMode ? sa.input : "border border-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:border-emerald-300"
                 }`}
                 style={{ minHeight: "44px", maxHeight: "120px" }}
               />
@@ -687,7 +704,7 @@ export function AdminChatShell({
                 messageText.trim()
                   ? "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
                   : darkMode
-                    ? "bg-[#1E2130] text-gray-600"
+                    ? `${sa.inset} text-gray-500`
                     : "bg-gray-100 text-gray-300"
               }`}
             >
@@ -700,10 +717,10 @@ export function AdminChatShell({
       {showMembers && selectedGroup && (
         <div
           className={`flex w-72 flex-shrink-0 flex-col border-l ${
-            darkMode ? "border-[#1E2130] bg-[#141824]" : "border-gray-100 bg-white"
+            darkMode ? "border-[#30363D] bg-[#21262D]" : "border-gray-100 bg-white"
           }`}
         >
-          <div className={`border-b px-4 py-3.5 ${darkMode ? "border-[#1E2130]" : "border-gray-100"}`}>
+          <div className={`border-b px-4 py-3.5 ${darkMode ? "border-[#30363D]" : "border-gray-100"}`}>
             <h3 className={`text-sm font-bold ${darkMode ? "text-white" : "text-gray-900"}`}>Guruh a&apos;zolari</h3>
             <p className={`mt-0.5 text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
               {rosterSize(selectedGroup)} ta shifokor
@@ -714,19 +731,17 @@ export function AdminChatShell({
               selectedGroup.members.map((m) => (
                 <div
                   key={m.id}
-                  className={`flex items-center gap-3 px-4 py-2.5 ${darkMode ? "hover:bg-[#1E2A3A]" : "hover:bg-gray-50"}`}
+                  className={`flex items-center gap-3 px-4 py-2.5 ${darkMode ? sa.hover : "hover:bg-gray-50"}`}
                 >
                   <div className="relative flex-shrink-0">
                     <div
-                      className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold text-white ${
-                        specialtyColors[m.specialty] || "bg-gray-500"
-                      }`}
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold text-white ${getSpecialtyColorClass(m.specialty)}`}
                     >
                       {m.avatar}
                     </div>
                     <span
                       className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 ${
-                        darkMode ? "border-[#141824]" : "border-white"
+                        darkMode ? "border-[#21262D]" : "border-white"
                       } ${statusColors[m.status] ?? "bg-gray-400"}`}
                     />
                   </div>
@@ -759,14 +774,3 @@ export function AdminChatShell({
   );
 }
 
-function getSpecialtyIcon(specialty: string): string {
-  const icons: Record<string, string> = {
-    Kardiologiya: "heart-pulse",
-    Nevrologiya: "brain",
-    Ortopediya: "armchair",
-    Pediatriya: "bear-smile",
-    Xirurgiya: "scissors",
-    Ginekologiya: "women",
-  };
-  return icons[specialty] || "chat-smile";
-}

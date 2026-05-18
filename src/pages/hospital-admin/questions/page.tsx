@@ -11,6 +11,7 @@ import {
   deleteDepartment,
   getDepartments,
   updateDepartment,
+  updateDepartmentAiSystemPrompt,
   type DepartmentDto,
 } from "@/api/services/medicalIntake.service";
 
@@ -138,9 +139,10 @@ export function HAQuestionsPageContent() {
     if (!promptDepartment) return;
     setSaving(true);
     try {
-      const updated = await updateDepartment(promptDepartment.id, {
-        ai_system_prompt: promptText.trim() || null,
-      });
+      const updated = await updateDepartmentAiSystemPrompt(
+        promptDepartment.id,
+        promptText.trim() || null,
+      );
       setDepartments((prev) => prev.map((d) => (d.id === updated.id ? { ...d, ...updated } : d)));
       setPromptDepartment(null);
       setPromptText("");

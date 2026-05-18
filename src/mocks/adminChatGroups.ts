@@ -36,6 +36,8 @@ export interface AdminChatGroup {
   rosterCount?: number;
   /** API: online count from server (optional) */
   onlineCountOverride?: number;
+  lastMessagePreview?: string | null;
+  lastMessageAt?: string | null;
 }
 
 export const superAdminMember: AdminGroupMember = {

@@ -386,6 +386,19 @@ export async function deleteDoctorQuestion(id: string): Promise<void> {
   await apiRequest<null>(`/api/questions/doctor/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
+export async function getMyAiIntakePrompt(): Promise<{ ai_intake_prompt: string | null }> {
+  return apiRequest<{ ai_intake_prompt: string | null }>("/api/doctors/me/ai-intake-prompt");
+}
+
+export async function updateMyAiIntakePrompt(
+  ai_intake_prompt: string | null,
+): Promise<{ ai_intake_prompt: string | null }> {
+  return apiRequest<{ ai_intake_prompt: string | null }>("/api/doctors/me/ai-intake-prompt", {
+    method: "PATCH",
+    body: JSON.stringify({ ai_intake_prompt }),
+  });
+}
+
 export async function updateDoctorAvatar(avatarUrl: string): Promise<string> {
   const updated = await apiRequest<{ avatar?: string }>("/api/doctors/me/avatar", {
     method: "PATCH",

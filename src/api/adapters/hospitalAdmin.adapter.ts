@@ -175,7 +175,7 @@ export const hospitalAdminAdapter = {
     };
   },
   updateDepartmentAiPrompt: async (id: string, aiSystemPrompt: string | null): Promise<void> => {
-    await apiRequest<unknown>(`/api/departments/${encodeURIComponent(id)}`, {
+    await apiRequest<unknown>(`/api/departments/${encodeURIComponent(id)}/ai-system-prompt`, {
       method: "PATCH",
       body: JSON.stringify({ ai_system_prompt: aiSystemPrompt }),
     });
