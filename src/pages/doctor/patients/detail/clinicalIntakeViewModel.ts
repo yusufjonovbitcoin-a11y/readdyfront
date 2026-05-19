@@ -101,7 +101,25 @@ function humanizeToken(v: unknown): string {
     worsening: "Yomonlashmoqda",
     unchanged: "O'zgarmagan",
     fluctuating: "O'zgaruvchan",
+    head: "Bosh",
+    chest: "Ko'krak/yurak sohasi",
+    heart: "Ko'krak/yurak sohasi",
+    cardiac: "Ko'krak/yurak sohasi",
+    abdomen: "Qorin",
+    back: "Bel/orqa",
+    limbs: "Qo'l/oyoq",
+    throat: "Tomoq",
+    skin: "Teri",
+    general: "Umumiy",
+    patient_report: "Bemor aytgan",
   };
+  if (s.includes("|")) {
+    return s
+      .split("|")
+      .map((part) => humanizeToken(part))
+      .filter((part, index, arr) => part !== "вЂ”" && arr.indexOf(part) === index)
+      .join(" / ");
+  }
   return map[s.toLowerCase()] ?? s;
 }
 
