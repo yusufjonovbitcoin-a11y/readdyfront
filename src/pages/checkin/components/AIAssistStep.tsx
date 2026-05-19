@@ -220,6 +220,8 @@ export default function AIAssistStep({
   const inputRef = useRef<HTMLInputElement>(null);
   const triageSummaryForDoctorRef = useRef<string | undefined>(undefined);
   const fetchGenRef = useRef(0);
+  /** Har bir `patient_response` uchun `/ai-intake/start` faqat bir marta. */
+  const bootstrappedSessionRef = useRef<string | null>(null);
   const busy = initialLoading || sending;
   const composerLocked = intakeComplete;
   const preferInlineCustomInput =
@@ -383,40 +385,47 @@ export default function AIAssistStep({
           return;
         }
 
-        const res = await postAiIntakeStart({
-          session_id: potientResponseId,
-          doctor_id: doctorId,
-          checkin_token: checkinToken,
-        });
-        if (cancelled || id !== fetchGenRef.current) return;
+        const sessionId = potientResponseId.trim();
+        const alreadyBootstrapped = bootstrappedSessionRef.current === sessionId;
 
-        const text = res.assistant_reply?.trim() ?? '';
-        const nextQuestion = mapDbQuestionToDock(res.next_question);
-        const sameAsStructuredQuestion =
-          Boolean(nextQuestion) && nextQuestion?.message.trim() === text;
-        const bubbleText = sameAsStructuredQuestion ? toCompactChatQuestion(text) : text;
-        const shouldRenderAiBubble = Boolean(bubbleText);
-        if (text) setLatestDoctorSummary(text);
-        if (shouldRenderAiBubble) {
-          setMessages([
-            {
-              id: `ai-bootstrap-${Date.now()}`,
-              role: 'ai',
-              text: bubbleText,
-              timestamp: new Date(),
-            },
-          ]);
-        } else if (!text) {
-          setMessages([
-            {
-              id: `ai-empty-bootstrap-${Date.now()}`,
-              role: 'ai',
-              text: "Intake boshlanmadi — qayta urinib ko'ring.",
-              timestamp: new Date(),
-            },
-          ]);
+        if (!alreadyBootstrapped) {
+          const res = await postAiIntakeStart({
+            session_id: sessionId,
+            doctor_id: doctorId,
+            checkin_token: checkinToken,
+          });
+          if (cancelled || id !== fetchGenRef.current) return;
+
+          bootstrappedSessionRef.current = sessionId;
+
+          const text = res.assistant_reply?.trim() ?? '';
+          const nextQuestion = mapDbQuestionToDock(res.next_question);
+          const sameAsStructuredQuestion =
+            Boolean(nextQuestion) && nextQuestion?.message.trim() === text;
+          const bubbleText = sameAsStructuredQuestion ? toCompactChatQuestion(text) : text;
+          const shouldRenderAiBubble = Boolean(bubbleText);
+          if (text) setLatestDoctorSummary(text);
+          if (shouldRenderAiBubble) {
+            setMessages([
+              {
+                id: `ai-bootstrap-${Date.now()}`,
+                role: 'ai',
+                text: bubbleText,
+                timestamp: new Date(),
+              },
+            ]);
+          } else if (!text) {
+            setMessages([
+              {
+                id: `ai-empty-bootstrap-${Date.now()}`,
+                role: 'ai',
+                text: "Intake boshlanmadi — qayta urinib ko'ring.",
+                timestamp: new Date(),
+              },
+            ]);
+          }
+          setDockQuestion(nextQuestion);
         }
-        setDockQuestion(nextQuestion);
       } catch (error) {
         if (cancelled || id !== fetchGenRef.current) return;
         setMessages([
