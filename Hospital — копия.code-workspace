@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../Hospital — копия"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"typescript.preferences.includePackageJsonAutoImports": "on"
+	}
+}
