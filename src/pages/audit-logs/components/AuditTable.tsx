@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
+import { formatAuditIpDisplay } from "@/lib/auditIpDisplay";
 
 interface AuditTableProps {
   logs: AuditLog[];
@@ -62,7 +63,7 @@ function formatTime(ts: string, locale: string) {
 
 export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableProps) {
   const navigate = useNavigate();
-  const { i18n } = useTranslation("admin");
+  const { i18n, t } = useTranslation("admin");
   const locale = i18n.language === "ru" ? "ru-RU" : "uz-UZ";
   const panelClass = darkMode ? "bg-[#21262D]" : "bg-white";
   const fallbackStatusCfg = { icon: "ri-alert-line", cls: "text-amber-500" };
@@ -91,6 +92,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
             ? (ACTION_COLORS_DARK[log.action as keyof typeof ACTION_COLORS_DARK] ?? "bg-gray-500/15 text-gray-400")
             : (ACTION_COLORS[log.action as keyof typeof ACTION_COLORS] ?? "bg-gray-100 text-gray-600");
           const roleLabel = ROLE_LABELS[log.role as keyof typeof ROLE_LABELS] ?? fallbackRoleLabel;
+          const displayIp = formatAuditIpDisplay(log.ip) || t("auditDetail.ipUnavailable");
           return (
             <article key={log.id} className={`rounded-lg border p-3 ${darkMode ? "border-[#2A3448] bg-[#0F1117]/40" : "border-gray-100 bg-white"}`}>
               <div className="flex items-start justify-between gap-2">
@@ -115,7 +117,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
               </div>
               <p className={`mt-2 text-xs ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{log.detail}</p>
               <div className="mt-3 flex items-center justify-between">
-                <span className={`text-xs font-mono ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{log.ip}</span>
+                <span className={`text-xs font-mono ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{displayIp}</span>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => navigate(`/audit-logs/${log.id}`)}
@@ -167,6 +169,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                 : (ACTION_COLORS[log.action as keyof typeof ACTION_COLORS] ?? "bg-gray-100 text-gray-600");
               const roleColor = ROLE_COLORS[log.role as keyof typeof ROLE_COLORS] ?? fallbackRoleColor;
               const roleLabel = ROLE_LABELS[log.role as keyof typeof ROLE_LABELS] ?? fallbackRoleLabel;
+              const displayIp = formatAuditIpDisplay(log.ip) || t("auditDetail.ipUnavailable");
 
               return (
                 <tr
@@ -243,7 +246,7 @@ export default function AuditTable({ logs, onViewDetail, darkMode }: AuditTableP
                   {/* IP */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`text-xs font-mono ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-                      {log.ip}
+                      {displayIp}
                     </span>
                   </td>
 

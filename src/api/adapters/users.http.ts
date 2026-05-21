@@ -44,16 +44,20 @@ async function getAdminById(id: string): Promise<BackendAdminDto | null> {
   return apiRequest<BackendAdminDto | null>(`/api/admins/${encodedId}`);
 }
 
-async function createAdmin(input: CreateUserInput): Promise<BackendAdminDto> {
+async function createAdminViaUsers(
+  input: CreateUserInput,
+  options: { isSuper: boolean },
+): Promise<BackendAdminDto> {
   const fullName = input.name?.trim();
+  const isSuper = options.isSuper;
   return apiRequest<BackendAdminDto>("/api/users", {
     method: "POST",
     body: JSON.stringify({
-      phone_number: input.phone,
+      phone_number: input.phone.replace(/\s+/g, ""),
       password: input.password,
       role: "admin",
-      is_super: false,
-      hospital_id: input.hospitalId || null,
+      is_super: isSuper,
+      hospital_id: isSuper ? null : input.hospitalId || null,
       ...(fullName ? { full_name: fullName } : {}),
     }),
   });
@@ -136,8 +140,10 @@ export async function getUserById(id: string): Promise<UserDto | null> {
 }
 
 export async function createUser(input: CreateUserInput): Promise<UserDto> {
-  if (input.role === "HOSPITAL_ADMIN") {
-    const created = await createAdmin(input);
+  if (input.role === "HOSPITAL_ADMIN" || input.role === "SUPER_ADMIN") {
+    const created = await createAdminViaUsers(input, {
+      isSuper: input.role === "SUPER_ADMIN",
+    });
     return normalizeAdmin(created);
   }
 

@@ -1,19 +1,19 @@
-/** Brenddagi meduza (jellyfish) aksenti — `.ai` qismi */
-export const MEDUZA_AI_ACCENT = "#00AAFF";
+import { MeduzaAiBrandText } from "@/components/branding/MeduzaAiBrandText";
 
 interface MeduzaAiWordmarkProps {
   darkMode: boolean;
   className?: string;
 }
 
-/**
- * Sidebar va boshqa joylarda bir xil: `meduza` + rangli `.ai`
- */
+/** Sidebar: `meduza` + aquamarine `.ai` */
 export function MeduzaAiWordmark({ darkMode, className }: MeduzaAiWordmarkProps) {
   return (
-    <span className={`truncate text-lg font-semibold tracking-tight leading-none ${className ?? ""}`}>
-      <span className={darkMode ? "text-white" : "text-gray-900"}>meduza</span>
-      <span style={{ color: MEDUZA_AI_ACCENT }}>.ai</span>
-    </span>
+    <MeduzaAiBrandText
+      variant={darkMode ? "on-dark" : "on-light"}
+      size="md"
+      className={`truncate font-semibold tracking-tight ${className ?? ""}`}
+    />
   );
 }
+
+export { BRAND_AI_ACCENT_COLOR } from "@/config/brand";

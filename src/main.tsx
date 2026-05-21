@@ -11,6 +11,7 @@ import { AuthProvider } from './hooks/useAuth'
 import { onIntegrationError } from "./api/integrationSignals";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
+import { prefetchClientPublicIpHint } from "./lib/clientPublicIp";
 
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
@@ -25,6 +26,8 @@ Sentry.init({
 });
 
 async function bootstrap() {
+  void prefetchClientPublicIpHint();
+
   const unsubscribeIntegrationErrors = onIntegrationError((signal) => {
     Sentry.captureMessage(`Integration error: ${signal.area}/${signal.reason}`, {
       level: "warning",

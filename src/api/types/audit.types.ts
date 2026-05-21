@@ -34,6 +34,8 @@ export interface AuditLogDto {
   detail: string;
   ip: string;
   userAgent: string;
+  /** Qisqa qurilma yorlig‘i, masalan `Chrome · Windows` */
+  deviceLabel?: string;
   hospitalId?: string;
   hospitalName?: string;
   timestamp: string;

@@ -166,7 +166,7 @@
     },
     "flowCard": {
       "chartAria": "График динамики потока пациентов",
-      "brandShort": "MC",
+      "brandShort": "m.ai",
       "calendarHint": "Даты статистики (до 31 дня)",
       "exportCsv": "Скачать CSV",
       "dateRangeTitle": "Диапазон дат",

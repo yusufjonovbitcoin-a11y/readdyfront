@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { MeduzaAiBrandShort, MeduzaAiBrandText } from "@/components/branding/MeduzaAiBrandText";
 
 export type PeakHoursBarRow = { label: string; count: number };
 
@@ -40,8 +41,8 @@ export function PeakHoursRechartsBar({
   emptyText,
   summaryFormatter,
   seriesName,
-  brandShort = "MC",
-  brandFull = "MedCore",
+  brandShort = "m.ai",
+  brandFull = "meduza.ai",
   showBrand,
   chartHeightClassName = "h-[280px] w-full md:h-[320px]",
 }: PeakHoursRechartsBarProps) {
@@ -252,13 +253,13 @@ function HeaderRow({
       {showBrandRow ? (
         <div className={brandPill}>
           <div
-            className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold text-white ${
+            className={`flex h-7 min-w-7 items-center justify-center rounded-full px-1 text-[11px] font-bold ${
               darkMode ? "bg-emerald-600" : "bg-emerald-500"
             }`}
           >
-            {brandShort}
+            <MeduzaAiBrandShort letterClassName="text-white" />
           </div>
-          <span className={`text-sm font-medium ${darkMode ? "text-white" : "text-gray-900"}`}>{brandFull}</span>
+          <MeduzaAiBrandText variant={darkMode ? "on-dark" : "on-light"} size="sm" className="font-medium" />
         </div>
       ) : null}
     </div>

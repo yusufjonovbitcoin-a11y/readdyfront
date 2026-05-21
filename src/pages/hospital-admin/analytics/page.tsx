@@ -36,7 +36,13 @@ export function HAAnalyticsPageContent() {
     () =>
       haDoctorPerformance.map((item) => ({
         ...item,
-        doctorId: haDoctors.find((doctor) => doctor.name === item.name)?.id ?? null,
+        doctorId:
+          item.doctorId ??
+          haDoctors.find(
+            (doctor) => doctor.name === item.name && doctor.specialty === item.specialty,
+          )?.id ??
+          haDoctors.find((doctor) => doctor.name === item.name)?.id ??
+          null,
       })),
     [haDoctorPerformance, haDoctors],
   );
@@ -219,7 +225,7 @@ export function HAAnalyticsPageContent() {
                   };
                   return (
                     <tr
-                      key={doc.name}
+                      key={doc.doctorId ?? `doctor-perf-${i}`}
                       onClick={openProfile}
                       onKeyDown={(e) => {
                         if (doctorId && (e.key === "Enter" || e.key === " ")) {

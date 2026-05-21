@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { formatAuditIpDisplay } from "@/lib/auditIpDisplay";
 import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
 
 interface AuditCardProps {
@@ -47,7 +48,8 @@ function formatTime(ts: string, locale: string) {
 }
 
 export default function AuditCard({ log, darkMode }: AuditCardProps) {
-  const { i18n } = useTranslation("admin");
+  const { i18n, t } = useTranslation("admin");
+  const displayIp = formatAuditIpDisplay(log.ip) || t("auditDetail.ipUnavailable");
   const locale = i18n.language === "ru" ? "ru-RU" : "uz-UZ";
   const actionCfg = ACTION_COLORS[log.action] || { bg: "bg-gray-500/15", text: "text-gray-400", icon: "ri-question-line" };
   const statusCfg = STATUS_CONFIG[log.status] || {
@@ -127,7 +129,7 @@ export default function AuditCard({ log, darkMode }: AuditCardProps) {
             <div className="w-3.5 h-3.5 flex items-center justify-center">
               <i className={`ri-global-line text-xs ${darkMode ? "text-gray-500" : "text-gray-400"}`}></i>
             </div>
-            <span className={`text-xs font-mono ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{log.ip}</span>
+            <span className={`text-xs font-mono ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{displayIp}</span>
           </div>
           {/* Hospital */}
           {log.hospitalName && (

@@ -112,6 +112,7 @@ export function UsersPageContent() {
             role: form.role as User["role"],
             hospitalId: form.hospitalId,
             password: form.password,
+            isSuperAdmin: form.role === "SUPER_ADMIN",
           });
           setUsers((prev) => [created, ...prev]);
           showToast(t("users.toast.added"));

@@ -3,6 +3,7 @@ import { initReactI18next } from "react-i18next";
 import resourcesToBackend from "i18next-resources-to-backend";
 
 export const LANGUAGE_STORAGE_KEY = "medcore_lang";
+export const DEFAULT_LANGUAGE = "uz" as const;
 const SUPPORTED_LANGUAGES = ["uz", "ru"] as const;
 const NAMESPACES = ["common", "auth", "admin", "hospital", "doctor", "checkin"] as const;
 const DEFAULT_NAMESPACE = "common" as const;
@@ -10,7 +11,7 @@ type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 function getInitialLanguage(): SupportedLanguage {
   if (typeof window === "undefined") {
-    return "ru";
+    return DEFAULT_LANGUAGE;
   }
 
   const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -18,7 +19,7 @@ function getInitialLanguage(): SupportedLanguage {
     return saved as SupportedLanguage;
   }
 
-  return "ru";
+  return DEFAULT_LANGUAGE;
 }
 
 i18n
@@ -30,7 +31,7 @@ i18n
   .use(initReactI18next)
   .init({
     lng: getInitialLanguage(),
-    fallbackLng: "ru",
+    fallbackLng: DEFAULT_LANGUAGE,
     supportedLngs: SUPPORTED_LANGUAGES,
     ns: NAMESPACES,
     defaultNS: DEFAULT_NAMESPACE,

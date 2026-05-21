@@ -10,6 +10,7 @@ export const analyticsPeriodPointSchema = z.object({
 });
 
 export const doctorPerformanceSchema = z.object({
+  doctorId: z.string().optional(),
   name: z.string(),
   patients: z.number(),
   rating: z.number(),

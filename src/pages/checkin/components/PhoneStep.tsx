@@ -2,6 +2,8 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from 'react';
 import { useModalA11y } from "@/hooks/useModalA11y";
 import { AppLogoMark } from "@/components/branding/AppLogoMark";
+import { MeduzaAiBrandText } from "@/components/branding/MeduzaAiBrandText";
+import { APP_BRAND_NAME } from "@/config/brand";
 import { clearCheckinDraft } from "@/api/checkin";
 import { resolveCheckinDraft } from "@/api/services/checkinDraftPolicy";
 import type { CheckinDraft } from "@/api/types/checkin.types";
@@ -148,8 +150,10 @@ export default function PhoneStep({ onContinue, onBack, doctorName, doctorSpecia
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <AppLogoMark size={56} className="mx-auto mb-4 block shrink-0" alt={t("phoneStep.appName")} />
-          <h1 className="text-2xl font-bold text-gray-900">{t("phoneStep.appName")}</h1>
+          <AppLogoMark size={56} className="mx-auto mb-4 block shrink-0" alt={APP_BRAND_NAME} />
+          <h1 className="text-2xl">
+            <MeduzaAiBrandText variant="on-light" size="xl" />
+          </h1>
           <p className="text-sm text-gray-500 mt-1">{t("phoneStep.title")}</p>
         </div>
 

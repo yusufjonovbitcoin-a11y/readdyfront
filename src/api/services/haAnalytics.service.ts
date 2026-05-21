@@ -31,7 +31,13 @@ export async function getHaDoctorPerformanceWithIds(doctors: DoctorDto[]): Promi
   const performance = await analyticsAdapter.getDoctorPerformance();
   return performance.map((item) => ({
     ...item,
-    doctorId: doctors.find((doctor) => doctor.name === item.name)?.id ?? null,
+    doctorId:
+      item.doctorId ??
+      doctors.find(
+        (doctor) => doctor.name === item.name && doctor.specialty === item.specialty,
+      )?.id ??
+      doctors.find((doctor) => doctor.name === item.name)?.id ??
+      null,
   }));
 }
 

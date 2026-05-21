@@ -11,7 +11,7 @@
     "ruSecondary": "Russian"
   },
   "phoneStep": {
-    "appName": "MedCore",
+    "appName": "meduza.ai",
     "title": "Система записи в очередь",
     "active": "Ведет прием",
     "phoneLabel": "Введите номер телефона",

@@ -84,7 +84,7 @@
       "visits": "-2.1% o'tgan oy"
     },
     "activityChart": {
-      "brandShort": "MC",
+      "brandShort": "m.ai",
       "calendarHint": "Statistika sanalari (31 kungacha)",
       "exportCsv": "CSV yuklab olish",
       "dateRangeTitle": "Sana oralig'i",
@@ -209,6 +209,7 @@
       "passwordLabel": "Parol *",
       "passwordPlaceholder": "Kamida 6 ta belgi",
       "roleOptions": {
+        "superAdmin": "Super Admin",
         "hospitalAdmin": "Hospital Admin",
         "doctor": "Doktor",
         "reception": "Qabulxona"
@@ -297,6 +298,7 @@
     "actionDescription": "Amal tavsifi",
     "fullInfoTitle": "To'liq Ma'lumotlar",
     "securityTitle": "Xavfsizlik Ma'lumotlari",
+    "ipUnavailable": "Aniqlanmadi",
     "quick": {
       "resource": "Resurs",
       "resourceId": "Resurs ID",
@@ -330,7 +332,9 @@
       "authDirect": "To'g'ridan-to'g'ri auth amali",
       "authSession": "Autentifikatsiyadan o'tgan sessiya",
       "locationTitle": "Joylashuv",
-      "locationDesc": "IP: {{ip}} — Ichki tarmoq",
+      "locationDesc": "IP: {{ip}}",
+      "locationLocal": "IP: {{ip}} (mahalliy yoki proxy orqali)",
+      "locationUnavailable": "IP aniqlanmadi. Nginx: proxy_set_header X-Real-IP va X-Forwarded-For yoqing.",
       "deviceTitle": "Qurilma"
     },
     "export": {

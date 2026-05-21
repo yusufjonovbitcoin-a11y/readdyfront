@@ -18,6 +18,7 @@ import {
 import { useViewMode } from "@/hooks/useViewMode";
 import ViewModeToggle from "@/components/ui/ViewModeToggle";
 import ResponsiveTable from "@/components/ui/ResponsiveTable";
+import { MeduzaAiBrandText } from "@/components/branding/MeduzaAiBrandText";
 
 const NOTIFICATIONS_STORAGE_KEY = "medcore_notifications_v1";
 
@@ -369,13 +370,17 @@ export function SuperAdminNotificationsPageContent() {
               </div>
               <div>
                 <h1 className={`text-2xl font-bold ${dm ? "text-white" : "text-gray-900"}`}>Bildirishnomalar</h1>
-                <p className={`text-sm ${dm ? "text-gray-400" : "text-gray-500"}`}>
-                  {user?.role === "SUPER_ADMIN"
-                    ? "Super Admin"
-                    : user?.role === "HOSPITAL_ADMIN"
-                      ? "Hospital Admin"
-                      : "Doctor"}{" "}
-                  · MedCore tizimi
+                <p className={`text-sm flex flex-wrap items-center gap-1 ${dm ? "text-gray-400" : "text-gray-500"}`}>
+                  <span>
+                    {user?.role === "SUPER_ADMIN"
+                      ? "Super Admin"
+                      : user?.role === "HOSPITAL_ADMIN"
+                        ? "Hospital Admin"
+                        : "Doctor"}
+                  </span>
+                  <span>·</span>
+                  <MeduzaAiBrandText variant={dm ? "on-dark" : "on-light"} size="sm" />
+                  <span>tizimi</span>
                 </p>
               </div>
             </div>

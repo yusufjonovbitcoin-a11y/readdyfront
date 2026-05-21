@@ -7,6 +7,8 @@ import { getAuditLogById } from "@/api/audit";
 import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
 import { usePageState } from "@/hooks/usePageState";
 import { copyTextWithFallback } from "@/utils/clipboard";
+import { formatAuditIpDisplay, isAuditIpLocalOnly, isAuditIpMissing } from "@/lib/auditIpDisplay";
+import { formatAuditDeviceLabel } from "@/lib/auditDeviceDisplay";
 
 const ACTION_COLORS: Record<string, { bg: string; text: string; icon: string; lightBg: string; lightText: string }> = {
   LOGIN: { bg: "bg-emerald-500/15", text: "text-emerald-400", icon: "ri-login-box-line", lightBg: "bg-emerald-50", lightText: "text-emerald-700" },
@@ -60,9 +62,11 @@ interface InfoRowProps {
   icon?: string;
   copyable?: boolean;
   onCopy?: (value: string) => void;
+  /** To‘liq matn (masalan, xom User-Agent) — hoverda ko‘rinadi */
+  title?: string;
 }
 
-function InfoRow({ label, value, mono, darkMode, icon, copyable, onCopy }: InfoRowProps) {
+function InfoRow({ label, value, mono, darkMode, icon, copyable, onCopy, title }: InfoRowProps) {
   const { t } = useTranslation("admin");
   const handleCopy = () => {
     onCopy?.(value);
@@ -79,7 +83,10 @@ function InfoRow({ label, value, mono, darkMode, icon, copyable, onCopy }: InfoR
         <span className={`text-xs font-semibold uppercase tracking-wide ${darkMode ? "text-gray-500" : "text-gray-400"}`}>{label}</span>
       </div>
       <div className="flex-1 flex items-center gap-2">
-        <span className={`text-sm break-all ${mono ? "font-mono" : ""} ${darkMode ? "text-gray-200" : "text-gray-800"}`}>
+        <span
+          title={title}
+          className={`text-sm ${mono ? "font-mono break-all" : "break-words"} ${darkMode ? "text-gray-200" : "text-gray-800"}`}
+        >
           {value}
         </span>
         {copyable && (
@@ -183,6 +190,13 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
   const roleLabel = t(`auditDetail.roles.${log.role}`, { defaultValue: t("auditDetail.roles.unknown") });
   const statusLabel = String(t(statusCfg.labelKey as never));
   const initials = log.userName.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase();
+  const displayIp = formatAuditIpDisplay(log.ip) || t("auditDetail.ipUnavailable");
+  const displayDevice = log.deviceLabel?.trim() || formatAuditDeviceLabel(log.userAgent);
+  const locationDesc = isAuditIpMissing(log.ip)
+    ? t("auditDetail.security.locationUnavailable")
+    : isAuditIpLocalOnly(log.ip)
+      ? t("auditDetail.security.locationLocal", { ip: formatAuditIpDisplay(log.ip) })
+      : t("auditDetail.security.locationDesc", { ip: formatAuditIpDisplay(log.ip) });
 
   return (
       <div className="max-w-4xl mx-auto space-y-5">
@@ -271,7 +285,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
               {[
                 { label: t("auditDetail.quick.resource"), value: log.resource, icon: "ri-database-2-line" },
                 { label: t("auditDetail.quick.resourceId"), value: log.resourceId || "—", icon: "ri-hashtag" },
-                { label: t("auditDetail.quick.ip"), value: log.ip, icon: "ri-global-line" },
+                { label: t("auditDetail.quick.ip"), value: displayIp, icon: "ri-global-line" },
                 { label: t("auditDetail.quick.time"), value: new Date(log.timestamp).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }), icon: "ri-time-line" },
               ].map((item) => (
                 <div key={item.label} className={`rounded-xl p-3 ${darkMode ? "bg-[#0F1117]" : "bg-gray-50"}`}>
@@ -314,8 +328,14 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
               <InfoRow label={t("auditDetail.quick.resourceId")} value={log.resourceId} mono darkMode={darkMode} icon="ri-hashtag" copyable onCopy={handleCopy} />
             )}
             <InfoRow label={t("audit.csv.description")} value={log.detail} darkMode={darkMode} icon="ri-text-snippet" />
-            <InfoRow label={t("auditDetail.quick.ip")} value={log.ip} mono darkMode={darkMode} icon="ri-global-line" copyable onCopy={handleCopy} />
-            <InfoRow label={t("auditDetail.fields.browserDevice")} value={log.userAgent} darkMode={darkMode} icon="ri-computer-line" />
+            <InfoRow label={t("auditDetail.quick.ip")} value={displayIp} mono darkMode={darkMode} icon="ri-global-line" copyable={!isAuditIpMissing(log.ip)} onCopy={handleCopy} />
+            <InfoRow
+              label={t("auditDetail.fields.browserDevice")}
+              value={displayDevice}
+              title={log.userAgent?.trim() ? log.userAgent : undefined}
+              darkMode={darkMode}
+              icon="ri-computer-line"
+            />
             <InfoRow label={t("auditDetail.fields.dateTime")} value={formatFullTime(log.timestamp)} darkMode={darkMode} icon="ri-calendar-event-line" />
             <InfoRow label={t("audit.csv.status")} value={statusLabel} darkMode={darkMode} icon="ri-checkbox-circle-line" />
           </div>
@@ -344,14 +364,15 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
                 color: "text-teal-400",
                 bg: "bg-teal-500/10",
                 title: t("auditDetail.security.locationTitle"),
-                desc: t("auditDetail.security.locationDesc", { ip: log.ip }),
+                desc: locationDesc,
               },
               {
                 icon: "ri-device-line",
                 color: "text-amber-400",
                 bg: "bg-amber-500/10",
                 title: t("auditDetail.security.deviceTitle"),
-                desc: log.userAgent,
+                desc: displayDevice,
+                hoverTitle: log.userAgent?.trim() || undefined,
               },
             ].map((item) => (
               <div key={item.title} className={`rounded-xl p-4 ${darkMode ? "bg-[#0F1117]" : "bg-gray-50"}`}>
@@ -359,7 +380,12 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
                   <i className={`${item.icon} text-lg ${item.color}`}></i>
                 </div>
                 <p className={`text-sm font-semibold mb-1 ${darkMode ? "text-white" : "text-gray-900"}`}>{item.title}</p>
-                <p className={`text-xs leading-relaxed ${darkMode ? "text-gray-400" : "text-gray-500"}`}>{item.desc}</p>
+                <p
+                  title={"hoverTitle" in item ? item.hoverTitle : undefined}
+                  className={`text-xs leading-relaxed ${darkMode ? "text-gray-400" : "text-gray-500"}`}
+                >
+                  {item.desc}
+                </p>
               </div>
             ))}
           </div>
@@ -381,7 +407,7 @@ export function AuditLogDetailContent({ resolved }: { resolved: ReturnType<typeo
 
           <button
             onClick={() => {
-              const text = `${t("auditDetail.export.auditLog")}: ${log.id}\n${t("audit.csv.user")}: ${log.userName}\n${t("audit.csv.action")}: ${log.action}\n${t("audit.csv.resource")}: ${log.resource}\n${t("auditDetail.quick.time")}: ${formatFullTime(log.timestamp)}\n${t("auditDetail.quick.ip")}: ${log.ip}\n${t("audit.csv.status")}: ${statusLabel}\n${t("audit.csv.description")}: ${log.detail}`;
+              const text = `${t("auditDetail.export.auditLog")}: ${log.id}\n${t("audit.csv.user")}: ${log.userName}\n${t("audit.csv.action")}: ${log.action}\n${t("audit.csv.resource")}: ${log.resource}\n${t("auditDetail.quick.time")}: ${formatFullTime(log.timestamp)}\n${t("auditDetail.quick.ip")}: ${displayIp}\n${t("audit.csv.status")}: ${statusLabel}\n${t("audit.csv.description")}: ${log.detail}`;
               void handleCopy(text);
             }}
             className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-xl transition-colors cursor-pointer whitespace-nowrap"

@@ -1,3 +1,5 @@
+import { APP_BRAND_NAME } from "@/config/brand";
+
 /** `public/app-logo.png` — Vite dev/prod va subpath (`BASE_URL`) bilan */
 const APP_LOGO_SRC = `${import.meta.env.BASE_URL}app-logo.png`;
 
@@ -13,11 +15,11 @@ export type AppLogoMarkProps = {
   graphicScale?: number;
 };
 
-/** Barcha rollar uchun MedCore belgisi (`public/app-logo.png`) */
+/** Barcha rollar uchun meduza.ai belgisi (`public/app-logo.png`) */
 export function AppLogoMark({
   size = 32,
   className = "",
-  alt = "MedCore",
+  alt = APP_BRAND_NAME,
   graphicScale = 1,
 }: AppLogoMarkProps) {
   const scaled = graphicScale > 1 && graphicScale < 3;

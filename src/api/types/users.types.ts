@@ -1,6 +1,6 @@
 import type { AppRole } from "@/types/roles";
 
-export type UserRole = Extract<AppRole, "HOSPITAL_ADMIN" | "DOCTOR" | "RECEPTION">;
+export type UserRole = Extract<AppRole, "SUPER_ADMIN" | "HOSPITAL_ADMIN" | "DOCTOR" | "RECEPTION">;
 export type UserStatus = "active" | "inactive";
 
 export interface UserDto {
@@ -26,6 +26,8 @@ export interface CreateUserInput {
   role: UserRole;
   hospitalId: string;
   password: string;
+  /** Super admin: `Admins.is_super`, kasalxona shart emas */
+  isSuperAdmin?: boolean;
 }
 
 export interface UpdateUserInput extends Partial<CreateUserInput> {

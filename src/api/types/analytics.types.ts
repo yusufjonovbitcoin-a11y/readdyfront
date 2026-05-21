@@ -6,6 +6,7 @@ export type AnalyticsPeriodPointDto = {
 };
 
 export type DoctorPerformancePointDto = {
+  doctorId?: string;
   name: string;
   patients: number;
   rating: number;

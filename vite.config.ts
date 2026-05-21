@@ -87,6 +87,16 @@ export default defineConfig({
         target: "http://localhost:4000",
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            const remote =
+              (req.socket as { remoteAddress?: string } | undefined)?.remoteAddress ??
+              req.headers["x-forwarded-for"];
+            if (typeof remote === "string" && remote.trim()) {
+              proxyReq.setHeader("X-Forwarded-For", remote.split(",")[0].trim());
+            }
+          });
+        },
       },
     },
   },
@@ -98,6 +108,16 @@ export default defineConfig({
         target: "http://localhost:4000",
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            const remote =
+              (req.socket as { remoteAddress?: string } | undefined)?.remoteAddress ??
+              req.headers["x-forwarded-for"];
+            if (typeof remote === "string" && remote.trim()) {
+              proxyReq.setHeader("X-Forwarded-For", remote.split(",")[0].trim());
+            }
+          });
+        },
       },
     },
   },

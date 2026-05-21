@@ -1,4 +1,5 @@
 import { emitSessionFailure } from "@/auth/sessionSignals";
+import { getClientPublicIpHint } from "@/lib/clientPublicIp";
 
 export interface ApiError<T = unknown> {
   status: number;
@@ -20,7 +21,17 @@ export class AuthError extends Error {
   }
 }
 
-const configuredApiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "").trim().replace(/\/$/, "");
+/**
+ * API paths already start with `/api/...`. Strip a trailing `/api` from the base so
+ * `VITE_API_BASE_URL=/api` or `https://host.com/api` does not produce `/api/api/...`.
+ */
+function normalizeApiBaseUrl(raw: string): string {
+  const trimmed = raw.trim().replace(/\/$/, "");
+  if (!trimmed) return "";
+  return trimmed.replace(/\/api$/i, "");
+}
+
+const configuredApiBaseUrl = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL ?? "");
 const API_BASE_URL = configuredApiBaseUrl || "";
 const API_FALLBACK_BASE_URL = "http://localhost:4000";
 const ACCESS_TOKEN_STORAGE_KEY = "medcore_access_token";
@@ -198,6 +209,10 @@ export async function apiRequest<TResponse>(
   };
   if (accessToken && !headers.Authorization) {
     headers.Authorization = `Bearer ${accessToken}`;
+  }
+  const clientIpHint = getClientPublicIpHint();
+  if (clientIpHint && !headers["X-Client-Public-Ip"]) {
+    headers["X-Client-Public-Ip"] = clientIpHint;
   }
 
     for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {

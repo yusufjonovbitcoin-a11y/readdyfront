@@ -45,7 +45,7 @@ export const superAdminMember: AdminGroupMember = {
   name: "Super Admin",
   specialty: "Administrator",
   hospitalId: "0",
-  hospitalName: "MedCore HQ",
+  hospitalName: "meduza.ai",
   avatar: "SA",
   status: "online",
   experience: 0,

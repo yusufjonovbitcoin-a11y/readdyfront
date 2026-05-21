@@ -202,7 +202,7 @@ export default function HAHeader({ title, darkMode, onToggleDark, sidebarCollaps
           <i className="ri-menu-line text-base" />
         </button>
         <div className="mr-2 flex shrink-0 items-center md:hidden">
-          <AppLogoMark size={28} className="shrink-0" alt="MedCore" />
+          <AppLogoMark size={28} className="shrink-0" />
         </div>
         <div className="min-w-0 flex-1">
           <h1 className={`truncate text-lg font-semibold ${darkMode ? "text-white" : "text-gray-900"}`}>{title}</h1>

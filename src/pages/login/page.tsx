@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import loginBgImage from "@/assets/login-bg.jpg";
 import { AppLogoMark } from "@/components/branding/AppLogoMark";
+import { MeduzaAiBrandText } from "@/components/branding/MeduzaAiBrandText";
 
 const ROLE_REDIRECT: Record<UserRole, string> = {
   SUPER_ADMIN: "/dashboard",
@@ -115,7 +116,7 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="flex items-center gap-3">
             <AppLogoMark size={40} className="shrink-0" alt={t("auth:login.leftPanel.title")} />
-            <span className="text-white text-2xl font-bold tracking-wide">MedCore</span>
+            <MeduzaAiBrandText variant="on-dark" size="xl" />
           </div>
 
           {/* Center Content */}
@@ -144,8 +145,10 @@ export default function LoginPage() {
           </div>
 
           {/* Bottom */}
-          <div className="text-emerald-200 text-sm">
-            &copy; 2026 MedCore. {t("auth:login.leftPanel.copyright")}
+          <div className="text-emerald-200 text-sm flex flex-wrap items-center gap-1">
+            <span>&copy; 2026</span>
+            <MeduzaAiBrandText variant="on-muted" size="sm" />
+            <span>. {t("auth:login.leftPanel.copyright")}</span>
           </div>
         </div>
       </div>
@@ -159,7 +162,7 @@ export default function LoginPage() {
           {/* Mobile Logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <AppLogoMark size={32} className="shrink-0" alt={t("auth:login.leftPanel.title")} />
-            <span className="text-gray-900 text-xl font-bold">MedCore</span>
+            <MeduzaAiBrandText variant="on-light" size="lg" />
           </div>
 
           <div className="mb-8">
@@ -263,8 +266,10 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-gray-400 mt-6">
-            &copy; 2026 MedCore &mdash; {t("auth:login.footer")}
+          <p className="text-center text-xs text-gray-400 mt-6 flex flex-wrap items-center justify-center gap-1">
+            <span>&copy; 2026</span>
+            <MeduzaAiBrandText variant="on-subtle" size="sm" />
+            <span>&mdash; {t("auth:login.footer")}</span>
           </p>
         </div>
       </div>

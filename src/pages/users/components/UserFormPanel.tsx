@@ -80,26 +80,29 @@ export default function UserFormPanel({
             value={form.role}
             onChange={(e) => onFormChange({ ...form, role: e.target.value })}
           >
+            <option value="SUPER_ADMIN">{t("users.form.roleOptions.superAdmin")}</option>
             <option value="HOSPITAL_ADMIN">{t("users.form.roleOptions.hospitalAdmin")}</option>
             <option value="DOCTOR">{t("users.form.roleOptions.doctor")}</option>
             <option value="RECEPTION">{t("users.form.roleOptions.reception")}</option>
           </select>
         </div>
-        <div>
-          <label htmlFor="users-form-hospital" className={labelClass}>{t("users.form.hospitalLabel")}</label>
-          <select
-            id="users-form-hospital"
-            className={inputClass}
-            value={form.hospitalId}
-            onChange={(e) => onFormChange({ ...form, hospitalId: e.target.value })}
-          >
-            {hospitals.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {form.role !== "SUPER_ADMIN" ? (
+          <div>
+            <label htmlFor="users-form-hospital" className={labelClass}>{t("users.form.hospitalLabel")}</label>
+            <select
+              id="users-form-hospital"
+              className={inputClass}
+              value={form.hospitalId}
+              onChange={(e) => onFormChange({ ...form, hospitalId: e.target.value })}
+            >
+              {hospitals.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
         <div>
           <label htmlFor="users-form-password" className={labelClass}>{t("users.form.passwordLabel")}</label>
           <input

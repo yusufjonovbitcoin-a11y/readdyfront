@@ -84,7 +84,7 @@
       "visits": "-2.1% к прошлому месяцу"
     },
     "activityChart": {
-      "brandShort": "MC",
+      "brandShort": "m.ai",
       "calendarHint": "Даты статистики (до 31 дня)",
       "exportCsv": "Скачать CSV",
       "dateRangeTitle": "Диапазон дат",
@@ -209,6 +209,7 @@
       "passwordLabel": "Пароль *",
       "passwordPlaceholder": "Минимум 6 символов",
       "roleOptions": {
+        "superAdmin": "Супер админ",
         "hospitalAdmin": "Админ клиники",
         "doctor": "Врач",
         "reception": "Регистратура"
@@ -297,6 +298,7 @@
     "actionDescription": "Описание действия",
     "fullInfoTitle": "Полные данные",
     "securityTitle": "Данные безопасности",
+    "ipUnavailable": "Не определён",
     "quick": {
       "resource": "Ресурс",
       "resourceId": "ID ресурса",
@@ -330,7 +332,9 @@
       "authDirect": "Прямое auth-действие",
       "authSession": "Аутентифицированная сессия",
       "locationTitle": "Локация",
-      "locationDesc": "IP: {{ip}} — Внутренняя сеть",
+      "locationDesc": "IP: {{ip}}",
+      "locationLocal": "IP: {{ip}} (локальный или через proxy)",
+      "locationUnavailable": "IP не определён. В nginx включите proxy_set_header X-Real-IP и X-Forwarded-For.",
       "deviceTitle": "Устройство"
     },
     "export": {

@@ -1,5 +1,8 @@
 import type { AuditLogDto as AuditLog } from "@/api/types/audit.types";
 import { useModalA11y } from "@/hooks/useModalA11y";
+import { formatAuditIpDisplay } from "@/lib/auditIpDisplay";
+import { formatAuditDeviceLabel } from "@/lib/auditDeviceDisplay";
+import { useTranslation } from "react-i18next";
 
 interface AuditDetailModalProps {
   log: AuditLog | null;
@@ -27,8 +30,12 @@ function formatTime(ts: string) {
 }
 
 export default function AuditDetailModal({ log, onClose, darkMode }: AuditDetailModalProps) {
+  const { t } = useTranslation("admin");
   const modalRef = useModalA11y({ isOpen: Boolean(log), onClose });
   if (!log) return null;
+
+  const displayIp = formatAuditIpDisplay(log.ip) || t("auditDetail.ipUnavailable");
+  const displayDevice = log.deviceLabel?.trim() || formatAuditDeviceLabel(log.userAgent);
 
   const statusCfg =
     STATUS_CONFIG[log.status as keyof typeof STATUS_CONFIG] ??
@@ -37,7 +44,7 @@ export default function AuditDetailModal({ log, onClose, darkMode }: AuditDetail
     ROLE_LABELS[log.role as keyof typeof ROLE_LABELS] ??
     "Unknown";
 
-  const rows: { label: string; value: string; mono?: boolean }[] = [
+  const rows: { label: string; value: string; mono?: boolean; title?: string }[] = [
     { label: "Log ID", value: log.id, mono: true },
     { label: "Vaqt", value: formatTime(log.timestamp) },
     { label: "Foydalanuvchi", value: log.userName },
@@ -48,8 +55,12 @@ export default function AuditDetailModal({ log, onClose, darkMode }: AuditDetail
     { label: "Resurs", value: log.resource },
     ...(log.resourceId ? [{ label: "Resurs ID", value: log.resourceId, mono: true }] : []),
     { label: "Tavsif", value: log.detail },
-    { label: "IP manzil", value: log.ip, mono: true },
-    { label: "Brauzer / Qurilma", value: log.userAgent },
+    { label: "IP manzil", value: displayIp, mono: true },
+    {
+      label: "Brauzer / Qurilma",
+      value: displayDevice,
+      title: log.userAgent?.trim() ? log.userAgent : undefined,
+    },
   ];
 
   return (
@@ -103,9 +114,12 @@ export default function AuditDetailModal({ log, onClose, darkMode }: AuditDetail
               <span className={`text-xs font-medium w-36 flex-shrink-0 pt-0.5 ${darkMode ? "text-gray-500" : "text-gray-400"}`}>
                 {row.label}
               </span>
-              <span className={`text-sm flex-1 break-all ${
-                row.mono ? "font-mono" : ""
-              } ${darkMode ? "text-gray-200" : "text-gray-800"}`}>
+              <span
+                title={row.title}
+                className={`text-sm flex-1 ${row.mono ? "font-mono break-all" : "break-words"} ${
+                  darkMode ? "text-gray-200" : "text-gray-800"
+                }`}
+              >
                 {row.value}
               </span>
             </div>

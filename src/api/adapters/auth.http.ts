@@ -5,6 +5,7 @@ import {
   setStoredAccessToken,
   trySilentSessionRefresh,
 } from "@/api/client";
+import { prefetchClientPublicIpHint } from "@/lib/clientPublicIp";
 import type {
   AuthUserDto,
   ChangePasswordInput,
@@ -19,6 +20,7 @@ type BackendLoginResponse = {
 };
 
 export async function login(input: LoginInput): Promise<LoginResult> {
+  await prefetchClientPublicIpHint();
   const loginResponse = await apiRequest<BackendLoginResponse>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({
