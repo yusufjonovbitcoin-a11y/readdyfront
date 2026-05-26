@@ -5,7 +5,7 @@ interface MeduzaAiWordmarkProps {
   className?: string;
 }
 
-/** Sidebar: `meduza` + aquamarine `.ai` */
+/** Sidebar: `meduza` + cyan `.ai` */
 export function MeduzaAiWordmark({ darkMode, className }: MeduzaAiWordmarkProps) {
   return (
     <MeduzaAiBrandText

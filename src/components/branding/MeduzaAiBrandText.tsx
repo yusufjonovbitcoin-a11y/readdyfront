@@ -23,7 +23,7 @@ type MeduzaAiBrandTextProps = {
   className?: string;
 };
 
-/** `meduza` + aquamarine `.ai` */
+/** `meduza` + cyan `.ai` */
 export function MeduzaAiBrandText({
   variant = "on-light",
   size = "md",
@@ -39,7 +39,7 @@ export function MeduzaAiBrandText({
   );
 }
 
-/** Qisqa: `m` + aquamarine `.ai` (grafik pill va hokazo) */
+/** Qisqa: `m` + cyan `.ai` (grafik pill va hokazo) */
 export function MeduzaAiBrandShort({
   className = "",
   letterClassName = "text-white",
